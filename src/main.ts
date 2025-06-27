@@ -1,15 +1,23 @@
+import './assets/main.css'
 import { createApp } from 'vue'
-import '@/assets/index.css'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import { initializeTheme } from '@/components/theming/themeManager'
-import './components/theming/themes.css'
-import { useCollecty } from '@/composables/useCollecty'
+import { apiPlugin } from './plugins/api'
+// Import v-calendar
+import VCalendar from 'v-calendar'
+import 'v-calendar/style.css'
 
-// Initialize theme and collecty store
-initializeTheme()
-useCollecty()
-
+// Create app
 const app = createApp(App)
+const pinia = createPinia()
+
+// Use plugins
+app.use(pinia)
 app.use(router)
+app.use(apiPlugin)
+// Use v-calendar
+app.use(VCalendar, {})
+
+// Mount app
 app.mount('#app')
