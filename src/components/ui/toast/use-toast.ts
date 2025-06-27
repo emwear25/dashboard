@@ -12,6 +12,8 @@ export type ToasterToast = ToastRootProps & {
   component?: VNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  variant?: 'default' | 'destructive'
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
 }
 
 type Action =
@@ -116,11 +118,21 @@ function useToast() {
     dispatch({ type: 'DISMISS_TOAST' })
   }
 
+  function onMouseEnter() {
+    // Pause toast dismissal on hover
+  }
+
+  function onMouseLeave() {
+    // Resume toast dismissal on leave
+  }
+
   return {
     toasts,
     toast,
     dismiss: (toastId?: string) => dispatch({ type: 'DISMISS_TOAST', toastId }),
     dismissAll,
+    onMouseEnter,
+    onMouseLeave,
   }
 }
 

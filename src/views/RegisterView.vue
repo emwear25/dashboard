@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useForm, type SubmissionHandler } from "vee-validate";
+import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ const props = defineProps({
 });
 
 // Submit handler
-const onSubmit: SubmissionHandler<FormValues> = async (values) => {
+const onSubmit = async (values: any) => {
   try {
     errorMessage.value = "";
     successMessage.value = "";

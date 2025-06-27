@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ToastViewport } from "@/components/ui/toast";
+import { ToastViewport } from "radix-vue";
 </script>
 
 <template>

@@ -51,13 +51,7 @@ const form = useForm({
 });
 
 // Submit handler
-const onSubmit = async (values: {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  permission: "admin" | "level1" | "level2";
-}) => {
+const onSubmit = async (values: any) => {
   try {
     errorMessage.value = "";
     successMessage.value = "";

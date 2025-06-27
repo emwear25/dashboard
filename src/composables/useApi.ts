@@ -34,7 +34,7 @@ export const useApi = () => {
     error.value = null
 
     try {
-      const response = await makeAuthenticatedRequest<ApiResponse<T>>(endpoint, options)
+      const response = await makeAuthenticatedRequest(endpoint, options)
       return response.data || response
     } catch (err: any) {
       const apiError: ApiError = {
