@@ -1,154 +1,65 @@
-# Vue Shadcn UIKit Starter
+# Telemediker Dashboard
 
-A modern approach to building websites using Vue 3 + Shadcn UI in a BunJS environment. This starter kit provides a robust foundation for creating landing pages, multi-page applications, and reusable UI components with a utility-first CSS approach.
+A modern telemedicine dashboard application for Bulgarian healthcare professionals, built with Vue 3, TypeScript, and Vite.
 
-## 📦 NEW! Section Collector
+## About Telemediker
 
-This version adds an experimental feature to add sections to the builder. 
-Click on the drop down menu in the top right corner. Click `Get UI Blocks` and add the blocks you like to the site-wide collection. Then click `Go to BuildY` to go into the builder and see the blocks ready to build pages. 
-If you want to continue browsing the site without the collector functionality, just click: `Default State`.
+Telemediker is a comprehensive telemedicine platform designed specifically for Bulgarian doctors to manage patients, schedule appointments, and provide remote medical consultations. The platform supports the Bulgarian healthcare system by enabling efficient digital healthcare delivery.
 
-## Page speed Google Lighthouse score 100%
+## Features
 
-[Google Lighthouse score](https://pagespeed.web.dev/analysis/https-vue-uikit-shadcn-vercel-app/b1ozhxmmsz?form_factor=desktop)
+- **Patient Management**: Comprehensive patient records and history
+- **Appointment Scheduling**: Easy-to-use appointment booking system
+- **Medical Dashboard**: Real-time overview of practice metrics
+- **Bulgarian Language Support**: Designed for Bulgarian healthcare professionals
+- **Modern UI**: Clean, responsive interface built with Vue 3 and Tailwind CSS
+- **Authentication**: Secure login system for medical professionals
 
-## 🚀 Getting Started
+## Technology Stack
 
-### Prerequisites
-- [Bun](https://bun.sh/) >= 1.0.0
-- Node.js >= 18.0.0
+- **Frontend**: Vue 3 with Composition API
+- **Language**: TypeScript for type safety
+- **Styling**: Tailwind CSS with custom components
+- **Build Tool**: Vite for fast development and building
+- **State Management**: Pinia for reactive state management
+- **Icons**: Lucide Vue for medical and general icons
 
-```bash
-# Install Bun
-curl -fsSL https://bun.sh/install | bash
+## Recommended IDE Setup
 
-# Clone and Setup
-git clone https://github.com/alexy-os/vue-shadcn-starter
-cd vue-shadcn-starter
-bun install
-bun dev
+[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+
+## Type Support for `.vue` Imports in TS
+
+TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+
+## Customize configuration
+
+See [Vite Configuration Reference](https://vite.dev/config/).
+
+## Project Setup
+
+```sh
+npm install
 ```
 
-## 🎨 Component Development
+### Compile and Hot-Reload for Development
 
-### CVA (class-variance-authority) Approach
-
-We use CVA for type-safe component variants. Here's how to create a new component:
-
-```typescript
-// components/ui/button/button.ts
-import { cva } from 'class-variance-authority'
-
-export const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
-      },
-      size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8'
-      }
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default'
-    }
-  }
-)
+```sh
+npm run dev
 ```
 
-### Component Implementation
+### Type-Check, Compile and Minify for Production
 
-```vue
-<!-- components/ui/button/button.vue -->
-<script setup lang="ts">
-import { computed } from 'vue'
-import { buttonVariants } from './button'
-import type { ButtonVariants } from './button.types'
-
-const props = defineProps<ButtonVariants>()
-
-const classes = computed(() => 
-  buttonVariants({ variant: props.variant, size: props.size })
-)
-</script>
- 
-<template>
-  <button :class="classes">
-    <slot />
-  </button>
-</template>
+```sh
+npm run build
 ```
 
-## 🛠️ Tech Stack
+### Lint with [ESLint](https://eslint.org/)
 
-- [Vue 3.5+](https://vuejs.org/)
-- [Vite](https://vitejs.dev/)
-- [Bun.js](https://bun.sh/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [shadcn-vue](https://github.com/unovue/shadcn-vue)
-- [Radix Vue](https://www.radix-vue.com/)
-- [class-variance-authority (CVA)](https://github.com/joe-bell/class-variance-authority)
-
-## 📦 Project Structure
-
-```
-src/
-├── components/
-│   └── ui/          # Shadcn components
-│       └── button/  # Example component structure
-│           ├── button.ts        # CVA variants
-│           ├── button.vue       # Component implementation
-│           └── button.types.ts  # TypeScript interfaces
-├── lib/
-│   └── utils.ts     # Utility functions
-├── styles/
-│   └── globals.css  # Global styles
-└── App.vue          # Main application
+```sh
+npm run lint
 ```
 
-## 🔧 Development Guidelines
+## License
 
-1. **Component Creation**:
-   - Place new components in `src/components/ui/`
-   - Use CVA for variant management
-   - Create separate files for types and variants
-   - Implement proper TypeScript interfaces
-
-2. **Styling**:
-   - Follow utility-first approach with Tailwind CSS
-   - Use CVA for managing component variants
-   - Maintain dark mode compatibility
-
-3. **Type Safety**:
-   - Ensure all components are properly typed
-   - Use TypeScript strict mode
-   - Leverage Vue 3.5+ type inference
-
-## 🎯 Use Cases
-
-- Landing Pages
-- Marketing Websites
-- Multi-page Applications
-- Component Libraries
-- Design Systems
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📝 License
-
-MIT License - see the [MIT](LICENSE) file for details.
-
----
-
-**Note**: This is an early preview of a larger ecosystem being developed for creating flexible, reusable UI components with shadcn-vue. Stay tuned for more blocks and components!
-
-For more information, visit [shadcn-vue documentation](https://www.shadcn-vue.com/).
+This project is proprietary software for Bulgarian healthcare professionals.
