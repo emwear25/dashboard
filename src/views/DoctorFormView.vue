@@ -62,7 +62,7 @@ const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
 
 // Available options
-const availablePlans = ["consultation", "prescriptions"];
+const availablePlans = ["consultation"];
 
 const commonSpecialties = [
   "General Medicine",

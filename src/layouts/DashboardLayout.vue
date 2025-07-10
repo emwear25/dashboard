@@ -21,6 +21,8 @@ import {
   Users,
   Calendar,
   CalendarDays,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-vue-next";
 import { ref, onMounted, computed } from "vue";
 import { useDark, useToggle } from "@vueuse/core";
@@ -38,6 +40,7 @@ interface NavigationItem {
 }
 
 const isOpen = ref(false);
+const sidebarCollapsed = ref(false);
 const isDark = useDark();
 const toggleDark = useToggle(isDark);
 
@@ -59,6 +62,7 @@ const navigationItems = computed<NavigationItem[]>(() => {
     { name: "My Profile", path: "/profile", icon: User },
     { name: "My Availability", path: "/availability", icon: Calendar },
     { name: "My Appointments", path: "/appointments", icon: CalendarDays },
+    { name: "My Patients", path: "/patients", icon: Users },
     { name: "Analytics", path: "/analytics", icon: BarChart3 },
   ];
 
@@ -79,6 +83,10 @@ const toggleExpand = (itemName: string) => {
   } else {
     expandedItems.value.splice(index, 1);
   }
+};
+
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value;
 };
 
 const handleLogout = async () => {
@@ -102,39 +110,83 @@ onMounted(async () => {
     <div class="min-h-screen flex bg-background dark:bg-slate-950">
       <!-- Desktop Sidebar -->
       <aside
-        class="hidden lg:flex w-64 flex-col fixed h-screen bg-card dark:bg-slate-900 border-r border-border"
+        :class="[
+          'hidden lg:flex flex-col fixed h-screen bg-card dark:bg-slate-900 border-r border-border transition-all duration-300 z-50',
+          sidebarCollapsed ? 'w-16' : 'w-64',
+        ]"
       >
-        <div class="p-6 flex justify-between items-center">
-          <h1 class="text-2xl font-bold">Telemediker</h1>
-          <Button variant="ghost" size="icon" @click="toggleDark()">
+        <div
+          :class="[
+            'p-4 flex justify-between items-center',
+            sidebarCollapsed ? 'px-3' : 'px-6',
+          ]"
+        >
+          <h1 v-if="!sidebarCollapsed" class="text-2xl font-bold">
+            Telemediker
+          </h1>
+          <h1 v-else class="text-xl font-bold">TM</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            @click="toggleDark()"
+            v-if="!sidebarCollapsed"
+          >
             <Sun v-if="isDark" class="h-5 w-5" />
             <Moon v-else class="h-5 w-5" />
           </Button>
         </div>
-        <nav class="flex-1 px-4">
+        <nav :class="['flex-1', sidebarCollapsed ? 'px-2' : 'px-4']">
+          <!-- Sidebar Toggle Button -->
+          <div
+            :class="[
+              'mb-4',
+              sidebarCollapsed ? 'flex justify-center' : 'flex justify-end',
+            ]"
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              @click="toggleSidebar"
+              class="hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200 border border-transparent hover:border-blue-200"
+            >
+              <PanelLeftClose
+                v-if="!sidebarCollapsed"
+                class="h-5 w-5 text-blue-600"
+              />
+              <PanelLeftOpen v-else class="h-5 w-5 text-blue-600" />
+            </Button>
+          </div>
+
           <template v-for="item in navigationItems" :key="item.name">
             <!-- Regular menu item without children -->
             <RouterLink
               v-if="!item.children"
               :to="item.path"
-              class="flex items-center px-4 py-2 mt-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-              :class="{
-                'bg-accent/50 text-accent-foreground':
-                  $route.path === item.path,
-                'opacity-50 cursor-not-allowed': item.locked,
-              }"
+              :class="[
+                'flex items-center py-2 mt-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors',
+                sidebarCollapsed ? 'px-3 justify-center' : 'px-4',
+                {
+                  'bg-accent/50 text-accent-foreground':
+                    $route.path === item.path,
+                  'opacity-50 cursor-not-allowed': item.locked,
+                },
+              ]"
               @click.prevent="$router.push(item.path)"
+              :title="sidebarCollapsed ? item.name : ''"
             >
-              <component :is="item.icon" class="h-5 w-5 mr-3" />
-              <span>{{ item.name }}</span>
+              <component
+                :is="item.icon"
+                :class="['h-5 w-5', sidebarCollapsed ? '' : 'mr-3']"
+              />
+              <span v-if="!sidebarCollapsed">{{ item.name }}</span>
               <Lock
-                v-if="item.locked"
+                v-if="item.locked && !sidebarCollapsed"
                 class="h-4 w-4 ml-auto text-muted-foreground"
               />
             </RouterLink>
 
             <!-- Menu item with children -->
-            <div v-else class="mt-2">
+            <div v-else-if="!sidebarCollapsed" class="mt-2">
               <Button
                 variant="ghost"
                 class="w-full justify-start px-4 py-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
@@ -174,17 +226,43 @@ onMounted(async () => {
                 </RouterLink>
               </div>
             </div>
+
+            <!-- Collapsed view for items with children - show as simple link to first child or parent -->
+            <RouterLink
+              v-else-if="sidebarCollapsed && item.children"
+              :to="item.children[0]?.path || item.path"
+              :class="[
+                'flex items-center py-2 mt-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors px-3 justify-center',
+                {
+                  'bg-accent/50 text-accent-foreground': item.children.some(
+                    (child) => $route.path === child.path
+                  ),
+                  'opacity-50 cursor-not-allowed': item.locked,
+                },
+              ]"
+              @click.prevent="$router.push(item.children[0]?.path || item.path)"
+              :title="item.name"
+            >
+              <component :is="item.icon" class="h-5 w-5" />
+            </RouterLink>
           </template>
         </nav>
-        <div class="p-4 border-t border-border">
+        <div
+          :class="['border-t border-border', sidebarCollapsed ? 'p-2' : 'p-4']"
+        >
           <Button
             variant="ghost"
-            class="w-full justify-start"
+            :class="[
+              sidebarCollapsed
+                ? 'w-full justify-center p-2'
+                : 'w-full justify-start',
+            ]"
             size="sm"
             @click="handleLogout"
+            :title="sidebarCollapsed ? 'Logout' : ''"
           >
-            <LogOut class="mr-2 h-4 w-4" />
-            Logout
+            <LogOut :class="[sidebarCollapsed ? 'h-4 w-4' : 'mr-2 h-4 w-4']" />
+            <span v-if="!sidebarCollapsed">Logout</span>
           </Button>
         </div>
       </aside>
@@ -370,7 +448,12 @@ onMounted(async () => {
       </div>
 
       <!-- Main Content -->
-      <main class="flex-1 lg:ml-64 lg:pt-0 pt-16">
+      <main
+        :class="[
+          'flex-1 lg:pt-0 pt-16 transition-all duration-300',
+          sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64',
+        ]"
+      >
         <!-- Desktop Header -->
         <header
           class="hidden lg:flex bg-card dark:bg-slate-900 border-b border-border px-6 py-4 sticky top-0 z-40"
@@ -457,7 +540,7 @@ onMounted(async () => {
         </header>
 
         <!-- Content Area -->
-        <div class="lg:pt-0">
+        <div class="lg:pt-0 px-4 md:px-6 lg:px-8 py-6">
           <RouterView />
         </div>
       </main>

@@ -123,7 +123,7 @@ interface Appointment {
   };
   date: string;
   slot: string;
-  plan: "prescription" | "consultation";
+  plan: "consultation";
   status: "pending" | "confirmed" | "cancelled" | "completed";
   reason?: string;
   notes?: string;

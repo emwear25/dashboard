@@ -266,7 +266,7 @@
                           appointment.status === 'pending' ||
                           appointment.status === 'confirmed'
                         "
-                        @click="cancelAppointment(appointment)"
+                        @click="showCancelModal(appointment)"
                       >
                         <XCircle class="mr-2 h-4 w-4" />
                         Cancel
@@ -352,12 +352,94 @@
             <Label class="text-sm font-medium">Notes</Label>
             <p class="text-sm">{{ selectedAppointment.notes || "No notes" }}</p>
           </div>
+          <div
+            v-if="
+              selectedAppointment.status === 'cancelled' &&
+              selectedAppointment.cancelReason
+            "
+          >
+            <Label class="text-sm font-medium">Cancellation Information</Label>
+            <div class="space-y-2 mt-1">
+              <div class="flex items-center gap-2">
+                <Badge variant="outline" class="text-xs">
+                  Cancelled by:
+                  {{
+                    selectedAppointment.cancelledBy === "doctor"
+                      ? "Doctor"
+                      : "Patient"
+                  }}
+                </Badge>
+                <span
+                  class="text-xs text-gray-500"
+                  v-if="selectedAppointment.cancelledAt"
+                >
+                  {{ formatDate(selectedAppointment.cancelledAt) }}
+                </span>
+              </div>
+              <div class="bg-red-50 border border-red-200 rounded-md p-3">
+                <p class="text-sm text-red-800 font-medium mb-1">
+                  Cancellation Reason:
+                </p>
+                <p class="text-sm text-red-700">
+                  {{ selectedAppointment.cancelReason }}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="flex justify-end space-x-2 mt-6">
           <Button variant="outline" @click="showDetailsModal = false"
             >Close</Button
           >
         </div>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Cancel Appointment Dialog -->
+    <Dialog v-model:open="showCancelDialog">
+      <DialogContent class="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Cancel Appointment</DialogTitle>
+          <DialogDescription>
+            Please provide a reason for cancelling this appointment. This will
+            be shared with the patient.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form @submit.prevent="confirmCancelAppointment" class="space-y-4">
+          <div class="space-y-2">
+            <Label for="cancelReason">Reason for cancellation *</Label>
+            <Textarea
+              id="cancelReason"
+              v-model="cancelReason"
+              placeholder="Please explain why you need to cancel this appointment..."
+              rows="4"
+              maxlength="500"
+              required
+              :class="{ 'border-red-500': cancelError }"
+            />
+            <div class="text-sm text-gray-500 text-right">
+              {{ cancelReason.length }}/500
+            </div>
+            <div v-if="cancelError" class="text-sm text-red-500">
+              {{ cancelError }}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="hideCancelModal">
+              Keep Appointment
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              :disabled="isCancelling || !cancelReason.trim()"
+            >
+              <span v-if="isCancelling">Cancelling...</span>
+              <span v-else>Cancel Appointment</span>
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   </div>
@@ -390,9 +472,12 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -435,10 +520,13 @@ interface Appointment {
   };
   date: string;
   slot: string;
-  plan: "prescription" | "consultation";
+  plan: "consultation";
   status: "pending" | "confirmed" | "cancelled" | "completed";
   reason?: string;
   notes?: string;
+  cancelledBy?: "patient" | "doctor";
+  cancelReason?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
   meetingRoomName?: string;
@@ -453,6 +541,13 @@ const appointments = ref<Appointment[]>([]);
 const isLoading = ref(false);
 const showDetailsModal = ref(false);
 const selectedAppointment = ref<Appointment | null>(null);
+
+// Cancel modal state
+const showCancelDialog = ref(false);
+const selectedCancelAppointment = ref<Appointment | null>(null);
+const cancelReason = ref("");
+const cancelError = ref("");
+const isCancelling = ref(false);
 
 // Filters
 const filters = ref({
@@ -597,12 +692,49 @@ const completeAppointment = async (appointment: Appointment) => {
   }
 };
 
-const cancelAppointment = async (appointment: Appointment) => {
+// Cancel modal methods
+const showCancelModal = (appointment: Appointment) => {
+  selectedCancelAppointment.value = appointment;
+  cancelReason.value = "";
+  cancelError.value = "";
+  showCancelDialog.value = true;
+};
+
+const hideCancelModal = () => {
+  showCancelDialog.value = false;
+  selectedCancelAppointment.value = null;
+  cancelReason.value = "";
+  cancelError.value = "";
+};
+
+const confirmCancelAppointment = async () => {
+  if (!selectedCancelAppointment.value) return;
+
+  if (!cancelReason.value.trim()) {
+    cancelError.value = "Please provide a reason for cancellation";
+    return;
+  }
+
+  if (cancelReason.value.trim().length < 10) {
+    cancelError.value = "Reason must be at least 10 characters long";
+    return;
+  }
+
+  isCancelling.value = true;
+  cancelError.value = "";
+
   try {
-    await appointmentsApi.cancel(appointment._id);
+    await appointmentsApi.cancel(
+      selectedCancelAppointment.value._id,
+      cancelReason.value.trim()
+    );
     await fetchAppointments();
+    hideCancelModal();
   } catch (error) {
     console.error("Failed to cancel appointment:", error);
+    cancelError.value = "Failed to cancel appointment. Please try again.";
+  } finally {
+    isCancelling.value = false;
   }
 };
 

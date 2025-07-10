@@ -64,6 +64,16 @@ const router = createRouter({
           component: () => import('@/views/AppointmentsView.vue')
         },
         {
+          path: 'patients',
+          name: 'patients',
+          component: () => import('@/views/PatientsView.vue')
+        },
+        {
+          path: 'patients/:id',
+          name: 'patient-detail',
+          component: () => import('@/views/PatientDetailView.vue')
+        },
+        {
           path: 'meeting/:id',
           name: 'meeting',
           component: () => import('@/views/MeetingView.vue')
