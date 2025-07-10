@@ -304,116 +304,246 @@
                   <div
                     v-for="document in documentsByCategory['medical-reports']"
                     :key="document._id"
-                    class="bg-card border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                    :class="[
+                      'border rounded-lg p-6 transition-all duration-200 hover:shadow-md',
+                      activeDocumentSection === 'doctor-uploads'
+                        ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
+                        : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200',
+                    ]"
                   >
-                    <div class="flex items-start justify-between">
+                    <!-- Header -->
+                    <div class="flex items-start justify-between mb-4">
                       <div class="flex-1">
-                        <div class="flex items-center space-x-3 mb-2">
-                          <h4 class="font-medium text-foreground">
-                            {{ document.title }}
-                          </h4>
-                          <span
-                            :class="[
-                              'px-2 py-1 text-xs rounded-full',
-                              document.metadata?.priority === 'urgent'
-                                ? 'bg-red-100 text-red-700'
-                                : document.metadata?.priority === 'high'
-                                  ? 'bg-orange-100 text-orange-700'
-                                  : 'bg-green-100 text-green-700',
-                            ]"
-                          >
-                            {{ document.metadata?.priority || "normal" }}
-                          </span>
+                        <!-- Document Category with Label -->
+                        <div class="flex items-center space-x-2 mb-3">
+                          <FileText class="h-4 w-4 text-indigo-600" />
+                          <div>
+                            <span class="font-medium text-gray-600"
+                              >Document Category:</span
+                            >
+                            <span
+                              :class="[
+                                'ml-2 px-3 py-1 text-xs font-bold rounded-full text-white',
+                                activeDocumentSection === 'doctor-uploads'
+                                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600'
+                                  : 'bg-gradient-to-r from-green-500 to-emerald-600',
+                              ]"
+                            >
+                              Medical Reports
+                            </span>
+                            <span
+                              :class="[
+                                'ml-2 px-2 py-1 text-xs rounded-full font-medium',
+                                document.metadata?.priority === 'urgent'
+                                  ? 'bg-red-100 text-red-700'
+                                  : document.metadata?.priority === 'high'
+                                    ? 'bg-orange-100 text-orange-700'
+                                    : 'bg-gray-100 text-gray-700',
+                              ]"
+                            >
+                              {{ document.metadata?.priority || "normal" }}
+                            </span>
+                          </div>
                         </div>
-                        <p
-                          v-if="document.description"
-                          class="text-sm text-muted-foreground mb-3"
-                        >
-                          {{ document.description }}
-                        </p>
-                        <div
-                          class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"
-                        >
-                          <div
-                            v-if="document.metadata?.reportType"
-                            class="flex items-center text-muted-foreground"
-                          >
-                            <FileText class="h-4 w-4 mr-2" />
-                            <span
-                              >Type: {{ document.metadata.reportType }}</span
+
+                        <!-- Document Title with Label -->
+                        <div class="flex items-center space-x-2 mb-2">
+                          <FileText class="h-4 w-4 text-blue-600" />
+                          <div>
+                            <span class="font-medium text-gray-600"
+                              >Document Title:</span
                             >
-                          </div>
-                          <div
-                            v-if="
-                              (document.metadata?.diagnoses &&
-                                document.metadata.diagnoses.length > 0) ||
-                              document.metadata?.diagnosis
-                            "
-                            class="flex items-start text-muted-foreground"
-                          >
-                            <FileText class="h-4 w-4 mr-2 mt-0.5" />
-                            <div>
-                              <span class="font-medium">Diagnoses:</span>
-                              <div
-                                v-if="
-                                  document.metadata?.diagnoses &&
-                                  document.metadata.diagnoses.length > 0
-                                "
-                                class="space-y-1"
-                              >
-                                <div
-                                  v-for="diagnosis in document.metadata
-                                    .diagnoses"
-                                  :key="diagnosis"
-                                  class="text-sm"
-                                >
-                                  {{ formatDiagnosisForDisplay(diagnosis) }}
-                                </div>
-                              </div>
-                              <div
-                                v-else-if="document.metadata?.diagnosis"
-                                class="text-sm"
-                              >
-                                {{
-                                  formatDiagnosisForDisplay(
-                                    document.metadata.diagnosis
-                                  )
-                                }}
-                              </div>
-                            </div>
-                          </div>
-                          <div class="flex items-center text-muted-foreground">
-                            <Calendar class="h-4 w-4 mr-2" />
-                            <span
-                              >Date:
-                              {{ formatDate(document.documentDate) }}</span
+                            <h4
+                              :class="[
+                                'inline ml-2 text-lg font-semibold',
+                                activeDocumentSection === 'doctor-uploads'
+                                  ? 'text-blue-900'
+                                  : 'text-green-900',
+                              ]"
                             >
+                              {{ document.title || "Not Available" }}
+                            </h4>
                           </div>
-                          <div class="flex items-center text-muted-foreground">
-                            <Clock class="h-4 w-4 mr-2" />
-                            <span
-                              >Uploaded:
-                              {{ formatDate(document.uploadedAt) }}</span
+                        </div>
+
+                        <!-- Description with Label -->
+                        <div class="flex items-start space-x-2 mb-3">
+                          <FileText class="h-4 w-4 text-gray-600 mt-0.5" />
+                          <div>
+                            <span class="font-medium text-gray-600"
+                              >Description:</span
                             >
+                            <p
+                              :class="[
+                                'text-sm italic mt-1',
+                                activeDocumentSection === 'doctor-uploads'
+                                  ? 'text-blue-700'
+                                  : 'text-green-700',
+                              ]"
+                            >
+                              {{ document.description || "Not Available" }}
+                            </p>
                           </div>
                         </div>
                       </div>
                       <div class="flex items-center space-x-2">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           @click="viewDocument(document._id)"
+                          class="hover:bg-indigo-50"
                         >
                           <Eye class="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="ghost"
                           size="sm"
                           @click="downloadDocument(document._id)"
+                          :class="[
+                            'text-white hover:shadow-lg transform hover:-translate-y-0.5 transition-all',
+                            activeDocumentSection === 'doctor-uploads'
+                              ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
+                              : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700',
+                          ]"
                         >
                           <Download class="h-4 w-4" />
                         </Button>
                       </div>
+                    </div>
+
+                    <!-- Detailed Metadata -->
+                    <div
+                      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm"
+                    >
+                      <!-- Document Date -->
+                      <div class="flex items-center space-x-2">
+                        <Calendar class="h-4 w-4 text-red-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Document Date:</span
+                          >
+                          <p class="text-red-600 font-semibold">
+                            {{
+                              document.documentDate
+                                ? formatDate(document.documentDate)
+                                : "Not Available"
+                            }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Report Type -->
+                      <div class="flex items-center space-x-2">
+                        <FileText class="h-4 w-4 text-purple-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Report Type:</span
+                          >
+                          <p class="text-purple-600 font-semibold capitalize">
+                            {{
+                              document.metadata?.reportType || "Not Available"
+                            }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Reference Number -->
+                      <div class="flex items-center space-x-2">
+                        <FileText class="h-4 w-4 text-orange-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Reference Number:</span
+                          >
+                          <p class="text-orange-600 font-mono font-semibold">
+                            {{
+                              document.metadata?.referenceNumber ||
+                              "Not Available"
+                            }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Uploaded Date -->
+                      <div class="flex items-center space-x-2">
+                        <Clock class="h-4 w-4 text-gray-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Uploaded:</span
+                          >
+                          <p class="text-gray-700 font-semibold">
+                            {{ formatDate(document.uploadedAt) }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Diagnoses Section -->
+                    <div
+                      v-if="
+                        (document.metadata?.diagnoses &&
+                          document.metadata.diagnoses.length > 0) ||
+                        document.metadata?.diagnosis
+                      "
+                      class="mt-4 p-3 bg-white/50 rounded-lg border border-gray-200"
+                    >
+                      <div class="flex items-center space-x-2 mb-2">
+                        <FileText class="h-4 w-4 text-indigo-600" />
+                        <span class="font-medium text-gray-700"
+                          >Diagnoses:</span
+                        >
+                      </div>
+                      <div class="flex flex-wrap gap-2">
+                        <div
+                          v-if="
+                            document.metadata?.diagnoses &&
+                            document.metadata.diagnoses.length > 0
+                          "
+                          class="flex flex-wrap gap-2"
+                        >
+                          <span
+                            v-for="diagnosis in document.metadata.diagnoses"
+                            :key="diagnosis"
+                            :class="[
+                              'px-3 py-1 text-xs rounded-full font-medium border',
+                              activeDocumentSection === 'doctor-uploads'
+                                ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                : 'bg-green-100 text-green-800 border-green-200',
+                            ]"
+                          >
+                            {{ formatDiagnosisForDisplay(diagnosis) }}
+                          </span>
+                        </div>
+                        <span
+                          v-else-if="document.metadata?.diagnosis"
+                          :class="[
+                            'px-3 py-1 text-xs rounded-full font-medium border',
+                            activeDocumentSection === 'doctor-uploads'
+                              ? 'bg-blue-100 text-blue-800 border-blue-200'
+                              : 'bg-green-100 text-green-800 border-green-200',
+                          ]"
+                        >
+                          {{
+                            formatDiagnosisForDisplay(
+                              document.metadata.diagnosis
+                            )
+                          }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Additional Notes -->
+                    <div
+                      v-if="document.metadata?.notes"
+                      class="mt-4 p-3 bg-white/50 rounded-lg border border-gray-200"
+                    >
+                      <div class="flex items-center space-x-2 mb-2">
+                        <FileText class="h-4 w-4 text-gray-600" />
+                        <span class="font-medium text-gray-700"
+                          >Additional Notes:</span
+                        >
+                      </div>
+                      <p class="text-gray-600 italic">
+                        {{ document.metadata.notes }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -441,82 +571,209 @@
                   <div
                     v-for="document in documentsByCategory['lab-results']"
                     :key="document._id"
-                    class="bg-card border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                    :class="[
+                      'border rounded-lg p-6 transition-all duration-200 hover:shadow-md',
+                      activeDocumentSection === 'doctor-uploads'
+                        ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200'
+                        : 'bg-gradient-to-br from-teal-50 to-cyan-50 border-teal-200',
+                    ]"
                   >
-                    <div class="flex items-start justify-between">
+                    <!-- Header -->
+                    <div class="flex items-start justify-between mb-4">
                       <div class="flex-1">
-                        <div class="flex items-center space-x-3 mb-2">
-                          <h4 class="font-medium text-foreground">
-                            {{ document.title }}
-                          </h4>
-                          <span
-                            :class="[
-                              'px-2 py-1 text-xs rounded-full',
-                              document.metadata?.priority === 'urgent'
-                                ? 'bg-red-100 text-red-700'
-                                : document.metadata?.priority === 'high'
-                                  ? 'bg-orange-100 text-orange-700'
-                                  : 'bg-green-100 text-green-700',
-                            ]"
-                          >
-                            {{ document.metadata?.priority || "normal" }}
-                          </span>
+                        <!-- Document Category with Label -->
+                        <div class="flex items-center space-x-2 mb-3">
+                          <FileText class="h-4 w-4 text-indigo-600" />
+                          <div>
+                            <span class="font-medium text-gray-600"
+                              >Document Category:</span
+                            >
+                            <span
+                              :class="[
+                                'ml-2 px-3 py-1 text-xs font-bold rounded-full text-white',
+                                activeDocumentSection === 'doctor-uploads'
+                                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600'
+                                  : 'bg-gradient-to-r from-teal-500 to-cyan-600',
+                              ]"
+                            >
+                              Lab Results
+                            </span>
+                            <span
+                              :class="[
+                                'ml-2 px-2 py-1 text-xs rounded-full font-medium',
+                                document.metadata?.priority === 'urgent'
+                                  ? 'bg-red-100 text-red-700'
+                                  : document.metadata?.priority === 'high'
+                                    ? 'bg-orange-100 text-orange-700'
+                                    : 'bg-gray-100 text-gray-700',
+                              ]"
+                            >
+                              {{ document.metadata?.priority || "normal" }}
+                            </span>
+                          </div>
                         </div>
-                        <p
-                          v-if="document.description"
-                          class="text-sm text-muted-foreground mb-3"
-                        >
-                          {{ document.description }}
-                        </p>
-                        <div
-                          class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"
-                        >
-                          <div
-                            v-if="document.metadata?.labName"
-                            class="flex items-center text-muted-foreground"
-                          >
-                            <FileText class="h-4 w-4 mr-2" />
-                            <span>Lab: {{ document.metadata.labName }}</span>
-                          </div>
-                          <div
-                            v-if="document.metadata?.testType"
-                            class="flex items-center text-muted-foreground"
-                          >
-                            <FileText class="h-4 w-4 mr-2" />
-                            <span>Test: {{ document.metadata.testType }}</span>
-                          </div>
-                          <div class="flex items-center text-muted-foreground">
-                            <Calendar class="h-4 w-4 mr-2" />
-                            <span
-                              >Date:
-                              {{ formatDate(document.documentDate) }}</span
+
+                        <!-- Document Title with Label -->
+                        <div class="flex items-center space-x-2 mb-2">
+                          <FileText class="h-4 w-4 text-blue-600" />
+                          <div>
+                            <span class="font-medium text-gray-600"
+                              >Document Title:</span
                             >
-                          </div>
-                          <div class="flex items-center text-muted-foreground">
-                            <Clock class="h-4 w-4 mr-2" />
-                            <span
-                              >Uploaded:
-                              {{ formatDate(document.uploadedAt) }}</span
+                            <h4
+                              :class="[
+                                'inline ml-2 text-lg font-semibold',
+                                activeDocumentSection === 'doctor-uploads'
+                                  ? 'text-emerald-900'
+                                  : 'text-teal-900',
+                              ]"
                             >
+                              {{ document.title || "Not Available" }}
+                            </h4>
+                          </div>
+                        </div>
+
+                        <!-- Description with Label -->
+                        <div class="flex items-start space-x-2 mb-3">
+                          <FileText class="h-4 w-4 text-gray-600 mt-0.5" />
+                          <div>
+                            <span class="font-medium text-gray-600"
+                              >Description:</span
+                            >
+                            <p
+                              :class="[
+                                'text-sm italic mt-1',
+                                activeDocumentSection === 'doctor-uploads'
+                                  ? 'text-emerald-700'
+                                  : 'text-teal-700',
+                              ]"
+                            >
+                              {{ document.description || "Not Available" }}
+                            </p>
                           </div>
                         </div>
                       </div>
                       <div class="flex items-center space-x-2">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           @click="viewDocument(document._id)"
+                          class="hover:bg-emerald-50"
                         >
                           <Eye class="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="ghost"
                           size="sm"
                           @click="downloadDocument(document._id)"
+                          :class="[
+                            'text-white hover:shadow-lg transform hover:-translate-y-0.5 transition-all',
+                            activeDocumentSection === 'doctor-uploads'
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700'
+                              : 'bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700',
+                          ]"
                         >
                           <Download class="h-4 w-4" />
                         </Button>
                       </div>
+                    </div>
+
+                    <!-- Detailed Metadata -->
+                    <div
+                      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm"
+                    >
+                      <!-- Document Date -->
+                      <div class="flex items-center space-x-2">
+                        <Calendar class="h-4 w-4 text-red-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Document Date:</span
+                          >
+                          <p class="text-red-600 font-semibold">
+                            {{
+                              document.documentDate
+                                ? formatDate(document.documentDate)
+                                : "Not Available"
+                            }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Test Type -->
+                      <div class="flex items-center space-x-2">
+                        <FileText class="h-4 w-4 text-purple-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Test Type:</span
+                          >
+                          <p class="text-purple-600 font-semibold capitalize">
+                            {{
+                              formatTestType(document.metadata?.testType) ||
+                              "Not Available"
+                            }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Reference Number -->
+                      <div class="flex items-center space-x-2">
+                        <FileText class="h-4 w-4 text-orange-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Reference Number:</span
+                          >
+                          <p class="text-orange-600 font-mono font-semibold">
+                            {{
+                              document.metadata?.referenceNumber ||
+                              "Not Available"
+                            }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Lab Name (if available) -->
+                      <div
+                        v-if="document.metadata?.labName"
+                        class="flex items-center space-x-2"
+                      >
+                        <FileText class="h-4 w-4 text-blue-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Lab Name:</span
+                          >
+                          <p class="text-blue-600 font-semibold">
+                            {{ document.metadata.labName }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Uploaded Date -->
+                      <div class="flex items-center space-x-2">
+                        <Clock class="h-4 w-4 text-gray-600" />
+                        <div>
+                          <span class="font-medium text-gray-600"
+                            >Uploaded:</span
+                          >
+                          <p class="text-gray-700 font-semibold">
+                            {{ formatDate(document.uploadedAt) }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Additional Notes -->
+                    <div
+                      v-if="document.metadata?.notes"
+                      class="mt-4 p-3 bg-white/50 rounded-lg border border-gray-200"
+                    >
+                      <div class="flex items-center space-x-2 mb-2">
+                        <FileText class="h-4 w-4 text-gray-600" />
+                        <span class="font-medium text-gray-700"
+                          >Additional Notes:</span
+                        >
+                      </div>
+                      <p class="text-gray-600 italic">
+                        {{ document.metadata.notes }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1757,6 +2014,33 @@ const formatDateTime = (dateString: string) => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+// Test Type formatting
+const formatTestType = (testType: string | undefined) => {
+  if (!testType) return "Not Available";
+
+  const testTypeMap: { [key: string]: string } = {
+    "blood-work": "Blood Work",
+    "urine-analysis": "Urine Analysis",
+    "stool-analysis": "Stool Analysis",
+    cholesterol: "Cholesterol Test",
+    glucose: "Blood Glucose",
+    "lipid-panel": "Lipid Panel",
+    "hormone-test": "Hormone Test",
+    "vitamin-levels": "Vitamin Levels",
+    "liver-function": "Liver Function",
+    "kidney-function": "Kidney Function",
+    "cardiac-markers": "Cardiac Markers",
+    "inflammatory-markers": "Inflammatory Markers",
+    "thyroid-function": "Thyroid Function",
+    "pregnancy-test": "Pregnancy Test",
+    "allergy-test": "Allergy Test",
+    "genetic-test": "Genetic Test",
+    other: "Other",
+  };
+
+  return testTypeMap[testType] || testType;
 };
 
 // Appointment Methods
