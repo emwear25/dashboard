@@ -79,21 +79,10 @@
       <Card>
         <CardContent class="pt-6">
           <div class="flex items-center space-x-2">
-            <Clock class="h-8 w-8 text-yellow-600" />
+            <Calendar class="h-8 w-8 text-blue-600" />
             <div>
-              <p class="text-2xl font-bold">{{ stats.pending }}</p>
-              <p class="text-sm text-muted-foreground">Pending</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent class="pt-6">
-          <div class="flex items-center space-x-2">
-            <CheckCircle class="h-8 w-8 text-green-600" />
-            <div>
-              <p class="text-2xl font-bold">{{ stats.confirmed }}</p>
-              <p class="text-sm text-muted-foreground">Confirmed</p>
+              <p class="text-2xl font-bold">{{ stats.upcoming }}</p>
+              <p class="text-sm text-muted-foreground">Upcoming</p>
             </div>
           </div>
         </CardContent>
@@ -214,7 +203,6 @@
                       <DropdownMenuItem
                         v-if="
                           appointment.plan === 'consultation' &&
-                          appointment.status === 'confirmed' &&
                           appointment.isJoinable
                         "
                         @click="joinMeeting(appointment)"
@@ -225,7 +213,6 @@
                       <DropdownMenuItem
                         v-else-if="
                           appointment.plan === 'consultation' &&
-                          appointment.status === 'confirmed' &&
                           appointment.minutesUntilJoinable &&
                           appointment.minutesUntilJoinable > 0
                         "
@@ -235,47 +222,28 @@
                         Available in {{ appointment.minutesUntilJoinable }}min
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        v-if="appointment.status === 'pending'"
-                        @click="confirmAppointment(appointment)"
-                      >
-                        <CheckCircle class="mr-2 h-4 w-4" />
-                        Confirm Appointment
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        v-if="
-                          appointment.status === 'pending' ||
-                          appointment.status === 'confirmed'
-                        "
+                        v-if="appointment.status === 'upcoming'"
                         @click="startAppointment(appointment)"
                       >
                         <Play class="mr-2 h-4 w-4" />
                         Start Appointment
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        v-if="
-                          appointment.status === 'pending' ||
-                          appointment.status === 'confirmed'
-                        "
+                        v-if="appointment.status === 'upcoming'"
                         @click="completeAppointment(appointment)"
                       >
                         <CheckCircle class="mr-2 h-4 w-4" />
                         Mark Complete
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        v-if="
-                          appointment.status === 'pending' ||
-                          appointment.status === 'confirmed'
-                        "
+                        v-if="appointment.status === 'upcoming'"
                         @click="showCancelModal(appointment)"
                       >
                         <XCircle class="mr-2 h-4 w-4" />
                         Cancel
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        v-if="
-                          appointment.status === 'pending' ||
-                          appointment.status === 'confirmed'
-                        "
+                        v-if="appointment.status === 'upcoming'"
                         @click="markNoShow(appointment)"
                       >
                         <UserX class="mr-2 h-4 w-4" />
@@ -446,7 +414,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useApi } from "@/composables/useApi";
 
 // UI Components
@@ -521,7 +489,7 @@ interface Appointment {
   date: string;
   slot: string;
   plan: "consultation";
-  status: "pending" | "confirmed" | "cancelled" | "completed";
+  status: "upcoming" | "cancelled" | "completed";
   reason?: string;
   notes?: string;
   cancelledBy?: "patient" | "doctor";
@@ -614,11 +582,8 @@ const filteredAppointments = computed(() => {
 
 const stats = computed(() => {
   const total = appointments.value.length;
-  const pending = appointments.value.filter(
-    (apt) => apt.status === "pending"
-  ).length;
-  const confirmed = appointments.value.filter(
-    (apt) => apt.status === "confirmed"
+  const upcoming = appointments.value.filter(
+    (apt) => apt.status === "upcoming"
   ).length;
   const completed = appointments.value.filter(
     (apt) => apt.status === "completed"
@@ -627,7 +592,7 @@ const stats = computed(() => {
     (apt) => apt.status === "cancelled"
   ).length;
 
-  return { total, pending, confirmed, completed, cancelled };
+  return { total, upcoming, completed, cancelled };
 });
 
 // Methods
@@ -671,16 +636,6 @@ const joinMeeting = (appointment: Appointment) => {
 
   // Navigate to the meeting page
   window.location.href = `/meeting/${appointment._id}`;
-};
-
-const confirmAppointment = async (appointment: Appointment) => {
-  try {
-    await appointmentsApi.confirm(appointment._id);
-    await fetchAppointments();
-  } catch (error) {
-    console.error("Failed to confirm appointment:", error);
-    alert("Failed to confirm appointment. Please try again.");
-  }
 };
 
 const completeAppointment = async (appointment: Appointment) => {
@@ -797,9 +752,35 @@ const appointmentDate = (appointment: Appointment) => appointment.date;
 const appointmentTime = (appointment: Appointment) => appointment.slot;
 const appointmentType = (appointment: Appointment) => appointment.plan;
 
+// Timer for real-time updates
+let updateTimer: number | null = null;
+
+const startUpdateTimer = () => {
+  if (updateTimer) {
+    clearInterval(updateTimer);
+  }
+
+  // Update every 10 seconds to refresh join button status and countdown
+  updateTimer = setInterval(() => {
+    fetchAppointments();
+  }, 10000);
+};
+
+const stopUpdateTimer = () => {
+  if (updateTimer) {
+    clearInterval(updateTimer);
+    updateTimer = null;
+  }
+};
+
 // Lifecycle
 onMounted(() => {
   fetchAppointments();
+  startUpdateTimer();
+});
+
+onUnmounted(() => {
+  stopUpdateTimer();
 });
 </script>
 
