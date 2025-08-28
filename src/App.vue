@@ -14,10 +14,6 @@ const { toast } = useToast();
 onMounted(async () => {
   try {
     await initialize();
-    console.log("Doctor auth initialized:", {
-      isAuthenticated: isAuthenticated.value,
-      doctor: doctor.value,
-    });
   } catch (error) {
     console.error("Failed to initialize doctor auth:", error);
     toast({

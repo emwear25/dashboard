@@ -182,10 +182,8 @@ export const useAuthStore = defineStore('authStore', {
         }
 
         const data = await response.json();
-        console.log('Auth status response:', data);
 
         if (!data.isAuthenticated) {
-          console.log('User is not authenticated');
           this.setAccessToken(null);
           this.user = null;
           return;
@@ -215,11 +213,6 @@ export const useAuthStore = defineStore('authStore', {
           position: data.position,
           userType: data.userType,
         };
-
-        console.log('Auth state updated:', {
-          isAuthenticated: this.isAuthenticated,
-          user: this.user
-        });
       } catch (err) {
         console.error('Auth check error:', err);
         this.setAccessToken(null);

@@ -221,37 +221,9 @@
               </div>
 
               <!-- Quick Actions -->
-              <div class="grid grid-cols-3 gap-2 pt-4 border-t border-border">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  class="flex flex-col items-center p-2 h-auto text-xs hover:bg-blue-50 dark:hover:bg-blue-950/20"
-                  @click.stop="navigateToPatientTab(patient._id, 'documents')"
-                >
-                  <FileText class="h-4 w-4 mb-1 text-blue-600" />
-                  Documents
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  class="flex flex-col items-center p-2 h-auto text-xs hover:bg-purple-50 dark:hover:bg-purple-950/20"
-                  @click.stop="openSickNoteModal(patient)"
-                >
-                  <ClipboardList class="h-4 w-4 mb-1 text-purple-600" />
-                  Sick Notes
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  class="flex flex-col items-center p-2 h-auto text-xs hover:bg-green-50 dark:hover:bg-green-950/20"
-                  @click.stop="
-                    navigateToPatientTab(patient._id, 'prescriptions')
-                  "
-                >
-                  <Pill class="h-4 w-4 mb-1 text-green-600" />
-                  Prescriptions
-                </Button>
-              </div>
+              <div
+                class="grid grid-cols-3 gap-2 pt-4 border-t border-border"
+              ></div>
             </div>
           </div>
         </div>
@@ -286,18 +258,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Sick Note Upload Modal -->
-    <SickNoteUploadModal
-      v-model:open="showSickNoteModal"
-      :patient-id="selectedPatient?._id || ''"
-      :patient-name="
-        selectedPatient
-          ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
-          : ''
-      "
-      @success="handleSickNoteSuccess"
-    />
   </div>
 </template>
 
@@ -317,7 +277,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import SickNoteUploadModal from "@/components/SickNoteUploadModal.vue";
 
 // Icons
 import {
@@ -327,9 +286,6 @@ import {
   Users,
   Calendar,
   UserCheck,
-  FileText,
-  ClipboardList,
-  Pill,
   User,
   Search,
   X,
@@ -367,10 +323,6 @@ const patients = ref<Patient[]>([]);
 const appointments = ref<Appointment[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
-
-// Sick Note Modal State
-const showSickNoteModal = ref(false);
-const selectedPatient = ref<Patient | null>(null);
 
 // Search and Filter State
 const searchQuery = ref("");
@@ -537,18 +489,6 @@ const formatDate = (dateString: string) => {
     month: "short",
     day: "numeric",
   });
-};
-
-// Sick Note Modal Methods
-const openSickNoteModal = (patient: Patient) => {
-  selectedPatient.value = patient;
-  showSickNoteModal.value = true;
-};
-
-const handleSickNoteSuccess = () => {
-  showSickNoteModal.value = false;
-  selectedPatient.value = null;
-  // You could refresh patient data here if needed
 };
 
 // Search and Filter Methods

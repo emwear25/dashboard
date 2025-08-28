@@ -87,7 +87,6 @@ const openPermissionDialog = (user: User) => {
   selectedUser.value = user;
   selectedUserType.value = user.userType || "sales_agent";
   isAdmin.value = user.isAdmin;
-  console.log("Opening dialog with isAdmin:", isAdmin.value);
   isPermissionDialogOpen.value = true;
 };
 
@@ -112,11 +111,9 @@ const updateUserPermissions = async () => {
     const adminValue =
       document.getElementById("is-admin")?.getAttribute("aria-checked") ===
       "true";
-    console.log(
       "Switch aria-checked value:",
       document.getElementById("is-admin")?.getAttribute("aria-checked")
     );
-    console.log("Calculated admin value:", adminValue);
 
     // Create the request body with explicit boolean conversion
     const requestBody = {
@@ -125,7 +122,6 @@ const updateUserPermissions = async () => {
     };
 
     // Log the actual request body that will be sent
-    console.log("Request body to be sent:", JSON.stringify(requestBody));
 
     const response = await api<PermissionResponse>(
       `/auth/users/${selectedUser.value._id}/permissions`,
@@ -139,7 +135,6 @@ const updateUserPermissions = async () => {
     );
 
     // Log the response
-    console.log("Response from server:", response);
 
     // Update the selected user with the response data
     if (response && response.user) {

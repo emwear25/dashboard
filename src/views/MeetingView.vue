@@ -1,18 +1,35 @@
 <template>
   <div class="meeting-container">
-    <div v-if="loading" class="flex items-center justify-center h-screen">
-      <Loader2 class="h-8 w-8 animate-spin mr-2" />
-      <span>Loading meeting...</span>
+    <div
+      v-if="loading"
+      class="flex items-center justify-center h-screen bg-blue-500 text-white"
+    >
+      <div class="text-center">
+        <Loader2 class="h-8 w-8 animate-spin mr-2" />
+        <h1 class="text-2xl font-bold">
+          🔵 LOADING STATE - Loading meeting...
+        </h1>
+        <p class="mt-2">If you see this, the component is loading</p>
+      </div>
     </div>
 
     <div
       v-else-if="error"
-      class="flex flex-col items-center justify-center h-screen space-y-4"
+      class="flex flex-col items-center justify-center h-screen space-y-4 bg-red-600 text-white"
     >
-      <AlertTriangle class="h-16 w-16 text-red-500" />
-      <h2 class="text-2xl font-bold">Unable to Join Meeting</h2>
-      <p class="text-muted-foreground text-center max-w-md">{{ error }}</p>
-      <Button @click="$router.push('/appointments')" variant="outline">
+      <AlertTriangle class="h-16 w-16 text-yellow-400" />
+      <h2 class="text-3xl font-bold">
+        🔴 ERROR STATE - Unable to Join Meeting
+      </h2>
+      <p class="text-center max-w-md text-lg">{{ error }}</p>
+      <p class="text-sm">
+        If you see this, there's an error loading the meeting
+      </p>
+      <Button
+        @click="$router.push('/appointments')"
+        variant="outline"
+        class="bg-white text-black"
+      >
         <ArrowLeft class="mr-2 h-4 w-4" />
         Back to Appointments
       </Button>
@@ -21,10 +38,12 @@
     <div v-else-if="appointment" class="h-screen flex flex-col">
       <!-- Meeting Header -->
       <div
-        class="bg-white border-b px-6 py-4 flex justify-between items-center"
+        class="bg-white border-b px-4 md:px-6 py-3 md:py-4 flex flex-col md:flex-row justify-between items-start md:items-center relative z-30 shadow-sm"
       >
-        <div class="flex-1">
-          <h1 class="text-xl font-semibold">Video Consultation</h1>
+        <div class="flex-1 mb-2 md:mb-0">
+          <h1 class="text-lg md:text-xl font-semibold text-gray-900">
+            Video Consultation
+          </h1>
           <div
             class="flex items-center space-x-4 text-sm text-muted-foreground mt-1"
           >
@@ -36,52 +55,115 @@
             }}</span>
           </div>
         </div>
-        <Button
-          @click="leaveMeeting"
-          variant="destructive"
-          class="flex items-center space-x-2"
+        <div
+          class="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-3 w-full md:w-auto"
         >
-          <PhoneOff class="h-4 w-4" />
-          <span>Leave Meeting</span>
-        </Button>
+          <Button
+            @click="toggleFilePanel"
+            variant="outline"
+            size="sm"
+            class="flex items-center justify-center space-x-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 w-full md:w-auto"
+          >
+            <Files class="h-4 w-4" />
+            <span class="text-sm">Files</span>
+          </Button>
+          <Button
+            @click="leaveMeeting"
+            variant="destructive"
+            class="flex items-center space-x-2"
+          >
+            <PhoneOff class="h-4 w-4" />
+            <span>Leave Meeting</span>
+          </Button>
+        </div>
       </div>
 
-      <!-- Daily.co Video Container -->
-      <div id="daily-container" class="flex-1 bg-black"></div>
+      <!-- Meeting Content with File Panel -->
+      <div class="flex-1 flex relative">
+        <!-- Daily.co Video Container -->
+        <div id="daily-container" class="flex-1 bg-black"></div>
 
-      <!-- Meeting not available overlay -->
-      <div
-        v-if="!appointment.isJoinable"
-        class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10"
-      >
-        <Card class="w-96">
-          <CardContent class="pt-6 text-center">
-            <Clock class="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 class="text-lg font-semibold mb-2">
-              Meeting not yet available
-            </h3>
-            <p
-              v-if="
-                appointment.minutesUntilJoinable &&
-                appointment.minutesUntilJoinable > 0
-              "
-              class="text-muted-foreground"
-            >
-              Meeting will be available in
-              {{ appointment.minutesUntilJoinable }} minutes
-            </p>
-            <p v-else-if="appointment.hasPassed" class="text-muted-foreground">
-              This meeting has already ended
-            </p>
-            <Button
-              @click="$router.push('/appointments')"
-              variant="outline"
-              class="mt-4"
-            >
-              Back to Appointments
-            </Button>
-          </CardContent>
-        </Card>
+        <!-- File Transfer Panel (Sidebar) -->
+        <div
+          v-if="showFilePanel"
+          class="absolute right-0 top-0 h-full w-full md:w-96 bg-white border-l shadow-lg z-10 overflow-y-auto"
+        >
+          <div class="p-4 border-b bg-gray-50">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-gray-900">File Transfer</h3>
+              <Button
+                @click="toggleFilePanel"
+                variant="ghost"
+                size="sm"
+                class="h-8 w-8 p-0"
+              >
+                <X class="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div class="p-4">
+            <FileSharePanel :callFrame="dailyFrame" />
+          </div>
+        </div>
+
+        <!-- Meeting not available overlay (only covers video area, not header) -->
+        <div
+          v-if="!appointment.isJoinable"
+          class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20"
+        >
+          <Card class="w-96">
+            <CardContent class="pt-6 text-center">
+              <Clock class="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 class="text-lg font-semibold mb-2">
+                Meeting not yet available
+              </h3>
+              <p
+                v-if="
+                  appointment.minutesUntilJoinable &&
+                  appointment.minutesUntilJoinable > 0
+                "
+                class="text-muted-foreground"
+              >
+                Meeting will be available in
+                {{ appointment.minutesUntilJoinable }} minutes
+              </p>
+              <p
+                v-else-if="appointment.hasPassed"
+                class="text-muted-foreground"
+              >
+                This meeting has already ended
+              </p>
+              <Button
+                @click="$router.push('/appointments')"
+                variant="outline"
+                class="mt-4"
+              >
+                Back to Appointments
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+
+    <!-- FALLBACK STATE - If none of the above conditions match -->
+    <div
+      v-else
+      class="flex items-center justify-center h-screen bg-purple-500 text-white"
+    >
+      <div class="text-center">
+        <h1 class="text-3xl font-bold">🟣 FALLBACK STATE</h1>
+        <p class="mt-2">Loading: {{ loading }}</p>
+        <p>Error: {{ error }}</p>
+        <p>Appointment: {{ appointment ? "exists" : "null" }}</p>
+        <p class="mt-4">If you see this, none of the conditions matched</p>
+        <Button
+          @click="$router.push('/appointments')"
+          variant="outline"
+          class="bg-white text-black mt-4"
+        >
+          Back to Appointments
+        </Button>
       </div>
     </div>
   </div>
@@ -97,6 +179,7 @@ import { useDoctorAuth } from "@/composables/useDoctorAuth";
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import FileSharePanel from "@/components/call/FileSharePanel.vue";
 
 // Icons
 import {
@@ -105,6 +188,8 @@ import {
   ArrowLeft,
   PhoneOff,
   Clock,
+  Files,
+  X,
 } from "lucide-vue-next";
 
 interface Appointment {
@@ -145,6 +230,8 @@ const error = ref("");
 const appointment = ref<Appointment | null>(null);
 // Using Daily.co SDK instead of direct iframe
 const dailyFrame = ref<DailyCall | null>(null);
+// File transfer panel state
+const showFilePanel = ref(false);
 
 const patientName = (apt: Appointment) => {
   return (
@@ -225,7 +312,6 @@ const initializeDaily = async () => {
   try {
     // Clean up existing Daily.co frame if any
     if (dailyFrame.value) {
-      console.log("Destroying existing Daily.co frame...");
       await dailyFrame.value.destroy();
       dailyFrame.value = null;
     }
@@ -244,7 +330,6 @@ const initializeDaily = async () => {
     const meetingUrl = String(appointment.value?.meetingUrl ?? "");
 
     // Pre-flight validation
-    console.log("Meeting URL:", meetingUrl);
     if (!meetingUrl.startsWith("https://")) {
       throw new Error("Invalid meeting URL");
     }
@@ -252,29 +337,26 @@ const initializeDaily = async () => {
     // 🎯 Get doctor's name for Daily.co userName parameter
     let userName = "Doctor"; // Default fallback
     try {
-      console.log("🔍 Doctor data:", doctor.value);
       if (doctor.value?.name) {
         userName = `Dr. ${doctor.value.name}`;
-        console.log("✅ Using doctor name:", userName);
       } else {
         console.warn("❌ No doctor name found");
-        console.log("🔄 Using default 'Doctor' name");
       }
     } catch (nameErr) {
       console.error("❌ Could not get doctor name:", nameErr);
-      console.log("🔄 Using fallback 'Doctor' name due to error");
     }
 
     // Clear container
     container.innerHTML = "";
 
     // ✅ Use Daily.co SDK with userName option (proper way to set user name)
-    console.log("🎯 Creating Daily.co frame with userName:", userName);
 
     const callFrame = DailyIframe.createFrame(container, {
       userName: userName,
-      showLeaveButton: true,
+      showLeaveButton: false, // Disable Daily's leave button to avoid conflicts
       showLocalVideo: true,
+      showFullscreenButton: false, // Disable to avoid layout conflicts
+      showParticipantsBar: true,
     });
 
     // Join the meeting
@@ -292,19 +374,21 @@ const initializeDaily = async () => {
 };
 
 const leaveMeeting = async () => {
-  console.log("Leaving meeting...");
   if (dailyFrame.value) {
     try {
       await dailyFrame.value.leave();
       await dailyFrame.value.destroy();
       dailyFrame.value = null;
-      console.log("✅ Successfully left and destroyed Daily.co frame");
     } catch (err) {
       console.error("Error leaving meeting:", err);
       dailyFrame.value = null; // Force cleanup
     }
   }
   router.push("/appointments");
+};
+
+const toggleFilePanel = () => {
+  showFilePanel.value = !showFilePanel.value;
 };
 
 onMounted(async () => {
@@ -324,7 +408,6 @@ onBeforeUnmount(async () => {
       await dailyFrame.value.leave();
       await dailyFrame.value.destroy();
       dailyFrame.value = null;
-      console.log("✅ Daily.co frame cleaned up properly");
     } catch (err) {
       console.error("Error cleaning up Daily.co frame:", err);
     }
@@ -344,5 +427,35 @@ onBeforeUnmount(async () => {
   height: 100%;
   border: none;
   border-radius: 0;
+}
+
+#daily-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* iOS safe area support */
+@supports (padding: max(0px)) {
+  .meeting-container {
+    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    padding-left: max(env(safe-area-inset-left), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .meeting-container {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+}
+
+/* Capacitor iOS specific styles */
+@media (max-width: 768px) and (orientation: portrait) {
+  .meeting-container {
+    padding-top: max(env(safe-area-inset-top), 20px);
+  }
 }
 </style>

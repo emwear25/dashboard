@@ -113,7 +113,6 @@ router.beforeEach(async (to, from, next) => {
     // Check if route requires admin access
     if (to.matched.some(record => record.meta.requiresAdmin)) {
       if (!isAdmin.value) {
-        console.log("Access denied: Admin privileges required")
         next('/dashboard')
         return
       }

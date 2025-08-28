@@ -183,7 +183,6 @@ const recentActivity = ref([
 
 onMounted(() => {
   // TODO: Fetch real analytics data from API
-  console.log("Analytics view mounted - implement API calls here");
 });
 </script>
 

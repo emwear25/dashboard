@@ -104,7 +104,6 @@ const onSubmit = async (values: any) => {
       emit("userAdded");
     }
   } catch (error: unknown) {
-    console.log("Registration error:", error); // Debug log
 
     // Handle different types of errors
     const apiError = error as ApiError;

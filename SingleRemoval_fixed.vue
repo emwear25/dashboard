@@ -125,7 +125,6 @@ const stageOptions = [
 // Update the update methods to handle the case properly
 const updateStatus = async (newStatus: string) => {
   try {
-    console.log("Updating status to:", newStatus);
 
     await api(`/data/removals/${route.params.id}/status`, {
       method: "PATCH",
@@ -285,10 +284,7 @@ onMounted(async () => {
       typeof route.params.id === "string"
         ? route.params.id
         : route.params.id[0];
-    console.log("Fetching removal with ID:", id);
     const data = await api<{ removal: Removal }>(`/data/removals/${id}`);
-    console.log("Fetched removal data:", data);
-    console.log("Status value:", data.removal.status);
     removal.value = data.removal;
   } catch (error) {
     console.error("Error fetching removal:", error);

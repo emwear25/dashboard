@@ -623,7 +623,6 @@ const viewAppointment = (appointment: Appointment) => {
 
 const startAppointment = async (appointment: Appointment) => {
   // This would typically redirect to a video call interface
-  console.log("Starting appointment:", appointment._id);
   // For now, just show an alert
   alert("Video call feature will be integrated here");
 };

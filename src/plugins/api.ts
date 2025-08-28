@@ -73,7 +73,6 @@ export const createCustomFetch = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.log('Server error response:', errorData);
         
         const error = new Error(errorData.message || 'API Error') as FetchError;
         error.status = response.status;
