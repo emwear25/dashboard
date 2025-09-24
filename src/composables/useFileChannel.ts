@@ -193,6 +193,12 @@ export function useFileChannel(
       if (data.type === 'file-header') {
         // Start receiving new file
         const metadata: FileMetadata = data.metadata
+        console.log('📨 Doctor received file metadata:', {
+          name: metadata.name,
+          size: metadata.size,
+          type: metadata.mime,
+          totalSize: metadata.total || metadata.size
+        })
         currentFileTransfer = {
           metadata,
           chunks: [],
@@ -206,6 +212,8 @@ export function useFileChannel(
         currentFileTransfer.chunks.push(chunkData.buffer)
         currentFileTransfer.receivedBytes += chunkData.length
         progress.value.receivedBytes = currentFileTransfer.receivedBytes
+
+        console.log(`📨 Doctor received chunk ${data.index + 1}/${data.total} (${chunkData.length} bytes)`)
 
         // Check if file is complete
         if (currentFileTransfer.receivedBytes >= currentFileTransfer.metadata.size) {
@@ -235,6 +243,13 @@ export function useFileChannel(
         blob,
         timestamp: Date.now(),
         senderId: 'peer' // Will be enhanced with actual sender ID
+      })
+
+      console.log('📁 File added to doctor incoming files list:', {
+        fileName: currentFileTransfer.metadata.name,
+        fileSize: currentFileTransfer.metadata.size,
+        totalIncomingFiles: incomingFiles.value.length,
+        allFiles: incomingFiles.value.map(f => f.name)
       })
 
       // Reset transfer state

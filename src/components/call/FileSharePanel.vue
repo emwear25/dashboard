@@ -93,6 +93,18 @@ const fileChannel = useFileChannel(sendAppMessage, onAppMessage);
 // Use incoming files from fileChannel
 const incomingFiles = fileChannel.incomingFiles;
 
+// Debug: Watch for changes in incoming files
+watch(
+  incomingFiles,
+  (newFiles) => {
+    console.log("🔍 Doctor incoming files changed:", {
+      count: newFiles.length,
+      files: newFiles.map((f) => ({ name: f.name, size: f.size })),
+    });
+  },
+  { deep: true }
+);
+
 const fileInput = ref<HTMLInputElement | null>(null);
 
 // Show consent modal before enabling file transfer
