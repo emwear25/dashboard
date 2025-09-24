@@ -222,52 +222,22 @@ async function onFileChange(e: Event) {
       throw new Error("No transfer method available. Please try again later.");
     }
 
-    // Log successful transfer (completely optional in development)
-    if (import.meta.env.PROD) {
-      try {
-        const { doctor } = useDoctorAuth();
-        const doctorId = doctor.value?._id || "unknown-doctor";
-
-        await logFileTransfer(
-          meetingId.value,
-          doctorId,
-          "unknown-patient",
-          file.name,
-          file.size,
-          "sent"
-        );
-      } catch (auditError) {
-        console.warn("Audit logging failed (non-blocking):", auditError);
-      }
-    } else {
-      console.log("Audit logging skipped in development");
-    }
+    // Audit logging temporarily disabled to prevent meeting disconnections
+    // TODO: Re-enable when auth system is more stable
+    console.log(
+      "Audit logging temporarily disabled in production to prevent auth conflicts"
+    );
   } catch (error) {
     console.error("File transfer failed:", error);
     const message =
       error instanceof Error ? error.message : "Unknown error occurred";
     alert(`File transfer failed: ${message}`);
 
-    // Log failed transfer (completely optional in development)
-    if (import.meta.env.PROD) {
-      try {
-        const { doctor } = useDoctorAuth();
-        const doctorId = doctor.value?._id || "unknown-doctor";
-
-        await logFileTransfer(
-          meetingId.value,
-          doctorId,
-          "unknown-patient",
-          file.name,
-          file.size,
-          "failed"
-        );
-      } catch (auditError) {
-        console.warn("Audit logging failed (non-blocking):", auditError);
-      }
-    } else {
-      console.log("Audit logging skipped in development");
-    }
+    // Audit logging temporarily disabled to prevent meeting disconnections
+    // TODO: Re-enable when auth system is more stable
+    console.log(
+      "Audit logging temporarily disabled in production to prevent auth conflicts"
+    );
   } finally {
     isTransferring.value = false;
     transferProgress.value = 0;
