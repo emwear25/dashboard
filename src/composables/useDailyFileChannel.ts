@@ -193,7 +193,7 @@ export function useDailyFileChannel(callFrame: any) {
       return;
     }
 
-    console.log('📋 Sending files - completed:', completedFiles.value.length, 'outgoing:', outgoingFiles.value.length);
+    console.log('📋 Sending files - completed:', completedFiles.value.length, 'outgoing:', outgoingFiles.value.length, 'secure:', secureFiles.value.length);
 
     // Send metadata for all completed files to the new participant
     completedFiles.value.forEach(file => {
@@ -248,6 +248,34 @@ export function useDailyFileChannel(callFrame: any) {
         } catch (err) {
           console.error('❌ Failed to send file sync message:', err);
         }
+      }
+    });
+
+    // Send S3 secure files with download URLs
+    secureFiles.value.forEach(file => {
+      console.log('📤 Sending secure file sync:', file.displayName);
+      try {
+        const message = {
+          kind: 'secure-file-sync',
+          key: file.key,
+          displayName: file.displayName,
+          size: file.size,
+          url: file.url,
+          expiresAt: file.expiresAt,
+          timestamp: file.timestamp,
+          senderId: file.senderId || frame.participants()?.local?.session_id || 'unknown'
+        };
+        
+        // Try sending to specific participant first, then broadcast as fallback
+        try {
+          frame.sendAppMessage(message, participantId);
+        } catch (specificErr) {
+          console.warn('❌ Failed to send secure file to specific participant, broadcasting instead:', specificErr);
+          frame.sendAppMessage(message, '*');
+        }
+        console.log('✅ Secure file sync sent:', file.displayName);
+      } catch (err) {
+        console.error('❌ Failed to send secure file sync message:', err);
       }
     });
 
@@ -361,6 +389,48 @@ export function useDailyFileChannel(callFrame: any) {
           console.log('📋 Total completed files now:', completedFiles.value.length);
         } else {
           console.log('⚠️ File already exists in completed files, skipping');
+        }
+        return;
+      }
+
+      // Handle secure file sync messages (S3 files with download URLs)
+      if (msg.kind === 'secure-file-sync') {
+        console.log('📥 Received secure file sync message:', msg);
+        
+        // Check if we already have this secure file
+        const existingSecureFile = secureFiles.value.find(f => f.key === msg.key);
+        if (!existingSecureFile) {
+          // Add secure file to our list
+          addSecureFile({
+            key: msg.key,
+            displayName: msg.displayName,
+            size: msg.size,
+            url: msg.url,
+            expiresAt: msg.expiresAt,
+            timestamp: msg.timestamp,
+            senderId: msg.senderId
+          });
+
+          // Also add to completed files for display
+          const syncedFile: IncomingFile = {
+            fileId: msg.key, // Use key as fileId for S3 files
+            name: msg.displayName,
+            type: 'application/octet-stream',
+            size: msg.size,
+            totalChunks: 0,
+            received: 0,
+            chunks: [],
+            senderId: msg.senderId,
+            timestamp: msg.timestamp,
+            url: msg.url // ACTUAL DOWNLOAD URL - not placeholder!
+          };
+          
+          completedFiles.value.push(syncedFile);
+          
+          console.log('✅ Added secure file with download URL:', msg.displayName);
+          console.log('📋 Total completed files now:', completedFiles.value.length);
+        } else {
+          console.log('⚠️ Secure file already exists, skipping');
         }
         return;
       }
@@ -561,6 +631,31 @@ export function useDailyFileChannel(callFrame: any) {
     resetAll();
   });
 
+  // Track S3 files separately for proper sync
+  const secureFiles = ref<Array<{
+    key: string;
+    displayName: string;
+    size: number;
+    url: string;
+    expiresAt: string;
+    timestamp: number;
+    senderId?: string;
+  }>>([]);
+
+  // Add S3 file to tracking
+  function addSecureFile(fileData: any) {
+    secureFiles.value.push({
+      key: fileData.key,
+      displayName: fileData.displayName,
+      size: fileData.size,
+      url: fileData.url,
+      expiresAt: fileData.expiresAt,
+      timestamp: fileData.timestamp || Date.now(),
+      senderId: fileData.senderId
+    });
+    console.log('📁 Added S3 file to tracking:', fileData.displayName);
+  }
+
   return {
     // State
     sending,
@@ -569,12 +664,14 @@ export function useDailyFileChannel(callFrame: any) {
     outgoingFiles,
     error,
     isEnabled,
+    secureFiles,
     
     // Methods
     sendFile,
     resetAll,
     setupListeners,
     cleanupListeners,
+    addSecureFile,
     
     // Debug methods
     requestFileList,
