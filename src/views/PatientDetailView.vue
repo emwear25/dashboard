@@ -307,13 +307,9 @@ const fetchPatientDetails = async () => {
   error.value = "";
 
   try {
-    const response = await api.get(`/api/patients/${route.params.id}`);
-    if (response.success) {
-      patient.value = response.data;
-      await fetchPatientAppointments();
-    } else {
-      error.value = response.message || "Failed to fetch patient details";
-    }
+    const response = await api.makeRequest(`/api/patients/${route.params.id}`);
+    patient.value = response;
+    await fetchPatientAppointments();
   } catch (err) {
     console.error("Error fetching patient details:", err);
     error.value = "Failed to fetch patient details";
@@ -326,12 +322,10 @@ const fetchPatientAppointments = async () => {
   if (!patient.value?._id) return;
 
   try {
-    const response = await api.get(
+    const response = await api.makeRequest(
       `/api/appointments/patient/${patient.value._id}`
     );
-    if (response.success) {
-      patientAppointments.value = response.data || [];
-    }
+    patientAppointments.value = response || [];
   } catch (err) {
     console.error("Error fetching patient appointments:", err);
   }
