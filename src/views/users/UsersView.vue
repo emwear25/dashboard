@@ -111,6 +111,7 @@ const updateUserPermissions = async () => {
     const adminValue =
       document.getElementById("is-admin")?.getAttribute("aria-checked") ===
       "true";
+    console.log(
       "Switch aria-checked value:",
       document.getElementById("is-admin")?.getAttribute("aria-checked")
     );

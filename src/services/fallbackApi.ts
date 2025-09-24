@@ -56,7 +56,7 @@ export async function createPresignedUpload(meetingId: string): Promise<Presigne
         timestamp: Date.now(),
         userType: 'doctor'
       })
-    })
+    }) as any
     
     if (!data.success) {
       throw new Error(data.message || 'Failed to create presigned upload URL')
@@ -83,7 +83,7 @@ export async function createPresignedDownload(objectKey: string): Promise<Presig
       body: JSON.stringify({
         objectKey
       })
-    })
+    }) as any
     
     if (!data.success) {
       throw new Error(data.message || 'Failed to create presigned download URL')
@@ -198,7 +198,7 @@ export async function checkFallbackAvailability(): Promise<boolean> {
       return false
     }
 
-    const data = await response.json()
+    const data = await response.json() as any
     return data.success && data.available
   } catch (error) {
     console.warn('Failed to check fallback availability:', error)
@@ -221,7 +221,7 @@ export async function validateMeetingAccess(meetingId: string): Promise<boolean>
       return false
     }
 
-    const data = await response.json()
+    const data = await response.json() as any
     return data.success && data.hasAccess
   } catch (error) {
     console.warn('Failed to validate meeting access:', error)
