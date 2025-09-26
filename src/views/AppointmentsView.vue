@@ -759,10 +759,16 @@ const startUpdateTimer = () => {
     clearInterval(updateTimer);
   }
 
-  // Update every 2 minutes to refresh join button status (much less frequent)
-  updateTimer = setInterval(() => {
-    fetchAppointments();
-  }, 120000); // Changed from 10s to 2 minutes
+  // Disable auto-refresh in production to prevent page reloading issues
+  if (import.meta.env.DEV) {
+    // Only enable auto-refresh in development
+    updateTimer = setInterval(() => {
+      fetchAppointments();
+    }, 120000); // Every 2 minutes in development only
+    console.log("📅 Auto-refresh enabled in development mode");
+  } else {
+    console.log("📅 Auto-refresh disabled in production");
+  }
 };
 
 const stopUpdateTimer = () => {

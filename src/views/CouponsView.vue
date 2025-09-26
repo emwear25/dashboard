@@ -415,6 +415,13 @@ interface Coupon {
   statusDisplay: string;
   createdAt: string;
   expiresAt: string;
+  updatedAt?: string;
+  doctorId?: {
+    _id: string;
+    name: string;
+    email: string;
+    specialties?: string[];
+  };
   usedBy?: {
     firstName: string;
     lastName: string;
@@ -424,6 +431,7 @@ interface Coupon {
     name: string;
   };
   approvedAt?: string;
+  rejectedAt?: string;
 }
 
 const { makeAuthenticatedRequest, doctor } = useDoctorAuth();
@@ -662,8 +670,10 @@ const deleteCoupon = async (couponId: string) => {
 };
 
 const copyCouponCode = (code: string) => {
-  navigator.clipboard.writeText(code);
-  showSuccess(`Coupon code ${code} copied to clipboard!`);
+  if (code) {
+    navigator.clipboard.writeText(code);
+    showSuccess(`Coupon code ${code} copied to clipboard!`);
+  }
 };
 
 const filterCoupons = () => {
