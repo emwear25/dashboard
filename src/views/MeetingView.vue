@@ -60,12 +60,25 @@
         >
           <Button
             @click="toggleFilePanel"
-            variant="outline"
+            :variant="showFilePanel ? 'default' : 'outline'"
             size="sm"
-            class="flex items-center justify-center space-x-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 w-full md:w-auto"
+            class="flex items-center justify-center space-x-2 w-full md:w-auto relative transition-all duration-200"
+            :class="{
+              'bg-blue-600 hover:bg-blue-700 text-white border-blue-600':
+                showFilePanel,
+              'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700':
+                !showFilePanel,
+            }"
           >
             <Files class="h-4 w-4" />
-            <span class="text-sm">Files</span>
+            <span class="text-sm">{{
+              showFilePanel ? "Close Files" : "Secure Files"
+            }}</span>
+            <!-- Status indicator -->
+            <div
+              class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white bg-green-500"
+              title="File transfer ready"
+            ></div>
           </Button>
           <Button
             @click="leaveMeeting"
@@ -79,32 +92,105 @@
       </div>
 
       <!-- Meeting Content with File Panel -->
-      <div class="flex-1 flex relative">
-        <!-- Daily.co Video Container -->
-        <div id="daily-container" class="flex-1 bg-black"></div>
+      <div class="flex-1 relative overflow-hidden">
+        <!-- Meeting Video Wrapper -->
+        <div class="h-full flex">
+          <!-- Daily.co Video Container -->
+          <div
+            class="flex-1 bg-black transition-all duration-300 ease-in-out relative"
+            :class="{
+              'mr-0': !showFilePanel,
+              'mr-80 lg:mr-96': showFilePanel,
+            }"
+          >
+            <div id="daily-container" class="w-full h-full"></div>
 
-        <!-- File Transfer Panel (Sidebar) -->
-        <div
-          v-if="showFilePanel"
-          class="absolute right-0 top-0 h-full w-full md:w-96 bg-white border-l shadow-lg z-10 overflow-y-auto"
-        >
-          <div class="p-4 border-b bg-gray-50">
-            <div class="flex items-center justify-between">
-              <h3 class="font-semibold text-gray-900">File Transfer</h3>
+            <!-- Video Overlay Controls (when file panel is open) -->
+            <div
+              v-if="showFilePanel"
+              class="absolute top-4 right-4 md:hidden z-40"
+            >
               <Button
                 @click="toggleFilePanel"
-                variant="ghost"
+                variant="secondary"
                 size="sm"
-                class="h-8 w-8 p-0"
+                class="bg-black/70 hover:bg-black/80 text-white border-0"
               >
-                <X class="h-4 w-4" />
+                <X class="h-4 w-4 mr-1" />
+                Close Files
               </Button>
             </div>
           </div>
-          <div class="p-4">
-            <FileSharePanel :callFrame="dailyFrame" />
+
+          <!-- File Transfer Panel (Fixed Sidebar) -->
+          <div
+            v-if="showFilePanel"
+            class="w-80 lg:w-96 bg-white border-l border-gray-200 shadow-xl flex flex-col h-full"
+          >
+            <!-- Panel Header -->
+            <div
+              class="flex-shrink-0 p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 bg-blue-100 rounded-lg">
+                    <svg
+                      class="h-5 w-5 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-gray-900">Secure Files</h3>
+                    <p class="text-xs text-gray-500">
+                      BG/DE compliant transfer
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  @click="toggleFilePanel"
+                  variant="ghost"
+                  size="sm"
+                  class="h-8 w-8 p-0 hover:bg-gray-100 hidden md:flex"
+                  title="Close file panel"
+                >
+                  <X class="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <!-- Panel Content -->
+            <div class="flex-1 overflow-y-auto">
+              <FileSharePanel :callFrame="dailyFrame" />
+            </div>
           </div>
         </div>
+
+        <!-- Floating File Button (when panel is closed) -->
+        <div v-if="!showFilePanel" class="absolute bottom-4 right-4 z-30">
+          <Button
+            @click="toggleFilePanel"
+            class="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-12 h-12 p-0"
+            title="Open secure file transfer"
+          >
+            <Files class="h-5 w-5" />
+          </Button>
+        </div>
+
+        <!-- Mobile File Panel Overlay -->
+        <div
+          v-if="showFilePanel"
+          class="absolute inset-0 bg-black/30 z-20 md:hidden"
+          @click="toggleFilePanel"
+        ></div>
 
         <!-- Meeting not available overlay (only covers video area, not header) -->
         <div

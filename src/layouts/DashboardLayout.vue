@@ -21,6 +21,7 @@ import {
   Users,
   Calendar,
   CalendarDays,
+  Ticket,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-vue-next";
@@ -63,6 +64,7 @@ const navigationItems = computed<NavigationItem[]>(() => {
     { name: "My Availability", path: "/availability", icon: Calendar },
     { name: "My Appointments", path: "/appointments", icon: CalendarDays },
     { name: "My Patients", path: "/patients", icon: Users },
+    { name: "Coupons", path: "/coupons", icon: Ticket },
     { name: "Analytics", path: "/analytics", icon: BarChart3 },
   ];
 

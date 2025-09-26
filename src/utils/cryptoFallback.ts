@@ -227,7 +227,11 @@ export function validateFileType(file: File): boolean {
     'image/webp',
     'text/plain',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    // ZIP file types
+    'application/zip',
+    'application/x-zip-compressed',
+    'application/x-zip'
   ]
   
   return allowedTypes.includes(file.type)

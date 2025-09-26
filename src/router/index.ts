@@ -59,6 +59,11 @@ const router = createRouter({
           component: () => import('@/views/AvailabilityView.vue')
         },
         {
+          path: 'coupons',
+          name: 'coupons',
+          component: () => import('@/views/CouponsView.vue')
+        },
+        {
           path: 'appointments',
           name: 'appointments',
           component: () => import('@/views/AppointmentsView.vue')

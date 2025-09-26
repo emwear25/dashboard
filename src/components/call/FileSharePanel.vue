@@ -190,7 +190,7 @@ async function onFileChange(e: Event) {
     // Validate file
     if (!validateFileType(file)) {
       throw new Error(
-        "File type not allowed. Please use PDF, images, or text files only."
+        "File type not allowed. Please use PDF, images, text files, Word documents, or ZIP files only."
       );
     }
 
@@ -557,7 +557,7 @@ onBeforeUnmount(() => {
       <input
         ref="fileInput"
         type="file"
-        accept="application/pdf,image/jpeg,image/png,image/webp,text/plain,.doc,.docx"
+        accept="application/pdf,image/jpeg,image/png,image/webp,text/plain,.doc,.docx,.zip,application/zip,application/x-zip-compressed"
         class="file-share-panel__file-input"
         @change="onFileChange"
       />
@@ -579,7 +579,8 @@ onBeforeUnmount(() => {
                 d="M13 10V3L4 14h7v7l9-11h-7z"
               />
             </svg>
-            P2P Direct (≤{{ Math.round(MAX_P2P_SIZE / (1024 * 1024)) }}MB):
+            P2P Direct (≤{{ Math.round(MAX_P2P_SIZE / (1024 * 1024)) }}MB +
+            ZIP):
           </div>
           <div
             class="method-status"
@@ -606,7 +607,7 @@ onBeforeUnmount(() => {
             </svg>
             Encrypted Fallback (≤{{
               Math.round(MAX_FALLBACK_SIZE / (1024 * 1024))
-            }}MB):
+            }}MB Large ZIP):
           </div>
           <div
             class="method-status"
