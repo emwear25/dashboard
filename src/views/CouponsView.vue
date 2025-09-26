@@ -208,7 +208,7 @@
                     </span>
                   </td>
                   <td>
-                    {{ formatDate(coupon.approvedAt || coupon.rejectedAt) }}
+                    {{ formatDate(coupon.approvedAt || coupon.rejectedAt || '') }}
                   </td>
                   <td>{{ coupon.approvedBy?.name || "-" }}</td>
                 </tr>
@@ -688,7 +688,7 @@ const closeCreateModal = () => {
   };
 };
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | undefined) => {
   if (!dateString) return "";
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
