@@ -759,10 +759,10 @@ const startUpdateTimer = () => {
     clearInterval(updateTimer);
   }
 
-  // Update every 10 seconds to refresh join button status and countdown
+  // Update every 2 minutes to refresh join button status (much less frequent)
   updateTimer = setInterval(() => {
     fetchAppointments();
-  }, 10000);
+  }, 120000); // Changed from 10s to 2 minutes
 };
 
 const stopUpdateTimer = () => {

@@ -557,7 +557,7 @@ onBeforeUnmount(() => {
       <input
         ref="fileInput"
         type="file"
-        accept="application/pdf,image/jpeg,image/png,image/webp,text/plain,.doc,.docx,.zip,application/zip,application/x-zip-compressed"
+        accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,.doc,.docx,.zip"
         class="file-share-panel__file-input"
         @change="onFileChange"
       />
