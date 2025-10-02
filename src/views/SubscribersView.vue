@@ -3,10 +3,10 @@
     <!-- Header -->
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-foreground">Newsletter Subscribers</h1>
-        <p class="text-muted-foreground">
-          Manage your newsletter subscribers
-        </p>
+        <h1 class="text-3xl font-bold text-foreground">
+          Newsletter Subscribers
+        </h1>
+        <p class="text-muted-foreground">Manage your newsletter subscribers</p>
       </div>
       <div class="flex gap-2">
         <Button @click="refreshSubscribers" variant="outline" size="sm">
@@ -19,7 +19,9 @@
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Total Subscribers</CardTitle>
           <Users class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -29,7 +31,9 @@
       </Card>
 
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Active</CardTitle>
           <UserCheck class="h-4 w-4 text-green-500" />
         </CardHeader>
@@ -39,7 +43,9 @@
       </Card>
 
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Unsubscribed</CardTitle>
           <UserX class="h-4 w-4 text-red-500" />
         </CardHeader>
@@ -49,7 +55,9 @@
       </Card>
 
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Recent (30 days)</CardTitle>
           <TrendingUp class="h-4 w-4 text-blue-500" />
         </CardHeader>
@@ -64,7 +72,9 @@
       <div class="space-y-4">
         <!-- Search Bar -->
         <div class="relative">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Search
+            class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4"
+          />
           <Input
             v-model="searchQuery"
             placeholder="Search by email or name..."
@@ -77,7 +87,10 @@
         <div class="flex flex-wrap gap-4">
           <div class="flex items-center space-x-2">
             <label class="text-sm font-medium text-foreground">Status:</label>
-            <Select v-model="activeFilter" @update:model-value="fetchSubscribers">
+            <Select
+              v-model="activeFilter"
+              @update:model-value="fetchSubscribers"
+            >
               <SelectTrigger class="w-40">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
@@ -111,7 +124,9 @@
 
     <!-- Error State -->
     <div v-else-if="error" class="text-center py-8">
-      <div class="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded relative flex items-center justify-center gap-2">
+      <div
+        class="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded relative flex items-center justify-center gap-2"
+      >
         <AlertTriangle class="h-4 w-4" />
         <span>{{ error }}</span>
       </div>
@@ -132,12 +147,24 @@
           <table class="w-full">
             <thead>
               <tr class="border-b">
-                <th class="text-left p-4 font-medium text-muted-foreground">Email</th>
-                <th class="text-left p-4 font-medium text-muted-foreground">Name</th>
-                <th class="text-left p-4 font-medium text-muted-foreground">Source</th>
-                <th class="text-left p-4 font-medium text-muted-foreground">Status</th>
-                <th class="text-left p-4 font-medium text-muted-foreground">Subscribed</th>
-                <th class="text-left p-4 font-medium text-muted-foreground">Actions</th>
+                <th class="text-left p-4 font-medium text-muted-foreground">
+                  Email
+                </th>
+                <th class="text-left p-4 font-medium text-muted-foreground">
+                  Name
+                </th>
+                <th class="text-left p-4 font-medium text-muted-foreground">
+                  Source
+                </th>
+                <th class="text-left p-4 font-medium text-muted-foreground">
+                  Status
+                </th>
+                <th class="text-left p-4 font-medium text-muted-foreground">
+                  Subscribed
+                </th>
+                <th class="text-left p-4 font-medium text-muted-foreground">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -153,26 +180,43 @@
                   </div>
                 </td>
                 <td class="p-4">
-                  {{ subscriber.firstName || '' }} {{ subscriber.lastName || '' }}
-                  <span v-if="!subscriber.firstName && !subscriber.lastName" class="text-muted-foreground">-</span>
+                  {{ subscriber.firstName || "" }}
+                  {{ subscriber.lastName || "" }}
+                  <span
+                    v-if="!subscriber.firstName && !subscriber.lastName"
+                    class="text-muted-foreground"
+                    >-</span
+                  >
                 </td>
                 <td class="p-4">
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                  <span
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                     :class="{
-                      'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300': subscriber.source === 'registration',
-                      'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300': subscriber.source === 'landing_page',
-                      'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300': subscriber.source === 'manual',
+                      'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300':
+                        subscriber.source === 'registration',
+                      'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300':
+                        subscriber.source === 'landing_page',
+                      'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300':
+                        subscriber.source === 'manual',
                     }"
                   >
                     {{ subscriber.source }}
                   </span>
                 </td>
                 <td class="p-4">
-                  <span v-if="subscriber.isActive" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                    <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></div>
+                  <span
+                    v-if="subscriber.isActive"
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300"
+                  >
+                    <div
+                      class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"
+                    ></div>
                     Active
                   </span>
-                  <span v-else class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300">
+                  <span
+                    v-else
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300"
+                  >
                     <div class="w-1.5 h-1.5 bg-red-500 rounded-full mr-1"></div>
                     Unsubscribed
                   </span>
@@ -205,15 +249,24 @@
           <!-- Empty State -->
           <div v-if="subscribers.length === 0" class="text-center py-12">
             <Users class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p class="text-lg font-semibold text-foreground">No subscribers found</p>
+            <p class="text-lg font-semibold text-foreground">
+              No subscribers found
+            </p>
             <p class="text-muted-foreground">
-              {{ searchQuery ? 'Try adjusting your search criteria.' : 'Subscribers will appear here once users sign up for the newsletter.' }}
+              {{
+                searchQuery
+                  ? "Try adjusting your search criteria."
+                  : "Subscribers will appear here once users sign up for the newsletter."
+              }}
             </p>
           </div>
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination.totalPages > 1" class="flex justify-center items-center gap-2 mt-6">
+        <div
+          v-if="pagination.totalPages > 1"
+          class="flex justify-center items-center gap-2 mt-6"
+        >
           <Button
             @click="goToPage(pagination.page - 1)"
             :disabled="pagination.page === 1"
@@ -240,18 +293,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useApi } from '@/composables/useApi';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { ref, onMounted } from "vue";
+import { useApi } from "@/composables/useApi";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   RefreshCw,
   Loader2,
@@ -266,8 +319,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-vue-next';
-import { cn } from '@/lib/utils';
+} from "lucide-vue-next";
+import { cn } from "@/lib/utils";
 
 // Types
 interface Subscriber {
@@ -275,7 +328,7 @@ interface Subscriber {
   email: string;
   firstName?: string;
   lastName?: string;
-  source: 'registration' | 'manual' | 'landing_page';
+  source: "registration" | "manual" | "landing_page";
   isActive: boolean;
   subscribedAt: string;
   unsubscribedAt?: string;
@@ -304,8 +357,8 @@ const pagination = ref({
 });
 const isLoading = ref(false);
 const error = ref<string | null>(null);
-const searchQuery = ref('');
-const activeFilter = ref('all');
+const searchQuery = ref("");
+const activeFilter = ref("all");
 
 // API
 const api = useApi();
@@ -321,26 +374,23 @@ const fetchSubscribers = async () => {
       limit: pagination.value.limit.toString(),
     });
 
-    if (activeFilter.value !== 'all') {
-      params.append('isActive', activeFilter.value);
+    if (activeFilter.value !== "all") {
+      params.append("isActive", activeFilter.value);
     }
 
     if (searchQuery.value) {
-      params.append('search', searchQuery.value);
+      params.append("search", searchQuery.value);
     }
 
-    const response = await api.authGet(`/api/newsletter/subscribers?${params.toString()}`);
+    const data = await api.makeRequest(
+      `/api/newsletter/subscribers?${params.toString()}`
+    );
 
-    if (response.error) {
-      throw new Error(response.error.message || 'Failed to fetch subscribers');
-    }
-
-    const data = response.data || response;
     subscribers.value = data.subscribers || [];
     pagination.value = data.pagination || pagination.value;
   } catch (err) {
-    console.error('Failed to fetch subscribers:', err);
-    error.value = 'Failed to load subscribers. Please try again.';
+    console.error("Failed to fetch subscribers:", err);
+    error.value = "Failed to load subscribers. Please try again.";
   } finally {
     isLoading.value = false;
   }
@@ -348,15 +398,10 @@ const fetchSubscribers = async () => {
 
 const fetchStats = async () => {
   try {
-    const response = await api.authGet('/api/newsletter/stats');
-
-    if (response.error) {
-      throw new Error(response.error.message || 'Failed to fetch stats');
-    }
-
-    stats.value = response.data || response;
+    const data = await api.makeRequest("/api/newsletter/stats");
+    stats.value = data;
   } catch (err) {
-    console.error('Failed to fetch stats:', err);
+    console.error("Failed to fetch stats:", err);
   }
 };
 
@@ -377,8 +422,8 @@ const debouncedSearch = (() => {
 })();
 
 const clearFilters = () => {
-  searchQuery.value = '';
-  activeFilter.value = 'all';
+  searchQuery.value = "";
+  activeFilter.value = "all";
   pagination.value.page = 1;
   fetchSubscribers();
 };
@@ -389,44 +434,45 @@ const goToPage = (page: number) => {
 };
 
 const unsubscribeUser = async (id: string) => {
-  if (!confirm('Are you sure you want to unsubscribe this user?')) return;
+  if (!confirm("Are you sure you want to unsubscribe this user?")) return;
 
   try {
-    const response = await api.authPost(`/api/newsletter/unsubscribe/${id}`, {});
-
-    if (response.error) {
-      throw new Error(response.error.message || 'Failed to unsubscribe user');
-    }
+    await api.makeRequest(`/api/newsletter/unsubscribe/${id}`, {
+      method: "POST",
+    });
 
     await refreshSubscribers();
   } catch (err) {
-    console.error('Failed to unsubscribe user:', err);
-    alert('Failed to unsubscribe user. Please try again.');
+    console.error("Failed to unsubscribe user:", err);
+    alert("Failed to unsubscribe user. Please try again.");
   }
 };
 
 const deleteSubscriber = async (id: string) => {
-  if (!confirm('Are you sure you want to delete this subscriber? This action cannot be undone.')) return;
+  if (
+    !confirm(
+      "Are you sure you want to delete this subscriber? This action cannot be undone."
+    )
+  )
+    return;
 
   try {
-    const response = await api.authDelete(`/api/newsletter/${id}`);
-
-    if (response.error) {
-      throw new Error(response.error.message || 'Failed to delete subscriber');
-    }
+    await api.makeRequest(`/api/newsletter/${id}`, {
+      method: "DELETE",
+    });
 
     await refreshSubscribers();
   } catch (err) {
-    console.error('Failed to delete subscriber:', err);
-    alert('Failed to delete subscriber. Please try again.');
+    console.error("Failed to delete subscriber:", err);
+    alert("Failed to delete subscriber. Please try again.");
   }
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 };
 
@@ -436,4 +482,3 @@ onMounted(() => {
   fetchStats();
 });
 </script>
-
