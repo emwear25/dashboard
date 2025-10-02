@@ -85,7 +85,7 @@ const handleSubmit = async () => {
               id="email"
               v-model="email"
               type="email"
-              placeholder="admin@telemedker.com"
+              placeholder="Enter your email"
               required
               :disabled="isSubmitting"
             />
@@ -109,15 +109,6 @@ const handleSubmit = async () => {
             {{ isSubmitting ? "Signing in..." : "Sign in" }}
           </Button>
         </form>
-
-        <!-- Test Credentials Info -->
-        <div
-          class="text-center text-xs text-muted-foreground mt-4 p-3 bg-muted rounded-md"
-        >
-          <p><strong>Test Credentials:</strong></p>
-          <p>Email: admin@telemedker.com</p>
-          <p>Password: admin123!</p>
-        </div>
       </CardContent>
     </Card>
   </div>
