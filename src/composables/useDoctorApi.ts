@@ -11,6 +11,7 @@ interface Doctor {
   photoUrl: string
   experience?: number
   isActive: boolean
+  isDoctor: boolean
   isAdmin: boolean
   createdAt: string
   updatedAt: string

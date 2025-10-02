@@ -47,7 +47,8 @@ const isDark = useDark();
 const toggleDark = useToggle(isDark);
 
 const router = useRouter();
-const { doctor, isAuthenticated, logout, initialize } = useDoctorAuth();
+const { doctor, isAuthenticated, isDoctor, isAdmin, logout, initialize } =
+  useDoctorAuth();
 
 // Computed property for user's full name
 const userFullName = computed(() => {
@@ -62,16 +63,31 @@ const navigationItems = computed<NavigationItem[]>(() => {
   const items: NavigationItem[] = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "My Profile", path: "/profile", icon: User },
-    { name: "My Availability", path: "/availability", icon: Calendar },
-    { name: "My Appointments", path: "/appointments", icon: CalendarDays },
-    { name: "My Patients", path: "/patients", icon: Users },
-    { name: "Coupons", path: "/coupons", icon: Ticket },
-    { name: "Analytics", path: "/analytics", icon: BarChart3 },
   ];
 
+  // Add doctor-only items
+  if (isDoctor.value) {
+    items.push(
+      { name: "My Availability", path: "/availability", icon: Calendar },
+      { name: "My Appointments", path: "/appointments", icon: CalendarDays },
+      { name: "My Patients", path: "/patients", icon: Users },
+      { name: "Analytics", path: "/analytics", icon: BarChart3 }
+    );
+  }
+
+  // Add items for both doctors and admins
+  if (isDoctor.value || isAdmin.value) {
+    items.push({ name: "Coupons", path: "/coupons", icon: Ticket });
+  }
+
   // Add admin-only items
-  if (doctor.value?.isAdmin) {
-    items.splice(2, 0, { name: "Doctors", path: "/doctors", icon: Users });
+  if (isAdmin.value) {
+    // Insert "Team Management" after "My Profile"
+    items.splice(2, 0, {
+      name: "Team Management",
+      path: "/doctors",
+      icon: Users,
+    });
     items.push({ name: "Subscribers", path: "/subscribers", icon: Mail });
   }
 

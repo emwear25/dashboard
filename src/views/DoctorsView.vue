@@ -3,20 +3,63 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold tracking-tight">Doctors Management</h1>
+        <h1 class="text-3xl font-bold tracking-tight">Team Management</h1>
         <p class="text-muted-foreground">
-          Manage all doctors in the system (Admin Only)
+          Manage doctors and administrators (Admin Only)
         </p>
       </div>
 
-      <Button
-        v-if="isAdmin"
-        @click="goToAddDoctor"
-        class="flex items-center gap-2"
+      <div v-if="isAdmin" class="flex gap-2">
+        <Button @click="goToAddDoctor" class="flex items-center gap-2">
+          <Plus class="h-4 w-4" />
+          Add Doctor
+        </Button>
+        <Button
+          @click="goToAddAdmin"
+          variant="outline"
+          class="flex items-center gap-2"
+        >
+          <Plus class="h-4 w-4" />
+          Add Admin
+        </Button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 border-b">
+      <button
+        @click="activeTab = 'doctors'"
+        :class="[
+          'px-4 py-2 font-medium transition-colors',
+          activeTab === 'doctors'
+            ? 'border-b-2 border-primary text-primary'
+            : 'text-muted-foreground hover:text-foreground',
+        ]"
       >
-        <Plus class="h-4 w-4" />
-        Add Doctor
-      </Button>
+        Doctors ({{ doctorsList.length }})
+      </button>
+      <button
+        @click="activeTab = 'admins'"
+        :class="[
+          'px-4 py-2 font-medium transition-colors',
+          activeTab === 'admins'
+            ? 'border-b-2 border-primary text-primary'
+            : 'text-muted-foreground hover:text-foreground',
+        ]"
+      >
+        Admins ({{ adminsList.length }})
+      </button>
+      <button
+        @click="activeTab = 'all'"
+        :class="[
+          'px-4 py-2 font-medium transition-colors',
+          activeTab === 'all'
+            ? 'border-b-2 border-primary text-primary'
+            : 'text-muted-foreground hover:text-foreground',
+        ]"
+      >
+        All ({{ doctors.length }})
+      </button>
     </div>
 
     <!-- Loading State -->
@@ -34,22 +77,37 @@
       <Button @click="loadDoctors" class="mt-4"> Try Again </Button>
     </div>
 
-    <!-- Doctors List -->
+    <!-- Team List -->
     <div v-else class="space-y-6">
-      <!-- Active Doctors -->
+      <!-- Active Users -->
       <Card>
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
             <User class="h-5 w-5" />
-            Active Doctors ({{ activeDoctors.length }})
+            {{
+              activeTab === "doctors"
+                ? "Active Doctors"
+                : activeTab === "admins"
+                  ? "Active Admins"
+                  : "Active Users"
+            }}
+            ({{ activeFiltered.length }})
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div
-            v-if="activeDoctors.length === 0"
+            v-if="activeFiltered.length === 0"
             class="text-center py-8 text-muted-foreground"
           >
-            No active doctors found
+            No active
+            {{
+              activeTab === "doctors"
+                ? "doctors"
+                : activeTab === "admins"
+                  ? "admins"
+                  : "users"
+            }}
+            found
           </div>
 
           <Table v-else>
@@ -57,18 +115,23 @@
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Specialties</TableHead>
-                <TableHead>Plans Offered</TableHead>
-                <TableHead>Experience</TableHead>
-                <TableHead>Admin</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead v-if="activeTab !== 'admins'">Specialties</TableHead>
+                <TableHead v-if="activeTab !== 'admins'">Experience</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead v-if="isAdmin" class="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="doctor in activeDoctors" :key="doctor._id">
+              <TableRow v-for="doctor in activeFiltered" :key="doctor._id">
                 <TableCell class="font-medium">{{ doctor.name }}</TableCell>
                 <TableCell>{{ doctor.email }}</TableCell>
                 <TableCell>
+                  <Badge :variant="getUserRoleBadgeVariant(doctor)">
+                    {{ getUserRoleLabel(doctor) }}
+                  </Badge>
+                </TableCell>
+                <TableCell v-if="activeTab !== 'admins'">
                   <div class="flex flex-wrap gap-1">
                     <Badge
                       v-for="specialty in doctor.specialties"
@@ -79,28 +142,18 @@
                     </Badge>
                   </div>
                 </TableCell>
+                <TableCell v-if="activeTab !== 'admins'"
+                  >{{ doctor.experience || "N/A" }} years</TableCell
+                >
                 <TableCell>
-                  <div class="flex flex-wrap gap-1">
-                    <Badge
-                      v-for="plan in doctor.plansOffered"
-                      :key="plan"
-                      variant="outline"
-                    >
-                      {{ plan }}
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell>{{ doctor.experience || "N/A" }} years</TableCell>
-                <TableCell>
-                  <Badge v-if="doctor.isAdmin" variant="default"> Admin </Badge>
-                  <span v-else class="text-muted-foreground">User</span>
+                  <Badge variant="default"> Active </Badge>
                 </TableCell>
                 <TableCell v-if="isAdmin" class="text-right">
                   <div class="flex justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      @click="goToEditDoctor(doctor._id)"
+                      @click="goToEdit(doctor)"
                     >
                       <Edit class="h-4 w-4" />
                     </Button>
@@ -119,12 +172,20 @@
         </CardContent>
       </Card>
 
-      <!-- Inactive Doctors (if any) -->
-      <Card v-if="inactiveDoctors.length > 0">
+      <!-- Inactive Users (if any) -->
+      <Card v-if="inactiveFiltered.length > 0">
         <CardHeader>
           <CardTitle class="flex items-center gap-2 text-muted-foreground">
             <User class="h-5 w-5" />
-            Inactive Doctors ({{ inactiveDoctors.length }})
+            Inactive
+            {{
+              activeTab === "doctors"
+                ? "Doctors"
+                : activeTab === "admins"
+                  ? "Admins"
+                  : "Users"
+            }}
+            ({{ inactiveFiltered.length }})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -133,20 +194,26 @@
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Specialties</TableHead>
-                <TableHead>Admin</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead v-if="activeTab !== 'admins'">Specialties</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead v-if="isAdmin" class="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow
-                v-for="doctor in inactiveDoctors"
+                v-for="doctor in inactiveFiltered"
                 :key="doctor._id"
                 class="opacity-60"
               >
                 <TableCell class="font-medium">{{ doctor.name }}</TableCell>
                 <TableCell>{{ doctor.email }}</TableCell>
                 <TableCell>
+                  <Badge :variant="getUserRoleBadgeVariant(doctor)">
+                    {{ getUserRoleLabel(doctor) }}
+                  </Badge>
+                </TableCell>
+                <TableCell v-if="activeTab !== 'admins'">
                   <div class="flex flex-wrap gap-1">
                     <Badge
                       v-for="specialty in doctor.specialties"
@@ -158,15 +225,14 @@
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge v-if="doctor.isAdmin" variant="default"> Admin </Badge>
-                  <span v-else class="text-muted-foreground">User</span>
+                  <Badge variant="secondary"> Inactive </Badge>
                 </TableCell>
                 <TableCell v-if="isAdmin" class="text-right">
                   <div class="flex justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      @click="goToEditDoctor(doctor._id)"
+                      @click="goToEdit(doctor)"
                     >
                       <Edit class="h-4 w-4" />
                     </Button>
@@ -219,6 +285,7 @@ interface Doctor {
   photoUrl: string;
   experience?: number;
   isActive: boolean;
+  isDoctor: boolean;
   isAdmin: boolean;
   createdAt: string;
   updatedAt: string;
@@ -227,14 +294,56 @@ interface Doctor {
 const { getAllDoctors, deleteDoctor, loading, error } = useDoctorApi();
 
 const doctors = ref<Doctor[]>([]);
+const activeTab = ref<"doctors" | "admins" | "all">("doctors");
 
-// Computed properties
-const activeDoctors = computed(() =>
-  doctors.value.filter((doctor) => doctor.isActive)
+// Computed properties for filtering
+const doctorsList = computed(() =>
+  doctors.value.filter((doctor) => doctor.isDoctor && !doctor.isAdmin)
 );
-const inactiveDoctors = computed(() =>
-  doctors.value.filter((doctor) => !doctor.isActive)
+const adminsList = computed(() =>
+  doctors.value.filter((doctor) => !doctor.isDoctor && doctor.isAdmin)
 );
+const bothRolesList = computed(() =>
+  doctors.value.filter((doctor) => doctor.isDoctor && doctor.isAdmin)
+);
+
+// Filtered lists based on active tab
+const filteredList = computed(() => {
+  if (activeTab.value === "doctors") {
+    return [...doctorsList.value, ...bothRolesList.value];
+  } else if (activeTab.value === "admins") {
+    return [...adminsList.value, ...bothRolesList.value];
+  }
+  return doctors.value;
+});
+
+const activeFiltered = computed(() =>
+  filteredList.value.filter((doctor) => doctor.isActive)
+);
+const inactiveFiltered = computed(() =>
+  filteredList.value.filter((doctor) => !doctor.isActive)
+);
+
+// Helper functions
+const getUserRoleLabel = (doctor: Doctor) => {
+  if (doctor.isDoctor && doctor.isAdmin) {
+    return "Doctor & Admin";
+  } else if (doctor.isDoctor) {
+    return "Doctor";
+  } else if (doctor.isAdmin) {
+    return "Admin";
+  }
+  return "User";
+};
+
+const getUserRoleBadgeVariant = (doctor: Doctor) => {
+  if (doctor.isDoctor && doctor.isAdmin) {
+    return "default";
+  } else if (doctor.isAdmin) {
+    return "secondary";
+  }
+  return "outline";
+};
 
 // Load doctors
 const loadDoctors = async () => {
@@ -272,8 +381,19 @@ const goToAddDoctor = () => {
   router.push("/doctors/new");
 };
 
-const goToEditDoctor = (doctorId: string) => {
-  router.push(`/doctors/${doctorId}/edit`);
+const goToAddAdmin = () => {
+  router.push("/admins/new");
+};
+
+const goToEdit = (doctor: Doctor) => {
+  // Route to appropriate form based on role
+  if (!doctor.isDoctor && doctor.isAdmin) {
+    // Admin only - use admin form
+    router.push(`/admins/${doctor._id}/edit`);
+  } else {
+    // Doctor or Doctor+Admin - use doctor form
+    router.push(`/doctors/${doctor._id}/edit`);
+  }
 };
 
 onMounted(() => {

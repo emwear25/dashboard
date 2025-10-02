@@ -10,13 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ArrowLeft, Plus, X } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
@@ -30,6 +23,7 @@ interface Doctor {
   photoUrl: string;
   experience?: number;
   isActive: boolean;
+  isDoctor: boolean;
   isAdmin: boolean;
   createdAt: string;
   updatedAt: string;
@@ -54,6 +48,7 @@ const form = ref({
   photoUrl: "",
   experience: 0,
   isActive: true,
+  isDoctor: true,
   isAdmin: false,
 });
 
@@ -97,6 +92,7 @@ const loadDoctor = async () => {
       photoUrl: doctor.photoUrl || "",
       experience: doctor.experience || 0,
       isActive: doctor.isActive,
+      isDoctor: doctor.isDoctor ?? true,
       isAdmin: doctor.isAdmin,
     };
   } catch (err) {
@@ -408,31 +404,15 @@ onMounted(() => {
             </p>
           </div>
 
-          <!-- Status and Permissions -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div
-              class="flex items-center justify-between p-4 border rounded-lg"
-            >
-              <div>
-                <label class="text-sm font-medium"> Active Status </label>
-                <p class="text-xs text-muted-foreground">
-                  Allow this doctor to log in and take appointments
-                </p>
-              </div>
-              <Switch v-model:checked="form.isActive" />
+          <!-- Status -->
+          <div class="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <label class="text-sm font-medium"> Active Status </label>
+              <p class="text-xs text-muted-foreground">
+                Allow this doctor to log in and take appointments
+              </p>
             </div>
-
-            <div
-              class="flex items-center justify-between p-4 border rounded-lg"
-            >
-              <div>
-                <label class="text-sm font-medium"> Administrator </label>
-                <p class="text-xs text-muted-foreground">
-                  Grant admin access to manage other doctors
-                </p>
-              </div>
-              <Switch v-model:checked="form.isAdmin" />
-            </div>
+            <Switch v-model:checked="form.isActive" />
           </div>
 
           <!-- Submit Button -->

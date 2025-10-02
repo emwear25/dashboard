@@ -12,6 +12,7 @@ interface Doctor {
   photoUrl: string
   experience?: number
   isActive: boolean
+  isDoctor: boolean
   isAdmin: boolean
   createdAt: string
   updatedAt: string
@@ -38,6 +39,7 @@ export const useDoctorAuth = () => {
   // Computed properties
   const isAuthenticated = computed(() => state.value.isAuthenticated)
   const doctor = computed(() => state.value.doctor)
+  const isDoctor = computed(() => state.value.doctor?.isDoctor || false)
   const isAdmin = computed(() => state.value.doctor?.isAdmin || false)
   const isLoading = computed(() => state.value.isLoading)
   const error = computed(() => state.value.error)
@@ -193,6 +195,7 @@ export const useDoctorAuth = () => {
     // State
     doctor,
     isAuthenticated,
+    isDoctor,
     isAdmin,
     isLoading,
     error,

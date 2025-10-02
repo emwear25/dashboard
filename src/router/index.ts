@@ -54,9 +54,22 @@ const router = createRouter({
           meta: { requiresAdmin: true }
         },
         {
+          path: 'admins/new',
+          name: 'new-admin',
+          component: () => import('@/views/AdminFormView.vue'),
+          meta: { requiresAdmin: true }
+        },
+        {
+          path: 'admins/:id/edit',
+          name: 'edit-admin',
+          component: () => import('@/views/AdminFormView.vue'),
+          meta: { requiresAdmin: true }
+        },
+        {
           path: 'availability',
           name: 'availability',
-          component: () => import('@/views/AvailabilityView.vue')
+          component: () => import('@/views/AvailabilityView.vue'),
+          meta: { requiresDoctor: true }
         },
         {
           path: 'coupons',
@@ -72,17 +85,20 @@ const router = createRouter({
         {
           path: 'appointments',
           name: 'appointments',
-          component: () => import('@/views/AppointmentsView.vue')
+          component: () => import('@/views/AppointmentsView.vue'),
+          meta: { requiresDoctor: true }
         },
         {
           path: 'patients',
           name: 'patients',
-          component: () => import('@/views/PatientsView.vue')
+          component: () => import('@/views/PatientsView.vue'),
+          meta: { requiresDoctor: true }
         },
         {
           path: 'patients/:id',
           name: 'patient-detail',
-          component: () => import('@/views/PatientDetailView.vue')
+          component: () => import('@/views/PatientDetailView.vue'),
+          meta: { requiresDoctor: true }
         },
         {
           path: 'meeting/:id',
@@ -108,7 +124,7 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   // Lazy import to avoid circular dependency
   const { useDoctorAuth } = await import('@/composables/useDoctorAuth')
-  const { isAuthenticated, isAdmin, initialize } = useDoctorAuth()
+  const { isAuthenticated, isDoctor, isAdmin, initialize } = useDoctorAuth()
   
   // Check if route requires authentication
   if (to.matched.some(record => record.meta.requiresAuth)) {
@@ -124,6 +140,14 @@ router.beforeEach(async (to, from, next) => {
     // Check if route requires admin access
     if (to.matched.some(record => record.meta.requiresAdmin)) {
       if (!isAdmin.value) {
+        next('/dashboard')
+        return
+      }
+    }
+    
+    // Check if route requires doctor role
+    if (to.matched.some(record => record.meta.requiresDoctor)) {
+      if (!isDoctor.value) {
         next('/dashboard')
         return
       }
