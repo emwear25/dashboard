@@ -64,6 +64,12 @@ const router = createRouter({
           component: () => import('@/views/CouponsView.vue')
         },
         {
+          path: 'subscribers',
+          name: 'subscribers',
+          component: () => import('@/views/SubscribersView.vue'),
+          meta: { requiresAdmin: true }
+        },
+        {
           path: 'appointments',
           name: 'appointments',
           component: () => import('@/views/AppointmentsView.vue')

@@ -22,6 +22,7 @@ import {
   Calendar,
   CalendarDays,
   Ticket,
+  Mail,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-vue-next";
@@ -71,6 +72,7 @@ const navigationItems = computed<NavigationItem[]>(() => {
   // Add admin-only items
   if (doctor.value?.isAdmin) {
     items.splice(2, 0, { name: "Doctors", path: "/doctors", icon: Users });
+    items.push({ name: "Subscribers", path: "/subscribers", icon: Mail });
   }
 
   return items;
