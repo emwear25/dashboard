@@ -311,7 +311,7 @@ interface Appointment {
     firstName: string;
     lastName: string;
     email: string;
-  };
+  } | null;
   date: string;
   status: "pending" | "confirmed" | "cancelled" | "completed";
   createdAt: string;
@@ -433,14 +433,20 @@ const fetchPatients = async () => {
     const patientsMap = new Map<string, Patient>();
 
     appointments.value.forEach((appointment) => {
+      // Skip appointments without patient data
+      if (!appointment.patientId || !appointment.patientId._id) {
+        console.warn('Skipping appointment without patient data:', appointment._id);
+        return;
+      }
+
       const patientId = appointment.patientId._id;
 
       if (!patientsMap.has(patientId)) {
         patientsMap.set(patientId, {
           _id: patientId,
-          firstName: appointment.patientId.firstName,
-          lastName: appointment.patientId.lastName,
-          email: appointment.patientId.email,
+          firstName: appointment.patientId.firstName || 'Unknown',
+          lastName: appointment.patientId.lastName || 'Patient',
+          email: appointment.patientId.email || 'No email',
           appointmentCount: 1,
           lastAppointment: appointment.date,
           firstAppointment: appointment.date,
