@@ -208,7 +208,9 @@
                     </span>
                   </td>
                   <td>
-                    {{ formatDate(coupon.approvedAt || coupon.rejectedAt || '') }}
+                    {{
+                      formatDate(coupon.approvedAt || coupon.rejectedAt || "")
+                    }}
                   </td>
                   <td>{{ coupon.approvedBy?.name || "-" }}</td>
                 </tr>

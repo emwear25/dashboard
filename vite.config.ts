@@ -15,4 +15,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    port: 5173, // Doctor dashboard always runs on 5173
+    strictPort: true, // Fail if port is already in use
+  },
 })
