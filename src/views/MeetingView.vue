@@ -258,7 +258,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import DailyIframe, { type DailyCall } from "@daily-co/daily-js";
+import DailyIframe, {
+  type DailyCall,
+  type DailyEventObjectAppMessage,
+} from "@daily-co/daily-js";
 import { useApi } from "@/composables/useApi";
 import { useDoctorAuth } from "@/composables/useDoctorAuth";
 
@@ -276,6 +279,7 @@ import {
   Clock,
   Files,
   X,
+  Download,
 } from "lucide-vue-next";
 
 interface Appointment {

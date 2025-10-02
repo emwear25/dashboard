@@ -435,7 +435,10 @@ const fetchPatients = async () => {
     appointments.value.forEach((appointment) => {
       // Skip appointments without patient data
       if (!appointment.patientId || !appointment.patientId._id) {
-        console.warn('Skipping appointment without patient data:', appointment._id);
+        console.warn(
+          "Skipping appointment without patient data:",
+          appointment._id
+        );
         return;
       }
 
@@ -444,9 +447,9 @@ const fetchPatients = async () => {
       if (!patientsMap.has(patientId)) {
         patientsMap.set(patientId, {
           _id: patientId,
-          firstName: appointment.patientId.firstName || 'Unknown',
-          lastName: appointment.patientId.lastName || 'Patient',
-          email: appointment.patientId.email || 'No email',
+          firstName: appointment.patientId.firstName || "Unknown",
+          lastName: appointment.patientId.lastName || "Patient",
+          email: appointment.patientId.email || "No email",
           appointmentCount: 1,
           lastAppointment: appointment.date,
           firstAppointment: appointment.date,

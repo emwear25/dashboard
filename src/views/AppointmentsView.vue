@@ -744,9 +744,12 @@ const getTypeVariant = (type: string) => {
 };
 
 // Computed properties for UI
-const patientName = (appointment: Appointment) =>
-  `${appointment.patientId.firstName} ${appointment.patientId.lastName}`;
-const patientEmail = (appointment: Appointment) => appointment.patientId.email;
+const patientName = (appointment: Appointment) => {
+  if (!appointment.patientId) return "Unknown Patient";
+  return `${appointment.patientId.firstName || "Unknown"} ${appointment.patientId.lastName || "Patient"}`;
+};
+const patientEmail = (appointment: Appointment) => 
+  appointment.patientId?.email || "No email";
 const appointmentDate = (appointment: Appointment) => appointment.date;
 const appointmentTime = (appointment: Appointment) => appointment.slot;
 const appointmentType = (appointment: Appointment) => appointment.plan;
