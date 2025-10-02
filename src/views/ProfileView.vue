@@ -283,6 +283,96 @@
           </CardContent>
         </Card>
 
+        <!-- Rating Stats -->
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                />
+              </svg>
+              Your Ratings
+            </CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div
+              v-if="loadingRating"
+              class="text-center text-muted-foreground py-4"
+            >
+              Loading ratings...
+            </div>
+            <div
+              v-else-if="ratingError"
+              class="text-center text-destructive py-4"
+            >
+              {{ ratingError }}
+            </div>
+            <div v-else class="space-y-4">
+              <!-- Average Rating -->
+              <div class="text-center">
+                <div class="text-4xl font-bold text-primary mb-2">
+                  {{ rating?.averageRating?.toFixed(1) || "0.0" }}
+                </div>
+                <div class="flex justify-center gap-1 mb-2">
+                  <svg
+                    v-for="star in 5"
+                    :key="star"
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    :class="
+                      star <= Math.round(rating?.averageRating || 0)
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300'
+                    "
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                    />
+                  </svg>
+                </div>
+                <p class="text-sm text-muted-foreground">
+                  Based on {{ rating?.totalRatings || 0 }}
+                  {{ rating?.totalRatings === 1 ? "rating" : "ratings" }}
+                </p>
+              </div>
+
+              <!-- Rating Distribution -->
+              <div v-if="rating && rating.totalRatings > 0" class="space-y-2">
+                <div
+                  v-for="star in [5, 4, 3, 2, 1]"
+                  :key="star"
+                  class="flex items-center gap-2"
+                >
+                  <span class="text-sm w-12">{{ star }} stars</span>
+                  <div class="flex-1 bg-muted rounded-full h-2">
+                    <div
+                      class="bg-primary h-2 rounded-full transition-all"
+                      :style="{
+                        width: `${(rating.ratingDistribution[star] / rating.totalRatings) * 100}%`,
+                      }"
+                    ></div>
+                  </div>
+                  <span class="text-sm text-muted-foreground w-8 text-right">
+                    {{ rating.ratingDistribution[star] }}
+                  </span>
+                </div>
+              </div>
+
+              <div v-else class="text-center text-muted-foreground py-4">
+                No ratings yet
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <!-- Quick Stats -->
         <Card>
           <CardHeader>
@@ -370,6 +460,11 @@ const { toast } = useToast();
 const isEditing = ref(false);
 const isSaving = ref(false);
 const newSpecialty = ref("");
+
+// Rating data
+const rating = ref<any>(null);
+const loadingRating = ref(false);
+const ratingError = ref("");
 
 // Edit form
 const editForm = reactive({
@@ -472,10 +567,39 @@ const handleImageRemoved = () => {
   editForm.photoUrl = "";
 };
 
+// Fetch doctor rating
+const fetchRating = async () => {
+  if (!doctor.value?._id) return;
+
+  loadingRating.value = true;
+  ratingError.value = "";
+
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL || "http://localhost:3030"}/api/ratings/doctor/${doctor.value._id}`
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      rating.value = data.data;
+    } else {
+      ratingError.value = "Failed to load ratings";
+    }
+  } catch (error) {
+    console.error("Error fetching rating:", error);
+    ratingError.value = "Failed to load ratings";
+  } finally {
+    loadingRating.value = false;
+  }
+};
+
 // Ensure doctor data is loaded on component mount
 onMounted(async () => {
   if (!doctor.value) {
     await refreshData();
   }
+  // Fetch rating after doctor data is loaded
+  await fetchRating();
 });
 </script>
