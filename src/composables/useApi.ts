@@ -67,6 +67,8 @@ export const useApi = () => {
       experience?: number
       isAdmin?: boolean
       isDoctor?: boolean
+      countriesOfOperation?: string[]
+      languages?: string[]
     }) => makeRequest<any>('/api/doctors', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -81,6 +83,8 @@ export const useApi = () => {
       isActive: boolean
       isAdmin: boolean
       isDoctor: boolean
+      countriesOfOperation: string[]
+      languages: string[]
     }>) => makeRequest<any>(`/api/doctors/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

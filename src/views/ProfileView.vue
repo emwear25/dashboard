@@ -196,6 +196,144 @@
               </div>
             </div>
 
+            <!-- Countries of Operation -->
+            <div>
+              <h3
+                class="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2"
+              >
+                Countries of Operation
+              </h3>
+
+              <div v-if="!isEditing" class="flex flex-wrap gap-2">
+                <Badge
+                  v-for="country in doctor?.countriesOfOperation || []"
+                  :key="country"
+                  variant="outline"
+                  class="px-3 py-1"
+                >
+                  {{ country }}
+                </Badge>
+                <span
+                  v-if="!doctor?.countriesOfOperation?.length"
+                  class="text-muted-foreground italic"
+                >
+                  No countries added
+                </span>
+              </div>
+
+              <div v-else class="space-y-2">
+                <div class="flex flex-wrap gap-2">
+                  <Badge
+                    v-for="(country, index) in editForm.countriesOfOperation"
+                    :key="index"
+                    variant="outline"
+                    class="px-3 py-1 flex items-center gap-1"
+                  >
+                    {{ country }}
+                    <X
+                      class="h-3 w-3 cursor-pointer"
+                      @click="removeCountry(index)"
+                    />
+                  </Badge>
+                </div>
+                <div class="flex gap-2">
+                  <Input
+                    v-model="newCountry"
+                    placeholder="Add country"
+                    @keydown.enter="addCountry"
+                    class="flex-1"
+                  />
+                  <Button @click="addCountry" size="sm">Add</Button>
+                </div>
+
+                <!-- Common Countries -->
+                <div class="flex flex-wrap gap-2">
+                  <Button
+                    v-for="country in availableCountries"
+                    :key="country"
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    @click="addCountry(country)"
+                    :disabled="editForm.countriesOfOperation.includes(country)"
+                    class="flex items-center gap-1"
+                  >
+                    <Plus class="h-3 w-3" />
+                    {{ country }}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Languages -->
+            <div>
+              <h3
+                class="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2"
+              >
+                Languages
+              </h3>
+
+              <div v-if="!isEditing" class="flex flex-wrap gap-2">
+                <Badge
+                  v-for="language in doctor?.languages || []"
+                  :key="language"
+                  variant="outline"
+                  class="px-3 py-1"
+                >
+                  {{ language }}
+                </Badge>
+                <span
+                  v-if="!doctor?.languages?.length"
+                  class="text-muted-foreground italic"
+                >
+                  No languages added
+                </span>
+              </div>
+
+              <div v-else class="space-y-2">
+                <div class="flex flex-wrap gap-2">
+                  <Badge
+                    v-for="(language, index) in editForm.languages"
+                    :key="index"
+                    variant="outline"
+                    class="px-3 py-1 flex items-center gap-1"
+                  >
+                    {{ language }}
+                    <X
+                      class="h-3 w-3 cursor-pointer"
+                      @click="removeLanguage(index)"
+                    />
+                  </Badge>
+                </div>
+                <div class="flex gap-2">
+                  <Input
+                    v-model="newLanguage"
+                    placeholder="Add language"
+                    @keydown.enter="addLanguage"
+                    class="flex-1"
+                  />
+                  <Button @click="addLanguage" size="sm">Add</Button>
+                </div>
+
+                <!-- Available Languages -->
+                <div class="flex flex-wrap gap-2">
+                  <Button
+                    v-for="language in availableLanguages"
+                    :key="language"
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    @click="addLanguage(language)"
+                    :disabled="editForm.languages.includes(language)"
+                    class="flex items-center gap-1"
+                  >
+                    <Plus class="h-3 w-3" />
+                    {{ language }}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <!-- Experience (View Mode) -->
             <div v-if="!isEditing">
               <h3
@@ -392,6 +530,20 @@
               </div>
 
               <div class="flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">Countries</span>
+                <span class="font-medium">{{
+                  doctor?.countriesOfOperation?.length || 0
+                }}</span>
+              </div>
+
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-muted-foreground">Languages</span>
+                <span class="font-medium">{{
+                  doctor?.languages?.length || 0
+                }}</span>
+              </div>
+
+              <div class="flex justify-between items-center">
                 <span class="text-sm text-muted-foreground"
                   >Account Status</span
                 >
@@ -440,6 +592,7 @@ import {
   BarChart3,
   Save,
   X,
+  Plus,
 } from "lucide-vue-next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -461,6 +614,70 @@ const { toast } = useToast();
 const isEditing = ref(false);
 const isSaving = ref(false);
 const newSpecialty = ref("");
+const newCountry = ref("");
+const newLanguage = ref("");
+
+// Available options
+const availableCountries = [
+  "Albania",
+  "Austria",
+  "Belgium",
+  "Bulgaria",
+  "Croatia",
+  "Cyprus",
+  "Czech Republic",
+  "Denmark",
+  "Estonia",
+  "Finland",
+  "France",
+  "Germany",
+  "Greece",
+  "Hungary",
+  "Ireland",
+  "Italy",
+  "Latvia",
+  "Lithuania",
+  "Luxembourg",
+  "Malta",
+  "Netherlands",
+  "Poland",
+  "Portugal",
+  "Romania",
+  "Slovakia",
+  "Slovenia",
+  "Spain",
+  "Sweden",
+  "Turkey",
+  "United Kingdom",
+];
+
+const availableLanguages = [
+  "Bulgarian",
+  "Croatian",
+  "Czech",
+  "Danish",
+  "Dutch",
+  "English",
+  "Estonian",
+  "Finnish",
+  "French",
+  "German",
+  "Greek",
+  "Hungarian",
+  "Irish",
+  "Italian",
+  "Latvian",
+  "Lithuanian",
+  "Maltese",
+  "Polish",
+  "Portuguese",
+  "Romanian",
+  "Slovak",
+  "Slovenian",
+  "Spanish",
+  "Swedish",
+  "Turkish",
+];
 
 // Rating data
 const rating = ref<any>(null);
@@ -474,6 +691,8 @@ const editForm = reactive({
   photoUrl: "",
   experience: 0,
   specialties: [] as string[],
+  countriesOfOperation: [] as string[],
+  languages: [] as string[],
 });
 
 const formatDate = (dateString?: string) => {
@@ -502,6 +721,10 @@ const startEditing = () => {
   editForm.photoUrl = doctor.value.photoUrl || "";
   editForm.experience = doctor.value.experience || 0;
   editForm.specialties = [...(doctor.value.specialties || [])];
+  editForm.countriesOfOperation = [
+    ...(doctor.value.countriesOfOperation || []),
+  ];
+  editForm.languages = [...(doctor.value.languages || [])];
 
   isEditing.value = true;
 };
@@ -509,6 +732,8 @@ const startEditing = () => {
 const cancelEditing = () => {
   isEditing.value = false;
   newSpecialty.value = "";
+  newCountry.value = "";
+  newLanguage.value = "";
 };
 
 const saveProfile = async () => {
@@ -523,6 +748,8 @@ const saveProfile = async () => {
       photoUrl: editForm.photoUrl,
       experience: editForm.experience,
       specialties: editForm.specialties,
+      countriesOfOperation: editForm.countriesOfOperation,
+      languages: editForm.languages,
     };
 
     await updateProfile(updateData);
@@ -557,6 +784,30 @@ const addSpecialty = () => {
 
 const removeSpecialty = (index: number) => {
   editForm.specialties.splice(index, 1);
+};
+
+const addCountry = (country?: string) => {
+  const cntry = country || newCountry.value.trim();
+  if (cntry && !editForm.countriesOfOperation.includes(cntry)) {
+    editForm.countriesOfOperation.push(cntry);
+    newCountry.value = "";
+  }
+};
+
+const removeCountry = (index: number) => {
+  editForm.countriesOfOperation.splice(index, 1);
+};
+
+const addLanguage = (language?: string) => {
+  const lang = language || newLanguage.value.trim();
+  if (lang && !editForm.languages.includes(lang)) {
+    editForm.languages.push(lang);
+    newLanguage.value = "";
+  }
+};
+
+const removeLanguage = (index: number) => {
+  editForm.languages.splice(index, 1);
 };
 
 // Image upload handlers

@@ -24,6 +24,8 @@ interface Doctor {
   isActive: boolean;
   isDoctor: boolean;
   isAdmin: boolean;
+  countriesOfOperation?: string[];
+  languages?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -48,11 +50,29 @@ const form = ref({
   isActive: true,
   isDoctor: true,
   isAdmin: false,
+  countriesOfOperation: [] as string[],
+  languages: [] as string[],
 });
 
 const newSpecialty = ref("");
+const newCountry = ref("");
+const newLanguage = ref("");
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
+
+// Available options
+const availableCountries = [
+  "Albania", "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic",
+  "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland",
+  "Italy", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland",
+  "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden", "Turkey", "United Kingdom"
+];
+
+const availableLanguages = [
+  "Bulgarian", "Croatian", "Czech", "Danish", "Dutch", "English", "Estonian", "Finnish",
+  "French", "German", "Greek", "Hungarian", "Irish", "Italian", "Latvian", "Lithuanian",
+  "Maltese", "Polish", "Portuguese", "Romanian", "Slovak", "Slovenian", "Spanish", "Swedish", "Turkish"
+];
 
 const commonSpecialties = [
   "General Medicine",
@@ -88,6 +108,8 @@ const loadDoctor = async () => {
       isActive: doctor.isActive,
       isDoctor: doctor.isDoctor ?? true,
       isAdmin: doctor.isAdmin,
+      countriesOfOperation: [...(doctor.countriesOfOperation || [])],
+      languages: [...(doctor.languages || [])],
     };
   } catch (err) {
     console.error("Failed to load doctor:", err);
@@ -137,6 +159,34 @@ const addSpecialty = (specialty?: string) => {
 // Remove specialty
 const removeSpecialty = (index: number) => {
   form.value.specialties.splice(index, 1);
+};
+
+// Add country
+const addCountry = (country?: string) => {
+  const cntry = country || newCountry.value.trim();
+  if (cntry && !form.value.countriesOfOperation.includes(cntry)) {
+    form.value.countriesOfOperation.push(cntry);
+    newCountry.value = "";
+  }
+};
+
+// Remove country
+const removeCountry = (index: number) => {
+  form.value.countriesOfOperation.splice(index, 1);
+};
+
+// Add language
+const addLanguage = (language?: string) => {
+  const lang = language || newLanguage.value.trim();
+  if (lang && !form.value.languages.includes(lang)) {
+    form.value.languages.push(lang);
+    newLanguage.value = "";
+  }
+};
+
+// Remove language
+const removeLanguage = (index: number) => {
+  form.value.languages.splice(index, 1);
 };
 
 // Image upload handlers
@@ -351,6 +401,98 @@ onMounted(() => {
             <p v-if="errors.specialties" class="text-sm text-destructive">
               {{ errors.specialties }}
             </p>
+          </div>
+
+          <!-- Countries of Operation -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium"> Countries of Operation </label>
+
+            <!-- Current Countries -->
+            <div class="flex flex-wrap gap-2 mb-2">
+              <Badge
+                v-for="(country, index) in form.countriesOfOperation"
+                :key="index"
+                variant="secondary"
+                class="cursor-pointer"
+                @click="removeCountry(index)"
+              >
+                {{ country }}
+                <X class="ml-1 h-3 w-3" />
+              </Badge>
+            </div>
+
+            <!-- Add Country -->
+            <div class="flex gap-2 mb-2">
+              <Input
+                v-model="newCountry"
+                placeholder="Search or add country"
+                @keyup.enter="addCountry()"
+              />
+              <Button type="button" @click="addCountry()" variant="outline">
+                <Plus class="h-4 w-4" />
+              </Button>
+            </div>
+
+            <!-- Common Countries -->
+            <div class="flex flex-wrap gap-2">
+              <Button
+                v-for="country in availableCountries"
+                :key="country"
+                type="button"
+                variant="outline"
+                size="sm"
+                @click="addCountry(country)"
+                :disabled="form.countriesOfOperation.includes(country)"
+              >
+                {{ country }}
+              </Button>
+            </div>
+          </div>
+
+          <!-- Languages -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium"> Languages </label>
+
+            <!-- Current Languages -->
+            <div class="flex flex-wrap gap-2 mb-2">
+              <Badge
+                v-for="(language, index) in form.languages"
+                :key="index"
+                variant="secondary"
+                class="cursor-pointer"
+                @click="removeLanguage(index)"
+              >
+                {{ language }}
+                <X class="ml-1 h-3 w-3" />
+              </Badge>
+            </div>
+
+            <!-- Add Language -->
+            <div class="flex gap-2 mb-2">
+              <Input
+                v-model="newLanguage"
+                placeholder="Search or add language"
+                @keyup.enter="addLanguage()"
+              />
+              <Button type="button" @click="addLanguage()" variant="outline">
+                <Plus class="h-4 w-4" />
+              </Button>
+            </div>
+
+            <!-- Available Languages -->
+            <div class="flex flex-wrap gap-2">
+              <Button
+                v-for="language in availableLanguages"
+                :key="language"
+                type="button"
+                variant="outline"
+                size="sm"
+                @click="addLanguage(language)"
+                :disabled="form.languages.includes(language)"
+              >
+                {{ language }}
+              </Button>
+            </div>
           </div>
 
           <!-- Status -->

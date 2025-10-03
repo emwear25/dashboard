@@ -12,6 +12,8 @@ interface Doctor {
   isActive: boolean
   isDoctor: boolean
   isAdmin: boolean
+  countriesOfOperation?: string[]
+  languages?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -26,6 +28,8 @@ interface CreateDoctorData {
   experience?: number
   isAdmin?: boolean
   isDoctor?: boolean
+  countriesOfOperation?: string[]
+  languages?: string[]
 }
 
 interface UpdateDoctorData {
@@ -39,6 +43,8 @@ interface UpdateDoctorData {
   isActive?: boolean
   isAdmin?: boolean
   isDoctor?: boolean
+  countriesOfOperation?: string[]
+  languages?: string[]
 }
 
 export const useDoctorApi = () => {

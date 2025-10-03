@@ -13,6 +13,8 @@ interface Doctor {
   isActive: boolean
   isDoctor: boolean
   isAdmin: boolean
+  countriesOfOperation?: string[]
+  languages?: string[]
   createdAt: string
   updatedAt: string
 }

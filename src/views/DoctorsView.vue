@@ -118,6 +118,8 @@
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead v-if="activeTab !== 'admins'">Specialties</TableHead>
+                <TableHead v-if="activeTab !== 'admins'">Countries</TableHead>
+                <TableHead v-if="activeTab !== 'admins'">Languages</TableHead>
                 <TableHead v-if="activeTab !== 'admins'">Experience</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead v-if="isAdmin" class="text-right">Actions</TableHead>
@@ -154,6 +156,30 @@
                     >
                       {{ specialty }}
                     </Badge>
+                  </div>
+                </TableCell>
+                <TableCell v-if="activeTab !== 'admins'">
+                  <div class="flex flex-wrap gap-1">
+                    <Badge
+                      v-for="country in (doctor.countriesOfOperation || [])"
+                      :key="country"
+                      variant="outline"
+                    >
+                      {{ country }}
+                    </Badge>
+                    <span v-if="!doctor.countriesOfOperation?.length" class="text-muted-foreground text-sm">None</span>
+                  </div>
+                </TableCell>
+                <TableCell v-if="activeTab !== 'admins'">
+                  <div class="flex flex-wrap gap-1">
+                    <Badge
+                      v-for="language in (doctor.languages || [])"
+                      :key="language"
+                      variant="outline"
+                    >
+                      {{ language }}
+                    </Badge>
+                    <span v-if="!doctor.languages?.length" class="text-muted-foreground text-sm">None</span>
                   </div>
                 </TableCell>
                 <TableCell v-if="activeTab !== 'admins'"
@@ -315,6 +341,8 @@ interface Doctor {
   isActive: boolean;
   isDoctor: boolean;
   isAdmin: boolean;
+  countriesOfOperation?: string[];
+  languages?: string[];
   createdAt: string;
   updatedAt: string;
 }
