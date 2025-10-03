@@ -7,7 +7,6 @@ interface Doctor {
   name: string
   email: string
   specialties: string[]
-  plansOffered: string[]
   bio: string
   photoUrl: string
   experience?: number
@@ -225,7 +224,7 @@ export const useDoctorAuth = () => {
             return true
           }
         } catch (err) {
-          console.log('Existing token invalid, trying to refresh...')
+          console.log('Existing token invalid, trying to refresh...', err)
         }
       }
 

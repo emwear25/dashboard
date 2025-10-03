@@ -6,7 +6,6 @@ interface Doctor {
   name: string
   email: string
   specialties: string[]
-  plansOffered: string[]
   bio: string
   photoUrl: string
   experience?: number
@@ -22,11 +21,11 @@ interface CreateDoctorData {
   email: string
   password?: string
   specialties: string[]
-  plansOffered: string[]
   bio?: string
   photoUrl?: string
   experience?: number
   isAdmin?: boolean
+  isDoctor?: boolean
 }
 
 interface UpdateDoctorData {
@@ -34,12 +33,12 @@ interface UpdateDoctorData {
   email?: string
   password?: string
   specialties?: string[]
-  plansOffered?: string[]
   bio?: string
   photoUrl?: string
   experience?: number
   isActive?: boolean
   isAdmin?: boolean
+  isDoctor?: boolean
 }
 
 export const useDoctorApi = () => {

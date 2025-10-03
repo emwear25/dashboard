@@ -63,9 +63,10 @@ export const useApi = () => {
       name: string
       email: string
       specialties: string[]
-      plansOffered: string[]
       bio?: string
       experience?: number
+      isAdmin?: boolean
+      isDoctor?: boolean
     }) => makeRequest<any>('/api/doctors', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -75,10 +76,11 @@ export const useApi = () => {
       name: string
       email: string
       specialties: string[]
-      plansOffered: string[]
       bio: string
       experience: number
       isActive: boolean
+      isAdmin: boolean
+      isDoctor: boolean
     }>) => makeRequest<any>(`/api/doctors/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

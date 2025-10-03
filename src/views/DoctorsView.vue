@@ -280,7 +280,6 @@ interface Doctor {
   name: string;
   email: string;
   specialties: string[];
-  plansOffered: string[];
   bio: string;
   photoUrl: string;
   experience?: number;

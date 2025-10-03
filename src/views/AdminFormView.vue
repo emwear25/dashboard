@@ -42,7 +42,6 @@ const form = ref({
   isAdmin: true,
   // Required fields for backend but not used for admins
   specialties: ["Administration"] as string[],
-  plansOffered: ["consultation"] as string[],
   bio: "",
 });
 
@@ -68,7 +67,6 @@ const loadAdmin = async () => {
       isDoctor: false,
       isAdmin: true,
       specialties: ["Administration"],
-      plansOffered: ["consultation"],
       bio: "",
     };
   } catch (err) {
