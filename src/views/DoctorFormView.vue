@@ -18,7 +18,6 @@ interface Doctor {
   name: string;
   email: string;
   specialties: string[];
-  plansOffered: string[];
   bio: string;
   photoUrl: string;
   experience?: number;
@@ -43,7 +42,6 @@ const form = ref({
   email: "",
   password: "",
   specialties: [] as string[],
-  plansOffered: [] as string[],
   bio: "",
   photoUrl: "",
   experience: 0,
@@ -55,9 +53,6 @@ const form = ref({
 const newSpecialty = ref("");
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
-
-// Available options
-const availablePlans = ["consultation"];
 
 const commonSpecialties = [
   "General Medicine",
@@ -87,7 +82,6 @@ const loadDoctor = async () => {
       email: doctor.email,
       password: "", // Don't load password
       specialties: [...doctor.specialties],
-      plansOffered: [...doctor.plansOffered],
       bio: doctor.bio || "",
       photoUrl: doctor.photoUrl || "",
       experience: doctor.experience || 0,
@@ -128,10 +122,6 @@ const validateForm = () => {
     errors.value.specialties = "At least one specialty is required";
   }
 
-  if (form.value.plansOffered.length === 0) {
-    errors.value.plansOffered = "At least one plan is required";
-  }
-
   return Object.keys(errors.value).length === 0;
 };
 
@@ -147,16 +137,6 @@ const addSpecialty = (specialty?: string) => {
 // Remove specialty
 const removeSpecialty = (index: number) => {
   form.value.specialties.splice(index, 1);
-};
-
-// Toggle plan
-const togglePlan = (plan: string) => {
-  const index = form.value.plansOffered.indexOf(plan);
-  if (index > -1) {
-    form.value.plansOffered.splice(index, 1);
-  } else {
-    form.value.plansOffered.push(plan);
-  }
 };
 
 // Image upload handlers
@@ -373,37 +353,6 @@ onMounted(() => {
             </p>
           </div>
 
-          <!-- Plans Offered -->
-          <div class="space-y-2">
-            <label class="text-sm font-medium"> Plans Offered * </label>
-
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div
-                v-for="plan in availablePlans"
-                :key="plan"
-                class="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-accent"
-                :class="{
-                  'bg-accent border-primary': form.plansOffered.includes(plan),
-                }"
-                @click="togglePlan(plan)"
-              >
-                <input
-                  type="checkbox"
-                  :checked="form.plansOffered.includes(plan)"
-                  class="rounded"
-                  readonly
-                />
-                <label class="capitalize cursor-pointer flex-1">
-                  {{ plan }}
-                </label>
-              </div>
-            </div>
-
-            <p v-if="errors.plansOffered" class="text-sm text-destructive">
-              {{ errors.plansOffered }}
-            </p>
-          </div>
-
           <!-- Status -->
           <div class="flex items-center justify-between p-4 border rounded-lg">
             <div>
@@ -420,7 +369,8 @@ onMounted(() => {
             <div>
               <label class="text-sm font-medium"> Admin Access </label>
               <p class="text-xs text-muted-foreground">
-                Grant administrative privileges (manage doctors, admins, coupons, etc.)
+                Grant administrative privileges (manage doctors, admins,
+                coupons, etc.)
               </p>
             </div>
             <Switch v-model:checked="form.isAdmin" />
