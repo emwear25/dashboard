@@ -4,6 +4,7 @@ import { useDark } from "@vueuse/core";
 import { onMounted, ref } from "vue";
 import { useDoctorAuth } from "@/composables/useDoctorAuth";
 import { useToast } from "@/components/ui/toast/use-toast";
+import { Toaster } from "vue-sonner";
 
 // Initialize dark mode
 const isDark = useDark();
@@ -32,6 +33,11 @@ onMounted(async () => {
     :class="{ dark: isDark }"
     class="min-h-screen bg-background font-sans antialiased"
   >
+    <Toaster
+      position="top-right"
+      :theme="isDark ? 'dark' : 'light'"
+      richColors
+    />
     <template v-if="isLoading">
       <div class="flex items-center justify-center min-h-screen">
         Loading...

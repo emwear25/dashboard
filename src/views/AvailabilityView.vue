@@ -49,13 +49,67 @@
       </CardContent>
     </Card>
 
+    <!-- Tabs -->
+    <div class="mb-6">
+      <div class="border-b">
+        <nav class="flex space-x-8" aria-label="Tabs">
+          <button
+            @click="activeTab = 'current'"
+            :class="[
+              activeTab === 'current'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',
+              'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors',
+            ]"
+          >
+            Current & Future
+            <span
+              v-if="currentAvailabilities.length > 0"
+              :class="[
+                activeTab === 'current'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground',
+                'ml-2 rounded-full px-2 py-0.5 text-xs',
+              ]"
+            >
+              {{ currentAvailabilities.length }}
+            </span>
+          </button>
+          <button
+            @click="activeTab = 'past'"
+            :class="[
+              activeTab === 'past'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',
+              'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors',
+            ]"
+          >
+            History
+            <span
+              v-if="pastAvailabilities.length > 0"
+              :class="[
+                activeTab === 'past'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground',
+                'ml-2 rounded-full px-2 py-0.5 text-xs',
+              ]"
+            >
+              {{ pastAvailabilities.length }}
+            </span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
     <!-- Availability List -->
     <Card>
       <CardHeader>
-        <CardTitle>Your Availability</CardTitle>
+        <CardTitle>
+          {{ activeTab === "current" ? "Current & Future" : "History" }}
+        </CardTitle>
         <CardDescription>
-          {{ availability.length }} availability slot{{
-            availability.length !== 1 ? "s" : ""
+          {{ filteredAvailabilities.length }} availability slot{{
+            filteredAvailabilities.length !== 1 ? "s" : ""
           }}
           found
         </CardDescription>
@@ -73,7 +127,7 @@
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="slot in availability" :key="slot._id">
+              <TableRow v-for="slot in filteredAvailabilities" :key="slot._id">
                 <TableCell>
                   <div class="font-medium">{{ formatDate(slot.date) }}</div>
                 </TableCell>
@@ -155,17 +209,25 @@
 
           <!-- Empty state -->
           <div
-            v-if="!loading && availability.length === 0"
+            v-if="!loading && filteredAvailabilities.length === 0"
             class="text-center py-12"
           >
             <Calendar class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 class="text-lg font-medium mb-2">
-              No availability slots found
+              {{
+                activeTab === "current"
+                  ? "No current or upcoming availability"
+                  : "No past availability"
+              }}
             </h3>
             <p class="text-muted-foreground mb-4">
-              Start by adding your available dates and times for appointments.
+              {{
+                activeTab === "current"
+                  ? "Start by adding your available dates and times for appointments."
+                  : "Your past availability slots will appear here."
+              }}
             </p>
-            <Button @click="openCreateModal">
+            <Button v-if="activeTab === 'current'" @click="openCreateModal">
               <Plus class="h-4 w-4 mr-2" />
               Add your first availability
             </Button>
@@ -202,7 +264,6 @@
               v-model="form.date"
               :min="today"
               :disabled="!!editingAvailability"
-              required
             />
           </div>
 
@@ -278,7 +339,7 @@
         <form @submit.prevent="addSingleSlot" class="space-y-4">
           <div class="space-y-2">
             <Label for="single-slot">Time Slot *</Label>
-            <Input id="single-slot" v-model="singleSlot" type="time" required />
+            <Input id="single-slot" v-model="singleSlot" type="time" />
           </div>
 
           <DialogFooter>
@@ -307,12 +368,7 @@
         <form @submit.prevent="saveWeeklySchedule" class="space-y-4">
           <div class="space-y-2">
             <Label>Start Date *</Label>
-            <Input
-              type="date"
-              v-model="weeklyForm.startDate"
-              :min="today"
-              required
-            />
+            <Input type="date" v-model="weeklyForm.startDate" :min="today" />
           </div>
 
           <div class="space-y-2">
@@ -322,7 +378,6 @@
               v-model.number="weeklyForm.weeks"
               min="1"
               max="8"
-              required
             />
           </div>
 
@@ -479,12 +534,48 @@ const formLoading = ref(false);
 // Get today's date in YYYY-MM-DD format
 const today = computed(() => new Date().toISOString().split("T")[0]);
 
+// Tab state
+const activeTab = ref<"current" | "past">("current");
+
 // Days of the week
 const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Filters
 const filters = reactive({
   date: "",
+});
+
+// Filter availabilities by date
+const currentAvailabilities = computed(() => {
+  const todayDate = new Date(today.value);
+  todayDate.setHours(0, 0, 0, 0);
+
+  return availability.value
+    .filter((slot) => {
+      const slotDate = new Date(slot.date);
+      slotDate.setHours(0, 0, 0, 0);
+      return slotDate >= todayDate;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+});
+
+const pastAvailabilities = computed(() => {
+  const todayDate = new Date(today.value);
+  todayDate.setHours(0, 0, 0, 0);
+
+  return availability.value
+    .filter((slot) => {
+      const slotDate = new Date(slot.date);
+      slotDate.setHours(0, 0, 0, 0);
+      return slotDate < todayDate;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+});
+
+const filteredAvailabilities = computed(() => {
+  return activeTab.value === "current"
+    ? currentAvailabilities.value
+    : pastAvailabilities.value;
 });
 
 // Modal state
@@ -693,25 +784,49 @@ const saveAvailability = async () => {
   try {
     formLoading.value = true;
 
+    let response;
     if (editingAvailability.value) {
-      await api.availability.update(editingAvailability.value._id, {
+      response = await api.availability.update(editingAvailability.value._id, {
         slots: form.slots,
         isActive: form.isActive,
       });
-      toast.success("Availability updated successfully");
+
+      if (response && (response.success || response.data)) {
+        toast.success("Availability updated successfully");
+        closeModal();
+        fetchAvailability();
+      } else {
+        throw new Error(response.message || "Failed to update availability");
+      }
     } else {
-      await api.availability.create({
+      response = await api.availability.create({
         date: form.date,
         slots: form.slots,
       });
-      toast.success("Availability created successfully");
+
+      if (response && (response.success || response.data)) {
+        toast.success("Availability created successfully");
+        closeModal();
+        fetchAvailability();
+      } else {
+        throw new Error(response.message || "Failed to create availability");
+      }
+    }
+  } catch (error: any) {
+    console.error("Error saving availability:", error);
+
+    // Extract the actual error message from the API response
+    let errorMessage = "Failed to save availability";
+
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "object" && error !== null) {
+      // Try to extract message from nested error structure
+      errorMessage =
+        error.error?.message || error.data?.message || errorMessage;
     }
 
-    closeModal();
-    fetchAvailability();
-  } catch (error: unknown) {
-    console.error("Error saving availability:", error);
-    toast.error("Failed to save availability");
+    toast.error(errorMessage);
   } finally {
     formLoading.value = false;
   }
@@ -721,6 +836,11 @@ const saveAvailability = async () => {
 const saveWeeklySchedule = async () => {
   if (!weeklyForm.startDate) {
     toast.error("Please select a start date");
+    return;
+  }
+
+  if (!weeklyForm.weeks || weeklyForm.weeks < 1 || weeklyForm.weeks > 8) {
+    toast.error("Please enter a valid number of weeks (1-8)");
     return;
   }
 
@@ -754,14 +874,40 @@ const saveWeeklySchedule = async () => {
       }
     }
 
-    await Promise.allSettled(promises);
-    toast.success(`Weekly schedule created for ${weeklyForm.weeks} week(s)`);
+    const results = await Promise.allSettled(promises);
+    const successCount = results.filter((r) => r.status === "fulfilled").length;
+    const failCount = results.filter((r) => r.status === "rejected").length;
 
-    closeWeeklyModal();
-    fetchAvailability();
-  } catch (error: unknown) {
+    if (successCount > 0) {
+      if (failCount > 0) {
+        toast.warning(
+          `Weekly schedule partially created: ${successCount} slot(s) added, ${failCount} failed (may already exist)`
+        );
+      } else {
+        toast.success(
+          `Weekly schedule created successfully: ${successCount} availability slot(s) added`
+        );
+      }
+      closeWeeklyModal();
+      fetchAvailability();
+    } else {
+      toast.error(
+        "Failed to create weekly schedule. Some dates may already have availability."
+      );
+    }
+  } catch (error: any) {
     console.error("Error saving weekly schedule:", error);
-    toast.error("Failed to save weekly schedule");
+
+    // Extract the actual error message
+    let errorMessage = "Failed to save weekly schedule";
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "object" && error !== null) {
+      errorMessage =
+        error.error?.message || error.data?.message || errorMessage;
+    }
+
+    toast.error(errorMessage);
   } finally {
     formLoading.value = false;
   }
@@ -783,20 +929,38 @@ const closeAddSlotModal = () => {
 
 // Add single slot
 const addSingleSlot = async () => {
-  if (!selectedAvailability.value || !singleSlot.value) return;
+  if (!selectedAvailability.value || !singleSlot.value) {
+    toast.error("Please enter a time slot");
+    return;
+  }
 
   try {
     formLoading.value = true;
-    await api.availability.addSlot(
+    const response = await api.availability.addSlot(
       selectedAvailability.value._id,
       singleSlot.value
     );
-    toast.success("Time slot added successfully");
-    closeAddSlotModal();
-    fetchAvailability();
-  } catch (error: unknown) {
+
+    if (response && (response.success || response.data)) {
+      toast.success("Time slot added successfully");
+      closeAddSlotModal();
+      fetchAvailability();
+    } else {
+      throw new Error(response.message || "Failed to add time slot");
+    }
+  } catch (error: any) {
     console.error("Error adding slot:", error);
-    toast.error("Failed to add time slot");
+
+    // Extract the actual error message
+    let errorMessage = "Failed to add time slot";
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "object" && error !== null) {
+      errorMessage =
+        error.error?.message || error.data?.message || errorMessage;
+    }
+
+    toast.error(errorMessage);
   } finally {
     formLoading.value = false;
   }
@@ -805,14 +969,33 @@ const addSingleSlot = async () => {
 // Toggle availability status
 const toggleAvailabilityStatus = async (slot: Availability) => {
   try {
-    await api.availability.update(slot._id, { isActive: !slot.isActive });
-    toast.success(
-      `Availability ${slot.isActive ? "deactivated" : "activated"} successfully`
-    );
-    fetchAvailability();
-  } catch (error: unknown) {
+    const response = await api.availability.update(slot._id, {
+      isActive: !slot.isActive,
+    });
+
+    if (response && (response.success || response.data)) {
+      toast.success(
+        `Availability ${slot.isActive ? "deactivated" : "activated"} successfully`
+      );
+      fetchAvailability();
+    } else {
+      throw new Error(
+        response.message || "Failed to update availability status"
+      );
+    }
+  } catch (error: any) {
     console.error("Error toggling availability status:", error);
-    toast.error("Failed to update availability status");
+
+    // Extract the actual error message
+    let errorMessage = "Failed to update availability status";
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "object" && error !== null) {
+      errorMessage =
+        error.error?.message || error.data?.message || errorMessage;
+    }
+
+    toast.error(errorMessage);
   }
 };
 
@@ -827,12 +1010,27 @@ const deleteAvailability = async (slot: Availability) => {
   }
 
   try {
-    await api.availability.delete(slot._id);
-    toast.success("Availability deleted successfully");
-    fetchAvailability();
-  } catch (error: unknown) {
+    const response = await api.availability.delete(slot._id);
+
+    if (response && (response.success || response.data)) {
+      toast.success("Availability deleted successfully");
+      fetchAvailability();
+    } else {
+      throw new Error(response.message || "Failed to delete availability");
+    }
+  } catch (error: any) {
     console.error("Error deleting availability:", error);
-    toast.error("Failed to delete availability");
+
+    // Extract the actual error message
+    let errorMessage = "Failed to delete availability";
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "object" && error !== null) {
+      errorMessage =
+        error.error?.message || error.data?.message || errorMessage;
+    }
+
+    toast.error(errorMessage);
   }
 };
 
