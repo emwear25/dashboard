@@ -16,100 +16,49 @@
       </div>
     </div>
 
-    <!-- Filters -->
+    <!-- Tabs -->
     <Card>
       <CardHeader>
-        <CardTitle>Filter Appointments</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label for="status-filter">Status</Label>
-            <Select v-model="filters.status">
-              <SelectTrigger>
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label for="date-filter">Date Range</Label>
-            <Select v-model="filters.dateRange">
-              <SelectTrigger>
-                <SelectValue placeholder="Select range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="tomorrow">Tomorrow</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="all">All Time</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div class="flex items-end">
-            <Button @click="applyFilters" class="w-full">
-              <Search class="mr-2 h-4 w-4" />
-              Apply Filters
-            </Button>
-          </div>
+        <div class="flex items-center gap-2 border-b">
+          <Button
+            :variant="activeFilter === 'upcoming' ? 'default' : 'ghost'"
+            @click="activeFilter = 'upcoming'"
+            class="rounded-b-none"
+          >
+            Upcoming
+            <Badge class="ml-2" variant="secondary">{{ stats.upcoming }}</Badge>
+          </Button>
+          <Button
+            :variant="activeFilter === 'completed' ? 'default' : 'ghost'"
+            @click="activeFilter = 'completed'"
+            class="rounded-b-none"
+          >
+            Completed
+            <Badge class="ml-2" variant="secondary">{{
+              stats.completed
+            }}</Badge>
+          </Button>
+          <Button
+            :variant="activeFilter === 'cancelled' ? 'default' : 'ghost'"
+            @click="activeFilter = 'cancelled'"
+            class="rounded-b-none"
+          >
+            Cancelled
+            <Badge class="ml-2" variant="secondary">{{
+              stats.cancelled
+            }}</Badge>
+          </Button>
+          <Button
+            :variant="activeFilter === 'all' ? 'default' : 'ghost'"
+            @click="activeFilter = 'all'"
+            class="rounded-b-none"
+          >
+            Total
+            <Badge class="ml-2" variant="secondary">{{ stats.total }}</Badge>
+          </Button>
         </div>
-      </CardContent>
+      </CardHeader>
     </Card>
-
-    <!-- Statistics -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card>
-        <CardContent class="pt-6">
-          <div class="flex items-center space-x-2">
-            <Calendar class="h-8 w-8 text-blue-600" />
-            <div>
-              <p class="text-2xl font-bold">{{ stats.total }}</p>
-              <p class="text-sm text-muted-foreground">Total Appointments</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent class="pt-6">
-          <div class="flex items-center space-x-2">
-            <Calendar class="h-8 w-8 text-blue-600" />
-            <div>
-              <p class="text-2xl font-bold">{{ stats.upcoming }}</p>
-              <p class="text-sm text-muted-foreground">Upcoming</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent class="pt-6">
-          <div class="flex items-center space-x-2">
-            <CheckCircle class="h-8 w-8 text-blue-600" />
-            <div>
-              <p class="text-2xl font-bold">{{ stats.completed }}</p>
-              <p class="text-sm text-muted-foreground">Completed</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent class="pt-6">
-          <div class="flex items-center space-x-2">
-            <XCircle class="h-8 w-8 text-red-600" />
-            <div>
-              <p class="text-2xl font-bold">{{ stats.cancelled }}</p>
-              <p class="text-sm text-muted-foreground">Cancelled</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
 
     <!-- Appointments Table -->
     <Card>
@@ -149,6 +98,8 @@
               <TableRow
                 v-for="appointment in filteredAppointments"
                 :key="appointment._id"
+                class="cursor-pointer hover:bg-muted/50"
+                @click="navigateToAppointment(appointment._id)"
               >
                 <TableCell>
                   <div>
@@ -188,7 +139,7 @@
                     {{ appointment.notes || "No notes" }}
                   </p>
                 </TableCell>
-                <TableCell class="text-right">
+                <TableCell class="text-right" @click.stop>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
@@ -196,10 +147,6 @@
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem @click="viewAppointment(appointment)">
-                        <Eye class="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
                       <DropdownMenuItem
                         v-if="
                           appointment.plan === 'consultation' &&
@@ -223,31 +170,10 @@
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         v-if="appointment.status === 'upcoming'"
-                        @click="startAppointment(appointment)"
-                      >
-                        <Play class="mr-2 h-4 w-4" />
-                        Start Appointment
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        v-if="appointment.status === 'upcoming'"
-                        @click="completeAppointment(appointment)"
-                      >
-                        <CheckCircle class="mr-2 h-4 w-4" />
-                        Mark Complete
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        v-if="appointment.status === 'upcoming'"
                         @click="showCancelModal(appointment)"
                       >
                         <XCircle class="mr-2 h-4 w-4" />
                         Cancel
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        v-if="appointment.status === 'upcoming'"
-                        @click="markNoShow(appointment)"
-                      >
-                        <UserX class="mr-2 h-4 w-4" />
-                        Mark No Show
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -258,110 +184,6 @@
         </div>
       </CardContent>
     </Card>
-
-    <!-- Appointment Details Modal -->
-    <Dialog v-model:open="showDetailsModal">
-      <DialogContent class="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Appointment Details</DialogTitle>
-        </DialogHeader>
-        <div v-if="selectedAppointment" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <Label class="text-sm font-medium">Patient Name</Label>
-              <p class="text-sm">{{ patientName(selectedAppointment) }}</p>
-            </div>
-            <div>
-              <Label class="text-sm font-medium">Email</Label>
-              <p class="text-sm">{{ patientEmail(selectedAppointment) }}</p>
-            </div>
-            <div>
-              <Label class="text-sm font-medium">Phone</Label>
-              <p class="text-sm">Not provided</p>
-            </div>
-            <div>
-              <Label class="text-sm font-medium">Date of Birth</Label>
-              <p class="text-sm">Not provided</p>
-            </div>
-            <div>
-              <Label class="text-sm font-medium">Date</Label>
-              <p class="text-sm">
-                {{ formatDate(appointmentDate(selectedAppointment)) }}
-              </p>
-            </div>
-            <div>
-              <Label class="text-sm font-medium">Time</Label>
-              <p class="text-sm">
-                {{ formatTime(appointmentTime(selectedAppointment)) }}
-              </p>
-            </div>
-            <div>
-              <Label class="text-sm font-medium">Type</Label>
-              <Badge
-                :variant="getTypeVariant(appointmentType(selectedAppointment))"
-              >
-                {{ appointmentType(selectedAppointment) }}
-              </Badge>
-            </div>
-            <div>
-              <Label class="text-sm font-medium">Status</Label>
-              <Badge :variant="getStatusVariant(selectedAppointment.status)">
-                {{ selectedAppointment.status }}
-              </Badge>
-            </div>
-          </div>
-          <div>
-            <Label class="text-sm font-medium">Reason for Visit</Label>
-            <p class="text-sm">
-              {{ selectedAppointment.reason || "Not provided" }}
-            </p>
-          </div>
-          <div>
-            <Label class="text-sm font-medium">Notes</Label>
-            <p class="text-sm">{{ selectedAppointment.notes || "No notes" }}</p>
-          </div>
-          <div
-            v-if="
-              selectedAppointment.status === 'cancelled' &&
-              selectedAppointment.cancelReason
-            "
-          >
-            <Label class="text-sm font-medium">Cancellation Information</Label>
-            <div class="space-y-2 mt-1">
-              <div class="flex items-center gap-2">
-                <Badge variant="outline" class="text-xs">
-                  Cancelled by:
-                  {{
-                    selectedAppointment.cancelledBy === "doctor"
-                      ? "Doctor"
-                      : "Patient"
-                  }}
-                </Badge>
-                <span
-                  class="text-xs text-gray-500"
-                  v-if="selectedAppointment.cancelledAt"
-                >
-                  {{ formatDate(selectedAppointment.cancelledAt) }}
-                </span>
-              </div>
-              <div class="bg-red-50 border border-red-200 rounded-md p-3">
-                <p class="text-sm text-red-800 font-medium mb-1">
-                  Cancellation Reason:
-                </p>
-                <p class="text-sm text-red-700">
-                  {{ selectedAppointment.cancelReason }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="flex justify-end space-x-2 mt-6">
-          <Button variant="outline" @click="showDetailsModal = false"
-            >Close</Button
-          >
-        </div>
-      </DialogContent>
-    </Dialog>
 
     <!-- Cancel Appointment Dialog -->
     <Dialog v-model:open="showCancelDialog">
@@ -415,6 +237,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import { useApi } from "@/composables/useApi";
 
 // UI Components
@@ -422,13 +245,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -456,15 +272,10 @@ import {
 // Icons
 import {
   RefreshCw,
-  Search,
   Calendar,
   Clock,
-  CheckCircle,
   XCircle,
   MoreHorizontal,
-  Eye,
-  Play,
-  UserX,
   Loader2,
   Video,
 } from "lucide-vue-next";
@@ -505,10 +316,9 @@ interface Appointment {
 }
 
 // State
+const router = useRouter();
 const appointments = ref<Appointment[]>([]);
 const isLoading = ref(false);
-const showDetailsModal = ref(false);
-const selectedAppointment = ref<Appointment | null>(null);
 
 // Cancel modal state
 const showCancelDialog = ref(false);
@@ -518,10 +328,9 @@ const cancelError = ref("");
 const isCancelling = ref(false);
 
 // Filters
-const filters = ref({
-  status: "all",
-  dateRange: "all",
-});
+const activeFilter = ref<"all" | "upcoming" | "completed" | "cancelled">(
+  "upcoming"
+);
 
 // API
 const { appointments: appointmentsApi } = useApi();
@@ -530,49 +339,8 @@ const { appointments: appointmentsApi } = useApi();
 const filteredAppointments = computed(() => {
   let filtered = appointments.value;
 
-  if (filters.value.status && filters.value.status !== "all") {
-    filtered = filtered.filter((apt) => apt.status === filters.value.status);
-  }
-
-  if (filters.value.dateRange && filters.value.dateRange !== "all") {
-    const today = new Date();
-    const startOfDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-
-    filtered = filtered.filter((apt) => {
-      const aptDate = new Date(apt.date);
-
-      switch (filters.value.dateRange) {
-        case "today":
-          return (
-            aptDate >= startOfDay &&
-            aptDate < new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
-          );
-        case "tomorrow":
-          const tomorrow = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-          return (
-            aptDate >= tomorrow &&
-            aptDate < new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)
-          );
-        case "week":
-          const weekEnd = new Date(
-            startOfDay.getTime() + 7 * 24 * 60 * 60 * 1000
-          );
-          return aptDate >= startOfDay && aptDate < weekEnd;
-        case "month":
-          const monthEnd = new Date(
-            today.getFullYear(),
-            today.getMonth() + 1,
-            1
-          );
-          return aptDate >= startOfDay && aptDate < monthEnd;
-        default:
-          return true;
-      }
-    });
+  if (activeFilter.value !== "all") {
+    filtered = filtered.filter((apt) => apt.status === activeFilter.value);
   }
 
   return filtered.sort(
@@ -612,19 +380,8 @@ const refreshAppointments = () => {
   fetchAppointments();
 };
 
-const applyFilters = () => {
-  // Filters are applied through computed property
-};
-
-const viewAppointment = (appointment: Appointment) => {
-  selectedAppointment.value = appointment;
-  showDetailsModal.value = true;
-};
-
-const startAppointment = async (appointment: Appointment) => {
-  // This would typically redirect to a video call interface
-  // For now, just show an alert
-  alert("Video call feature will be integrated here");
+const navigateToAppointment = (appointmentId: string) => {
+  router.push(`/appointments/${appointmentId}`);
 };
 
 const joinMeeting = (appointment: Appointment) => {
@@ -634,16 +391,7 @@ const joinMeeting = (appointment: Appointment) => {
   }
 
   // Navigate to the meeting page
-  window.location.href = `/meeting/${appointment._id}`;
-};
-
-const completeAppointment = async (appointment: Appointment) => {
-  try {
-    await appointmentsApi.complete(appointment._id);
-    await fetchAppointments();
-  } catch (error) {
-    console.error("Failed to complete appointment:", error);
-  }
+  router.push(`/meeting/${appointment._id}`);
 };
 
 // Cancel modal methods
@@ -689,15 +437,6 @@ const confirmCancelAppointment = async () => {
     cancelError.value = "Failed to cancel appointment. Please try again.";
   } finally {
     isCancelling.value = false;
-  }
-};
-
-const markNoShow = async (appointment: Appointment) => {
-  try {
-    await appointmentsApi.updateStatus(appointment._id, "no-show");
-    await fetchAppointments();
-  } catch (error) {
-    console.error("Failed to mark no show:", error);
   }
 };
 
@@ -748,7 +487,7 @@ const patientName = (appointment: Appointment) => {
   if (!appointment.patientId) return "Unknown Patient";
   return `${appointment.patientId.firstName || "Unknown"} ${appointment.patientId.lastName || "Patient"}`;
 };
-const patientEmail = (appointment: Appointment) => 
+const patientEmail = (appointment: Appointment) =>
   appointment.patientId?.email || "No email";
 const appointmentDate = (appointment: Appointment) => appointment.date;
 const appointmentTime = (appointment: Appointment) => appointment.slot;

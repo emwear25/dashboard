@@ -89,6 +89,12 @@ const router = createRouter({
           meta: { requiresDoctor: true }
         },
         {
+          path: 'appointments/:id',
+          name: 'appointment-detail',
+          component: () => import('@/views/AppointmentDetailView.vue'),
+          meta: { requiresDoctor: true }
+        },
+        {
           path: 'patients',
           name: 'patients',
           component: () => import('@/views/PatientsView.vue'),

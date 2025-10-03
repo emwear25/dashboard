@@ -203,6 +203,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -256,6 +257,7 @@ interface CalendarDay {
   appointments?: Appointment[];
 }
 
+const router = useRouter();
 const api = useApi();
 const currentDate = ref(new Date());
 const availabilities = ref<Availability[]>([]);
@@ -412,9 +414,7 @@ const getStatusVariant = (
 };
 
 const viewAppointmentDetails = (appointment: Appointment) => {
-  // Could navigate to appointment details or show a modal
-  console.log("View appointment:", appointment);
-  toast.info("Click to view appointment details (coming soon)");
+  router.push(`/appointments/${appointment._id}`);
 };
 
 const fetchData = async () => {
