@@ -353,7 +353,7 @@ onMounted(async () => {
                     >Profile</RouterLink
                   >
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem v-if="isDoctor" asChild>
                   <RouterLink to="/calendar" class="cursor-pointer"
                     >Calendar</RouterLink
                   >
@@ -540,7 +540,7 @@ onMounted(async () => {
                       My Profile
                     </RouterLink>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem v-if="isDoctor" asChild>
                     <RouterLink to="/calendar" class="cursor-pointer">
                       <Calendar class="mr-2 h-4 w-4" />
                       Calendar
