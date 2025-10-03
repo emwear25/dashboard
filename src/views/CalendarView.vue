@@ -525,21 +525,21 @@ onMounted(() => {
   font-weight: 500;
 
   &--availability {
-    background: hsl(var(--blue-500) / 0.2);
-    border: 1px solid hsl(var(--blue-500));
-    color: hsl(var(--blue-500));
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgb(59, 130, 246);
+    color: rgb(59, 130, 246);
   }
 
   &--appointment {
-    background: hsl(var(--green-500) / 0.2);
-    border: 1px solid hsl(var(--green-500));
-    color: hsl(var(--green-500));
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid rgb(34, 197, 94);
+    color: rgb(34, 197, 94);
   }
 
   &--mixed {
-    background: hsl(var(--orange-500) / 0.2);
-    border: 1px solid hsl(var(--orange-500));
-    color: hsl(var(--orange-500));
+    background: rgba(249, 115, 22, 0.2);
+    border: 1px solid rgb(249, 115, 22);
+    color: rgb(249, 115, 22);
   }
 }
 </style>
