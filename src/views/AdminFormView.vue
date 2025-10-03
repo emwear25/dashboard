@@ -134,7 +134,7 @@ const handleSubmit = async () => {
       toast.success("Admin created successfully");
     }
 
-    router.push("/doctors");
+    router.push("/doctors?tab=admins");
   } catch (err: unknown) {
     console.error("Failed to save admin:", err);
     const errorMessage =
@@ -147,7 +147,7 @@ const handleSubmit = async () => {
 
 // Navigation
 const goBack = () => {
-  router.push("/doctors");
+  router.push("/doctors?tab=admins");
 };
 
 onMounted(() => {

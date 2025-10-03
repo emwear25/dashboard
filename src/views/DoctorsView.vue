@@ -113,6 +113,7 @@
           <Table v-else>
             <TableHeader>
               <TableRow>
+                <TableHead class="w-16">Photo</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
@@ -124,6 +125,19 @@
             </TableHeader>
             <TableBody>
               <TableRow v-for="doctor in activeFiltered" :key="doctor._id">
+                <TableCell>
+                  <div
+                    class="w-12 h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center"
+                  >
+                    <img
+                      v-if="doctor.photoUrl"
+                      :src="doctor.photoUrl"
+                      :alt="doctor.name"
+                      class="w-full h-full object-cover"
+                    />
+                    <User v-else class="w-6 h-6 text-muted-foreground" />
+                  </div>
+                </TableCell>
                 <TableCell class="font-medium">{{ doctor.name }}</TableCell>
                 <TableCell>{{ doctor.email }}</TableCell>
                 <TableCell>
@@ -192,6 +206,7 @@
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead class="w-16">Photo</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
@@ -206,6 +221,19 @@
                 :key="doctor._id"
                 class="opacity-60"
               >
+                <TableCell>
+                  <div
+                    class="w-12 h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center"
+                  >
+                    <img
+                      v-if="doctor.photoUrl"
+                      :src="doctor.photoUrl"
+                      :alt="doctor.name"
+                      class="w-full h-full object-cover"
+                    />
+                    <User v-else class="w-6 h-6 text-muted-foreground" />
+                  </div>
+                </TableCell>
                 <TableCell class="font-medium">{{ doctor.name }}</TableCell>
                 <TableCell>{{ doctor.email }}</TableCell>
                 <TableCell>
@@ -255,8 +283,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted, onActivated, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useDoctorAuth } from "@/composables/useDoctorAuth";
 import { useDoctorApi } from "@/composables/useDoctorApi";
 import { Button } from "@/components/ui/button";
@@ -274,6 +302,7 @@ import { Plus, Edit, Trash2, User } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
 const router = useRouter();
+const route = useRoute();
 const { isAdmin } = useDoctorAuth();
 interface Doctor {
   _id: string;
@@ -293,7 +322,9 @@ interface Doctor {
 const { getAllDoctors, deleteDoctor, loading, error } = useDoctorApi();
 
 const doctors = ref<Doctor[]>([]);
-const activeTab = ref<"doctors" | "admins" | "all">("doctors");
+const activeTab = ref<"doctors" | "admins" | "all">(
+  (route.query.tab as "doctors" | "admins" | "all") || "all"
+);
 
 // Computed properties for filtering
 const doctorsList = computed(() =>
@@ -347,7 +378,11 @@ const getUserRoleBadgeVariant = (doctor: Doctor) => {
 // Load doctors
 const loadDoctors = async () => {
   try {
-    doctors.value = await getAllDoctors();
+    const doctorsData = await getAllDoctors();
+    doctors.value = doctorsData;
+    console.log("Loaded doctors:", doctorsData);
+    console.log("Active tab:", activeTab.value);
+    console.log("Admins list:", adminsList.value);
   } catch (err) {
     console.error("Failed to load doctors:", err);
     toast.error("Failed to load doctors");
@@ -396,6 +431,11 @@ const goToEdit = (doctor: Doctor) => {
 };
 
 onMounted(() => {
+  loadDoctors();
+});
+
+// Refresh data when returning to this view (e.g., after creating admin)
+onActivated(() => {
   loadDoctors();
 });
 </script>
