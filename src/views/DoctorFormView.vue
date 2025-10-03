@@ -415,6 +415,17 @@ onMounted(() => {
             <Switch v-model:checked="form.isActive" />
           </div>
 
+          <!-- Admin Access -->
+          <div class="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <label class="text-sm font-medium"> Admin Access </label>
+              <p class="text-xs text-muted-foreground">
+                Grant administrative privileges (manage doctors, admins, coupons, etc.)
+              </p>
+            </div>
+            <Switch v-model:checked="form.isAdmin" />
+          </div>
+
           <!-- Submit Button -->
           <div class="flex justify-end gap-3">
             <Button type="button" variant="outline" @click="goBack">
