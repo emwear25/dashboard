@@ -35,7 +35,8 @@ export const useApi = () => {
 
     try {
       const response = await makeAuthenticatedRequest(endpoint, options)
-      return response.data || response
+      // Return the full response to preserve success/data structure
+      return response
     } catch (err: any) {
       const apiError: ApiError = {
         message: err.message || 'Network error',

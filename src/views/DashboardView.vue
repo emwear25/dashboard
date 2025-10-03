@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useDoctorAuth } from "@/composables/useDoctorAuth";
+import { useApi } from "@/composables/useApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -28,11 +29,11 @@ interface Patient {
   _id: string;
   firstName: string;
   lastName: string;
-  age: number;
+  age: number | string;
   city: string;
   status: "Active" | "Inactive" | "Pending";
-  lastVisit: string;
-  createdAt: string;
+  lastVisit: string | null;
+  createdAt?: string;
 }
 
 interface Appointment {
@@ -43,12 +44,14 @@ interface Appointment {
   status: "Scheduled" | "Completed" | "Cancelled";
   date: string;
   time: string;
-  createdAt: string;
+  dateTime?: string;
+  createdAt?: string;
 }
 
 const router = useRouter();
 
-const { isAdmin, doctor } = useDoctorAuth();
+const { isAdmin, isDoctor, doctor } = useDoctorAuth();
+const api = useApi();
 
 const patients = ref<Patient[]>([]);
 const appointments = ref<Appointment[]>([]);
@@ -57,9 +60,13 @@ const error = ref("");
 
 const metrics = ref({
   totalPatients: 0,
+  totalPatientsGrowth: 0,
   activePatients: 0,
+  activePatientsGrowth: 0,
   scheduledAppointments: 0,
+  scheduledAppointmentsGrowth: 0,
   completedAppointments: 0,
+  completedAppointmentsGrowth: 0,
 });
 
 // Format date helper
@@ -95,118 +102,80 @@ const computedMetrics = computed(() => [
   {
     title: "Total Patients",
     value: metrics.value.totalPatients.toString(),
-    change: "+8%",
+    change: `${metrics.value.totalPatientsGrowth >= 0 ? "+" : ""}${metrics.value.totalPatientsGrowth}%`,
+    changeColor:
+      metrics.value.totalPatientsGrowth >= 0
+        ? "text-green-600"
+        : "text-red-600",
     icon: Users,
   },
   {
     title: "Active Patients",
     value: metrics.value.activePatients.toString(),
-    change: "+12%",
+    change: `${metrics.value.activePatientsGrowth >= 0 ? "+" : ""}${metrics.value.activePatientsGrowth}%`,
+    changeColor:
+      metrics.value.activePatientsGrowth >= 0
+        ? "text-green-600"
+        : "text-red-600",
     icon: UserCheck,
   },
   {
     title: "Scheduled Appointments",
     value: metrics.value.scheduledAppointments.toString(),
-    change: "+5%",
+    change: `${metrics.value.scheduledAppointmentsGrowth >= 0 ? "+" : ""}${metrics.value.scheduledAppointmentsGrowth}%`,
+    changeColor:
+      metrics.value.scheduledAppointmentsGrowth >= 0
+        ? "text-green-600"
+        : "text-red-600",
     icon: Calendar,
   },
   {
     title: "Completed Today",
     value: metrics.value.completedAppointments.toString(),
-    change: "+15%",
+    change: `${metrics.value.completedAppointmentsGrowth >= 0 ? "+" : ""}${metrics.value.completedAppointmentsGrowth}%`,
+    changeColor:
+      metrics.value.completedAppointmentsGrowth >= 0
+        ? "text-green-600"
+        : "text-red-600",
     icon: CheckCircle2,
   },
 ]);
 
 onMounted(async () => {
-  if (isAdmin.value) {
-    try {
-      // Mock data for now - in real app, these would be API calls
-      // Fetch patients
-      const patientsData = {
-        patients: [
-          {
-            _id: "1",
-            firstName: "Петър",
-            lastName: "Петров",
-            age: 45,
-            city: "София",
-            status: "Active" as const,
-            lastVisit: "2024-01-15",
-            createdAt: "2024-01-10",
-          },
-          {
-            _id: "2",
-            firstName: "Мария",
-            lastName: "Иванова",
-            age: 32,
-            city: "Пловдив",
-            status: "Pending" as const,
-            lastVisit: "2024-01-14",
-            createdAt: "2024-01-09",
-          },
-          {
-            _id: "3",
-            firstName: "Иван",
-            lastName: "Стоянов",
-            age: 67,
-            city: "Варна",
-            status: "Active" as const,
-            lastVisit: "2024-01-13",
-            createdAt: "2024-01-08",
-          },
-        ],
-      };
-      patients.value = patientsData.patients.slice(0, 5);
+  try {
+    loading.value = true;
+    error.value = "";
 
-      // Calculate patient metrics
-      metrics.value.totalPatients = patientsData.patients.length;
-      metrics.value.activePatients = patientsData.patients.filter(
-        (p) => p.status === "Active"
-      ).length;
+    // Fetch real dashboard data from API
+    const response = await api.makeRequest("/api/analytics/dashboard");
 
-      // Fetch appointments
-      const appointmentsData = {
-        appointments: [
-          {
-            _id: "1",
-            patientName: "Петър Петров",
-            doctorName: "Д-р Стоянова",
-            appointmentType: "Консултация",
-            status: "Scheduled" as const,
-            date: "2024-01-16",
-            time: "10:00",
-            createdAt: "2024-01-15",
-          },
-          {
-            _id: "2",
-            patientName: "Мария Иванова",
-            doctorName: "Д-р Георгиев",
-            appointmentType: "Преглед",
-            status: "Completed" as const,
-            date: "2024-01-15",
-            time: "14:30",
-            createdAt: "2024-01-14",
-          },
-        ],
+    if (response.success && response.data) {
+      // Update metrics
+      metrics.value = {
+        totalPatients: response.data.metrics.totalPatients,
+        totalPatientsGrowth: response.data.metrics.totalPatientsGrowth,
+        activePatients: response.data.metrics.activePatients,
+        activePatientsGrowth: response.data.metrics.activePatientsGrowth,
+        scheduledAppointments: response.data.metrics.scheduledAppointments,
+        scheduledAppointmentsGrowth:
+          response.data.metrics.scheduledAppointmentsGrowth,
+        completedAppointments: response.data.metrics.completedToday,
+        completedAppointmentsGrowth: response.data.metrics.completedTodayGrowth,
       };
-      appointments.value = appointmentsData.appointments.slice(0, 5);
-      metrics.value.scheduledAppointments =
-        appointmentsData.appointments.filter(
-          (a) => a.status === "Scheduled"
-        ).length;
-      metrics.value.completedAppointments =
-        appointmentsData.appointments.filter(
-          (a) => a.status === "Completed"
-        ).length;
-    } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-      error.value =
-        err instanceof Error ? err.message : "Failed to load dashboard data";
-    } finally {
-      loading.value = false;
+
+      // Update patients list
+      patients.value = response.data.recentPatients;
+
+      // Update appointments list
+      appointments.value = response.data.recentAppointments;
+    } else {
+      error.value = "Failed to load dashboard data";
     }
-  } else {
+  } catch (err) {
+    console.error("Error fetching dashboard data:", err);
+    error.value =
+      err instanceof Error ? err.message : "Failed to load dashboard data";
+  } finally {
     loading.value = false;
   }
 });
@@ -247,7 +216,7 @@ onMounted(async () => {
       </p>
     </div>
 
-    <div v-else-if="!isAdmin" class="text-center">
+    <div v-else-if="!isAdmin && !isDoctor" class="text-center">
       <Card class="max-w-2xl mx-auto">
         <CardContent class="p-6">
           <div class="mb-4">
@@ -283,10 +252,11 @@ onMounted(async () => {
           <CardContent>
             <div class="text-2xl font-bold">{{ metric.value }}</div>
             <div
-              class="flex items-center space-x-2 text-xs text-muted-foreground"
+              class="flex items-center space-x-2 text-xs"
+              :class="metric.changeColor"
             >
               <TrendingUp class="h-3 w-3" />
-              <span>{{ metric.change }} from last month</span>
+              <span>{{ metric.change }} from last period</span>
             </div>
           </CardContent>
         </Card>

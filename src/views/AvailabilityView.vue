@@ -537,7 +537,7 @@ const fetchAvailability = async () => {
     if (filters.date) params.date = filters.date;
 
     const response = await api.availability.getDoctorAvailability(params);
-    availability.value = (response as any).data || response;
+    availability.value = (response as any).data || [];
   } catch (error) {
     console.error("Error fetching availability:", error);
     toast.error("Failed to fetch availability");

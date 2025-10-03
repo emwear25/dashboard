@@ -44,26 +44,81 @@ export const useDoctorAuth = () => {
   const isLoading = computed(() => state.value.isLoading)
   const error = computed(() => state.value.error)
 
+  // Refresh access token
+  const refreshAccessToken = async (): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/doctor-auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        return false
+      }
+
+      const data = await response.json()
+      if (data.accessToken) {
+        state.value.accessToken = data.accessToken
+        state.value.doctor = data.doctor
+        state.value.isAuthenticated = true
+        localStorage.setItem('doctor_access_token', data.accessToken)
+        return true
+      }
+
+      return false
+    } catch (err) {
+      console.error('Token refresh failed:', err)
+      return false
+    }
+  }
+
   // Helper function to make authenticated requests
   const makeAuthenticatedRequest = async (endpoint: string, options: RequestInit = {}) => {
-    const headers: Record<string, string> = {
-      ...(options.headers as Record<string, string>),
+    const makeRequest = async (token: string) => {
+      const headers: Record<string, string> = {
+        ...(options.headers as Record<string, string>),
+      }
+
+      // Only set Content-Type if not uploading FormData
+      if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json'
+      }
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
+      return fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        credentials: 'include',
+        headers,
+      })
     }
 
-    // Only set Content-Type if not uploading FormData
-    if (!(options.body instanceof FormData)) {
-      headers['Content-Type'] = 'application/json'
+    if (!state.value.accessToken) {
+      // Try to refresh token first
+      const refreshed = await refreshAccessToken()
+      if (!refreshed || !state.value.accessToken) {
+        throw new Error('No access token')
+      }
     }
 
-    if (state.value.accessToken) {
-      headers.Authorization = `Bearer ${state.value.accessToken}`
-    }
+    let response = await makeRequest(state.value.accessToken)
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      credentials: 'include',
-      headers,
-    })
+    // If 401, try to refresh token and retry once
+    if (response.status === 401) {
+      console.log('🔄 Token expired, refreshing...')
+      const refreshed = await refreshAccessToken()
+      if (refreshed && state.value.accessToken) {
+        console.log('✅ Token refreshed, retrying request...')
+        response = await makeRequest(state.value.accessToken)
+      } else {
+        console.error('❌ Token refresh failed, redirecting to login...')
+        clearAuth()
+        window.location.href = '/login'
+        throw new Error('Session expired')
+      }
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
@@ -160,14 +215,29 @@ export const useDoctorAuth = () => {
 
   // Initialize authentication state
   const initialize = async () => {
-    if (!state.value.accessToken) {
-      return false
-    }
-
     state.value.isLoading = true
     try {
-      const doctor = await getCurrentDoctor()
-      return !!doctor
+      // Try to get current doctor with existing token
+      if (state.value.accessToken) {
+        try {
+          const doctor = await getCurrentDoctor()
+          if (doctor) {
+            return true
+          }
+        } catch (err) {
+          console.log('Existing token invalid, trying to refresh...')
+        }
+      }
+
+      // Try to refresh token
+      const refreshed = await refreshAccessToken()
+      if (refreshed) {
+        const doctor = await getCurrentDoctor()
+        return !!doctor
+      }
+
+      clearAuth()
+      return false
     } catch (err) {
       console.error('Auth initialization failed:', err)
       clearAuth()
