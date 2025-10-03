@@ -67,10 +67,11 @@
               {{ isSaving ? "Saving..." : "Save" }}
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               size="lg"
               @click="cancelEditing"
               :disabled="isSaving"
+              class="bg-white/20 hover:bg-white/30 text-white border-white/30"
             >
               <X class="h-4 w-4 mr-2" />
               Cancel
