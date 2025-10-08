@@ -143,7 +143,10 @@
                 <TableCell class="font-medium">{{ doctor.name }}</TableCell>
                 <TableCell>{{ doctor.email }}</TableCell>
                 <TableCell>
-                  <Badge :variant="getUserRoleBadgeVariant(doctor)">
+                  <Badge
+                    :variant="getUserRoleBadgeVariant(doctor)"
+                    :style="getUserRoleBadgeStyle(doctor)"
+                  >
                     {{ getUserRoleLabel(doctor) }}
                   </Badge>
                 </TableCell>
@@ -161,25 +164,33 @@
                 <TableCell v-if="activeTab !== 'admins'">
                   <div class="flex flex-wrap gap-1">
                     <Badge
-                      v-for="country in (doctor.countriesOfOperation || [])"
+                      v-for="country in doctor.countriesOfOperation || []"
                       :key="country"
                       variant="outline"
                     >
                       {{ country }}
                     </Badge>
-                    <span v-if="!doctor.countriesOfOperation?.length" class="text-muted-foreground text-sm">None</span>
+                    <span
+                      v-if="!doctor.countriesOfOperation?.length"
+                      class="text-muted-foreground text-sm"
+                      >None</span
+                    >
                   </div>
                 </TableCell>
                 <TableCell v-if="activeTab !== 'admins'">
                   <div class="flex flex-wrap gap-1">
                     <Badge
-                      v-for="language in (doctor.languages || [])"
+                      v-for="language in doctor.languages || []"
                       :key="language"
                       variant="outline"
                     >
                       {{ language }}
                     </Badge>
-                    <span v-if="!doctor.languages?.length" class="text-muted-foreground text-sm">None</span>
+                    <span
+                      v-if="!doctor.languages?.length"
+                      class="text-muted-foreground text-sm"
+                      >None</span
+                    >
                   </div>
                 </TableCell>
                 <TableCell v-if="activeTab !== 'admins'"
@@ -263,7 +274,10 @@
                 <TableCell class="font-medium">{{ doctor.name }}</TableCell>
                 <TableCell>{{ doctor.email }}</TableCell>
                 <TableCell>
-                  <Badge :variant="getUserRoleBadgeVariant(doctor)">
+                  <Badge
+                    :variant="getUserRoleBadgeVariant(doctor)"
+                    :style="getUserRoleBadgeStyle(doctor)"
+                  >
                     {{ getUserRoleLabel(doctor) }}
                   </Badge>
                 </TableCell>
@@ -401,6 +415,30 @@ const getUserRoleBadgeVariant = (doctor: Doctor) => {
     return "secondary";
   }
   return "outline";
+};
+
+const getUserRoleBadgeStyle = (doctor: Doctor) => {
+  if (doctor.isDoctor && doctor.isAdmin) {
+    // Doctor and Admin - black background with white text
+    return {
+      backgroundColor: "#000000",
+      color: "#ffffff",
+      borderColor: "#000000",
+    };
+  } else if (doctor.isAdmin) {
+    // Admin only - grey
+    return {
+      backgroundColor: "#6b7280",
+      color: "#ffffff",
+      borderColor: "#6b7280",
+    };
+  }
+  // Doctor only - white background with dark text (default outline style enhanced)
+  return {
+    backgroundColor: "#ffffff",
+    color: "#000000",
+    borderColor: "#d1d5db",
+  };
 };
 
 // Load doctors

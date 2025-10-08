@@ -5,10 +5,18 @@
       <div>
         <h1 class="coupons-title">Coupon Management</h1>
         <p class="coupons-subtitle">
-          Create and manage promotional coupons for free consultations
+          {{
+            isDoctor
+              ? "Create and manage promotional coupons for free consultations"
+              : "Manage and validate promotional coupons"
+          }}
         </p>
       </div>
-      <Button @click="showCreateModal = true" class="create-coupon-btn">
+      <Button
+        v-if="isDoctor"
+        @click="showCreateModal = true"
+        class="create-coupon-btn"
+      >
         <Plus class="h-4 w-4 mr-2" />
         Create Coupon
       </Button>
@@ -249,8 +257,15 @@
       <div v-else-if="filteredCoupons.length === 0" class="empty-state">
         <Ticket class="h-16 w-16 text-gray-300" />
         <h3>No coupons found</h3>
-        <p>Create your first coupon to start offering free consultations</p>
-        <Button @click="showCreateModal = true" variant="outline">
+        <p v-if="isDoctor">
+          Create your first coupon to start offering free consultations
+        </p>
+        <p v-else>No coupons to manage at this time</p>
+        <Button
+          v-if="isDoctor"
+          @click="showCreateModal = true"
+          variant="outline"
+        >
           <Plus class="h-4 w-4 mr-2" />
           Create Coupon
         </Button>
@@ -376,7 +391,12 @@
 
           <div class="approval-notice">
             <AlertCircle class="h-4 w-4" />
-            <span>Coupons require admin approval before becoming active</span>
+            <span v-if="isAdmin && isDoctor"
+              >Your coupon will be automatically activated upon creation</span
+            >
+            <span v-else
+              >Coupons require admin approval before becoming active</span
+            >
           </div>
         </div>
 
@@ -453,8 +473,9 @@ const showErrorMessage = ref(false);
 const messageText = ref("");
 const activeTab = ref<"pending" | "history">("pending");
 
-// Check if current doctor is admin
+// Check if current doctor is admin or doctor
 const isAdmin = computed(() => doctor.value?.isAdmin || false);
+const isDoctor = computed(() => doctor.value?.isDoctor || false);
 
 // New coupon form
 const newCoupon = ref({

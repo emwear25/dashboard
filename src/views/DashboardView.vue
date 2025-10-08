@@ -328,7 +328,6 @@ onMounted(async () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Patient</TableHead>
-                  <TableHead>Doctor</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date & Time</TableHead>
@@ -342,9 +341,6 @@ onMounted(async () => {
                 >
                   <TableCell>{{
                     appointment.patientName || "Not Available!"
-                  }}</TableCell>
-                  <TableCell>{{
-                    appointment.doctorName || "Not Available!"
                   }}</TableCell>
                   <TableCell>{{
                     appointment.appointmentType || "Not Available!"
@@ -387,17 +383,31 @@ onMounted(async () => {
         </CardHeader>
         <CardContent>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button class="h-20 flex flex-col space-y-2" variant="outline">
-              <Calendar class="h-6 w-6" />
-              <span>Schedule Appointment</span>
-            </Button>
-            <Button class="h-20 flex flex-col space-y-2" variant="outline">
-              <Users class="h-6 w-6" />
-              <span>Add New Patient</span>
-            </Button>
-            <Button class="h-20 flex flex-col space-y-2" variant="outline">
+            <Button
+              class="h-20 flex flex-col space-y-2"
+              variant="outline"
+              @click="router.push('/coupons')"
+            >
               <FileText class="h-6 w-6" />
-              <span>Medical Reports</span>
+              <span>Make a Coupon</span>
+            </Button>
+            <Button
+              v-if="isDoctor"
+              class="h-20 flex flex-col space-y-2"
+              variant="outline"
+              @click="router.push('/availability')"
+            >
+              <Calendar class="h-6 w-6" />
+              <span>My Availabilities</span>
+            </Button>
+            <Button
+              v-if="isDoctor"
+              class="h-20 flex flex-col space-y-2"
+              variant="outline"
+              @click="router.push('/appointments')"
+            >
+              <Stethoscope class="h-6 w-6" />
+              <span>My Appointments</span>
             </Button>
           </div>
         </CardContent>
