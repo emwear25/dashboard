@@ -1,28 +1,22 @@
-# Telemediker Dashboard
+# Emwear Dashboard
 
-A modern telemedicine dashboard application for Bulgarian healthcare professionals, built with Vue 3, TypeScript, and Vite.
-
-## About Telemediker
-
-Telemediker is a comprehensive telemedicine platform designed specifically for Bulgarian doctors to manage patients, schedule appointments, and provide remote medical consultations. The platform supports the Bulgarian healthcare system by enabling efficient digital healthcare delivery.
+Emwear Dashboard is a minimal Vue 3 starter template focused on a responsive sidebar layout powered by ShadCN UI components and Tailwind CSS.
 
 ## Features
 
-- **Patient Management**: Comprehensive patient records and history
-- **Appointment Scheduling**: Easy-to-use appointment booking system
-- **Medical Dashboard**: Real-time overview of practice metrics
-- **Bulgarian Language Support**: Designed for Bulgarian healthcare professionals
-- **Modern UI**: Clean, responsive interface built with Vue 3 and Tailwind CSS
-- **Authentication**: Secure login system for medical professionals
+- **Vue 3 + TypeScript** single page application scaffolded with Vite
+- **ShadCN UI** component library preconfigured with Tailwind CSS tokens
+- **Adaptive Sidebar Layout** with mobile drawer navigation
+- **Theme Toggle** using VueUse `useDark`
+- **Sample Dashboard View** demonstrating cards, tabs, and badges
 
 ## Technology Stack
 
-- **Frontend**: Vue 3 with Composition API
-- **Language**: TypeScript for type safety
-- **Styling**: Tailwind CSS with custom components
-- **Build Tool**: Vite for fast development and building
-- **State Management**: Pinia for reactive state management
-- **Icons**: Lucide Vue for medical and general icons
+- **Frontend**: Vue 3 (Composition API with `<script setup>`)
+- **Styling**: Tailwind CSS with ShadCN UI primitives
+- **State Utilities**: VueUse for theme management
+- **Icons**: Lucide Vue icon set
+- **Routing**: Vue Router for layout-based navigation
 
 ## Recommended IDE Setup
 
@@ -62,4 +56,5 @@ npm run lint
 
 ## License
 
-This project is proprietary software for Bulgarian healthcare professionals.
+This starter template is proprietary to the Emwear team.
+# dashboard

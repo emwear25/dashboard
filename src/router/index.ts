@@ -1,175 +1,107 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import DashboardLayout from '@/layouts/DashboardLayout.vue'
-import DashboardView from '@/views/DashboardView.vue'
-import LoginView from '@/views/LoginView.vue'
+import { createRouter, createWebHistory } from "vue-router";
+import DashboardLayout from "@/layouts/DashboardLayout.vue";
+import DashboardView from "@/views/DashboardView.vue";
+import ProductsView from "@/views/ProductsView.vue";
+import AddProductView from "@/views/AddProductView.vue";
+import ProductDetailsView from "@/views/ProductDetailsView.vue";
+import StockManagementView from "@/views/StockManagementView.vue";
+import CategoriesManagementView from "@/views/CategoriesManagementView.vue";
+import ExternalOrdersView from "@/views/ExternalOrdersView.vue";
+import OrdersView from "@/views/OrdersView.vue";
+import DiscountsView from "@/views/DiscountsView.vue";
+import CouponsView from "@/views/CouponsView.vue";
+import DiscountAnalyticsView from "@/views/DiscountAnalyticsView.vue";
+import CreateDiscountView from "@/views/CreateDiscountView.vue";
+import CreateCouponView from "@/views/CreateCouponView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      redirect: '/dashboard',
+      path: "/",
+      redirect: "/dashboard",
     },
     {
-      path: '/login',
-      name: 'login',
-      component: LoginView,
-    },
-    {
-      path: '/',
+      path: "/",
       component: DashboardLayout,
-      meta: { requiresAuth: true },
       children: [
         {
-          path: 'dashboard',
-          name: 'dashboard',
-          component: DashboardView
+          path: "dashboard",
+          name: "dashboard",
+          component: DashboardView,
         },
         {
-          path: 'profile',
-          name: 'profile',
-          component: () => import('@/views/ProfileView.vue')
+          path: "products",
+          name: "products",
+          component: ProductsView,
         },
         {
-          path: 'analytics',
-          name: 'analytics',
-          component: () => import('@/views/AnalyticsView.vue')
+          path: "products/add",
+          name: "products-add",
+          component: AddProductView,
         },
         {
-          path: 'doctors',
-          name: 'doctors',
-          component: () => import('@/views/DoctorsView.vue'),
-          meta: { requiresAdmin: true }
+          path: "products/:id",
+          name: "product-details",
+          component: ProductDetailsView,
         },
         {
-          path: 'doctors/new',
-          name: 'new-doctor',
-          component: () => import('@/views/DoctorFormView.vue'),
-          meta: { requiresAdmin: true }
+          path: "stock",
+          name: "stock-management",
+          component: StockManagementView,
         },
         {
-          path: 'doctors/:id/edit',
-          name: 'edit-doctor',
-          component: () => import('@/views/DoctorFormView.vue'),
-          meta: { requiresAdmin: true }
+          path: "categories",
+          name: "categories-management",
+          component: CategoriesManagementView,
         },
         {
-          path: 'admins/new',
-          name: 'new-admin',
-          component: () => import('@/views/AdminFormView.vue'),
-          meta: { requiresAdmin: true }
+          path: "external-orders",
+          name: "external-orders",
+          component: ExternalOrdersView,
         },
         {
-          path: 'admins/:id/edit',
-          name: 'edit-admin',
-          component: () => import('@/views/AdminFormView.vue'),
-          meta: { requiresAdmin: true }
+          path: "orders",
+          name: "orders",
+          component: OrdersView,
         },
         {
-          path: 'availability',
-          name: 'availability',
-          component: () => import('@/views/AvailabilityView.vue'),
-          meta: { requiresDoctor: true }
+          path: "orders/:id",
+          name: "order-detail",
+          component: () => import("@/views/OrderDetailView.vue"),
         },
         {
-          path: 'coupons',
-          name: 'coupons',
-          component: () => import('@/views/CouponsView.vue')
+          path: "discounts",
+          name: "discounts",
+          component: DiscountsView,
         },
         {
-          path: 'subscribers',
-          name: 'subscribers',
-          component: () => import('@/views/SubscribersView.vue'),
-          meta: { requiresAdmin: true }
+          path: "discounts/create",
+          name: "create-discount",
+          component: CreateDiscountView,
         },
         {
-          path: 'appointments',
-          name: 'appointments',
-          component: () => import('@/views/AppointmentsView.vue'),
-          meta: { requiresDoctor: true }
+          path: "coupons",
+          name: "coupons",
+          component: CouponsView,
         },
         {
-          path: 'appointments/:id',
-          name: 'appointment-detail',
-          component: () => import('@/views/AppointmentDetailView.vue'),
-          meta: { requiresDoctor: true }
+          path: "coupons/create",
+          name: "create-coupon",
+          component: CreateCouponView,
         },
         {
-          path: 'patients',
-          name: 'patients',
-          component: () => import('@/views/PatientsView.vue'),
-          meta: { requiresDoctor: true }
-        },
-        {
-          path: 'patients/:id',
-          name: 'patient-detail',
-          component: () => import('@/views/PatientDetailView.vue'),
-          meta: { requiresDoctor: true }
-        },
-        {
-          path: 'meeting/:id',
-          name: 'meeting',
-          component: () => import('@/views/MeetingView.vue')
-        },
-        {
-          path: 'settings',
-          name: 'settings',
-          component: () => import('@/views/SettingsView.vue')
-        },
-        {
-          path: 'calendar',
-          name: 'calendar',
-          component: () => import('@/views/CalendarView.vue'),
-          meta: { requiresDoctor: true }
+          path: "discount-analytics",
+          name: "discount-analytics",
+          component: DiscountAnalyticsView,
         },
       ],
     },
+    {
+      path: "/:pathMatch(.*)*",
+      redirect: "/dashboard",
+    },
   ],
-})
+});
 
-// Navigation guard for authentication
-router.beforeEach(async (to, from, next) => {
-  // Lazy import to avoid circular dependency
-  const { useDoctorAuth } = await import('@/composables/useDoctorAuth')
-  const { isAuthenticated, isDoctor, isAdmin, initialize } = useDoctorAuth()
-  
-  // Check if route requires authentication
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    // Initialize auth if not authenticated
-    if (!isAuthenticated.value) {
-      const initialized = await initialize()
-      if (!initialized) {
-        next('/login')
-        return
-      }
-    }
-    
-    // Check if route requires admin access
-    if (to.matched.some(record => record.meta.requiresAdmin)) {
-      if (!isAdmin.value) {
-        next('/dashboard')
-        return
-      }
-    }
-    
-    // Check if route requires doctor role
-    if (to.matched.some(record => record.meta.requiresDoctor)) {
-      if (!isDoctor.value) {
-        next('/dashboard')
-        return
-      }
-    }
-    
-    next()
-  } else {
-    // Route doesn't require auth, proceed
-    if (to.path === '/login' && isAuthenticated.value) {
-      // Redirect to dashboard if already authenticated
-      next('/dashboard')
-    } else {
-      next()
-    }
-  }
-})
-
-export default router 
+export default router;

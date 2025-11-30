@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from "vue";
+import { RouterLink, RouterView, useRoute } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -7,372 +9,178 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ThemeToggle from "@/components/ThemeToggle.vue";
 import type { LucideIcon } from "lucide-vue-next";
 import {
-  Menu,
-  Sun,
-  Moon,
-  Lock,
-  LogOut,
-  ChevronDown,
   LayoutDashboard,
-  BarChart3,
-  User,
-  Users,
-  Calendar,
-  CalendarDays,
-  Ticket,
-  Mail,
+  Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings,
+  User,
+  Package,
+  Boxes,
+  Tags,
+  ShoppingCart,
+  ShoppingBag,
+  Percent,
+  Tag,
+  TrendingUp,
 } from "lucide-vue-next";
-import { ref, onMounted, computed } from "vue";
-import { useDark, useToggle } from "@vueuse/core";
-import { RouterLink, RouterView } from "vue-router";
-import { ToastProvider, Toast } from "@/components/ui/toast";
-import { useDoctorAuth } from "@/composables/useDoctorAuth";
-import { useRouter } from "vue-router";
 
 interface NavigationItem {
   name: string;
   path: string;
   icon: LucideIcon;
-  locked?: boolean;
-  children?: NavigationItem[];
 }
+
+const navigationItems: NavigationItem[] = [
+  {
+    name: "Табло",
+    path: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    name: "Продукти",
+    path: "/products",
+    icon: Package,
+  },
+  {
+    name: "Управление на Склада",
+    path: "/stock",
+    icon: Boxes,
+  },
+  {
+    name: "Категории",
+    path: "/categories",
+    icon: Tags,
+  },
+  {
+    name: "Отстъпки",
+    path: "/discounts",
+    icon: Percent,
+  },
+  {
+    name: "Купони",
+    path: "/coupons",
+    icon: Tag,
+  },
+  {
+    name: "Аналитика",
+    path: "/discount-analytics",
+    icon: TrendingUp,
+  },
+  {
+    name: "Поръчки",
+    path: "/orders",
+    icon: ShoppingBag,
+  },
+  {
+    name: "Външни Поръчки",
+    path: "/external-orders",
+    icon: ShoppingCart,
+  },
+];
+
+const brandName = "Emwear";
+const userName = "Emwear Екип";
+const userEmail = "team@emwear.app";
 
 const isOpen = ref(false);
 const sidebarCollapsed = ref(false);
-const isDark = useDark();
-const toggleDark = useToggle(isDark);
-
-const router = useRouter();
-const { doctor, isAuthenticated, isDoctor, isAdmin, logout, initialize } =
-  useDoctorAuth();
-
-// Computed property for user's full name
-const userFullName = computed(() => {
-  if (doctor.value?.name) {
-    return doctor.value.name;
-  } else {
-    return doctor.value?.email || "Doctor";
-  }
-});
-
-const navigationItems = computed<NavigationItem[]>(() => {
-  const items: NavigationItem[] = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { name: "My Profile", path: "/profile", icon: User },
-  ];
-
-  // Add doctor-only items
-  if (isDoctor.value) {
-    items.push(
-      { name: "My Availability", path: "/availability", icon: Calendar },
-      { name: "My Appointments", path: "/appointments", icon: CalendarDays },
-      { name: "My Patients", path: "/patients", icon: Users },
-      { name: "Analytics", path: "/analytics", icon: BarChart3 }
-    );
-  }
-
-  // Add items for both doctors and admins
-  if (isDoctor.value || isAdmin.value) {
-    items.push({ name: "Coupons", path: "/coupons", icon: Ticket });
-  }
-
-  // Add admin-only items
-  if (isAdmin.value) {
-    // Insert "Team Management" after "My Profile"
-    items.splice(2, 0, {
-      name: "Team Management",
-      path: "/doctors",
-      icon: Users,
-    });
-    items.push({ name: "Subscribers", path: "/subscribers", icon: Mail });
-  }
-
-  return items;
-});
-
-const expandedItems = ref<string[]>([]);
-
-const toggleExpand = (itemName: string) => {
-  const index = expandedItems.value.indexOf(itemName);
-  if (index === -1) {
-    expandedItems.value.push(itemName);
-  } else {
-    expandedItems.value.splice(index, 1);
-  }
-};
+const route = useRoute();
 
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value;
 };
 
-const handleLogout = async () => {
-  await logout();
+const closeSheet = () => {
+  isOpen.value = false;
 };
-
-onMounted(async () => {
-  // Make sure doctor auth is initialized
-  if (!isAuthenticated.value) {
-    const initialized = await initialize();
-    if (!initialized) {
-      router.push("/login");
-    }
-  }
-});
 </script>
 
 <template>
-  <ToastProvider>
-    <Toast />
-    <div class="min-h-screen flex bg-background dark:bg-slate-950">
-      <!-- Desktop Sidebar -->
-      <aside
+  <div class="min-h-screen flex bg-background text-foreground transition-colors">
+    <aside
+      :class="[
+        'hidden lg:flex flex-col fixed h-screen bg-card border-r border-border transition-all duration-300 z-50',
+        sidebarCollapsed ? 'w-16' : 'w-64',
+      ]"
+    >
+      <div
         :class="[
-          'hidden lg:flex flex-col fixed h-screen bg-card dark:bg-slate-900 border-r border-border transition-all duration-300 z-50',
-          sidebarCollapsed ? 'w-16' : 'w-64',
+          'p-4 flex items-center',
+          sidebarCollapsed ? 'justify-center' : 'justify-between',
         ]"
       >
+        <h1 class="text-xl font-bold tracking-tight">
+          <span v-if="!sidebarCollapsed">{{ brandName }}</span>
+          <span v-else>{{ brandName.slice(0, 2).toUpperCase() }}</span>
+        </h1>
+        <ThemeToggle v-if="!sidebarCollapsed" />
+      </div>
+
+      <nav :class="['flex-1 space-y-1', sidebarCollapsed ? 'px-2' : 'px-4']">
         <div
           :class="[
-            'p-4 flex justify-between items-center',
-            sidebarCollapsed ? 'px-3' : 'px-6',
+            'mb-4',
+            sidebarCollapsed ? 'flex justify-center' : 'flex justify-end',
           ]"
         >
-          <h1 v-if="!sidebarCollapsed" class="text-2xl font-bold">
-            Telemediker
-          </h1>
-          <h1 v-else class="text-xl font-bold">TM</h1>
           <Button
             variant="ghost"
             size="icon"
-            @click="toggleDark()"
-            v-if="!sidebarCollapsed"
+            @click="toggleSidebar"
+            class="hover:bg-primary/10 hover:text-primary transition-colors"
           >
-            <Sun v-if="isDark" class="h-5 w-5" />
-            <Moon v-else class="h-5 w-5" />
+            <PanelLeftClose
+              v-if="!sidebarCollapsed"
+              class="h-5 w-5 text-primary"
+            />
+            <PanelLeftOpen v-else class="h-5 w-5 text-primary" />
           </Button>
         </div>
-        <nav :class="['flex-1', sidebarCollapsed ? 'px-2' : 'px-4']">
-          <!-- Sidebar Toggle Button -->
-          <div
-            :class="[
-              'mb-4',
-              sidebarCollapsed ? 'flex justify-center' : 'flex justify-end',
-            ]"
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              @click="toggleSidebar"
-              class="hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200 border border-transparent hover:border-blue-200"
-            >
-              <PanelLeftClose
-                v-if="!sidebarCollapsed"
-                class="h-5 w-5 text-blue-600"
-              />
-              <PanelLeftOpen v-else class="h-5 w-5 text-blue-600" />
-            </Button>
-          </div>
 
-          <template v-for="item in navigationItems" :key="item.name">
-            <!-- Regular menu item without children -->
-            <RouterLink
-              v-if="!item.children"
-              :to="item.path"
-              :class="[
-                'flex items-center py-2 mt-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors',
-                sidebarCollapsed ? 'px-3 justify-center' : 'px-4',
-                {
-                  'bg-accent/50 text-accent-foreground':
-                    $route.path === item.path,
-                  'opacity-50 cursor-not-allowed': item.locked,
-                },
-              ]"
-              @click.prevent="$router.push(item.path)"
-              :title="sidebarCollapsed ? item.name : ''"
-            >
-              <component
-                :is="item.icon"
-                :class="['h-5 w-5', sidebarCollapsed ? '' : 'mr-3']"
-              />
-              <span v-if="!sidebarCollapsed">{{ item.name }}</span>
-              <Lock
-                v-if="item.locked && !sidebarCollapsed"
-                class="h-4 w-4 ml-auto text-muted-foreground"
-              />
-            </RouterLink>
-
-            <!-- Menu item with children -->
-            <div v-else-if="!sidebarCollapsed" class="mt-2">
-              <Button
-                variant="ghost"
-                class="w-full justify-start px-4 py-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-                @click="toggleExpand(item.name)"
-              >
-                <component :is="item.icon" class="h-5 w-5 mr-3" />
-                <span>{{ item.name }}</span>
-                <ChevronDown
-                  class="ml-auto h-4 w-4 transition-transform"
-                  :class="{
-                    'rotate-180': expandedItems.includes(item.name),
-                  }"
-                />
-              </Button>
-              <div
-                v-if="expandedItems.includes(item.name)"
-                class="ml-8 mt-1 space-y-1"
-              >
-                <RouterLink
-                  v-for="child in item.children"
-                  :key="child.name"
-                  :to="child.path"
-                  class="flex items-center px-4 py-2 text-sm text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-                  :class="{
-                    'bg-accent/50 text-accent-foreground':
-                      $route.path === child.path,
-                    'opacity-50 cursor-not-allowed': child.locked,
-                  }"
-                  @click.prevent="$router.push(child.path)"
-                >
-                  <component :is="child.icon" class="h-4 w-4 mr-3" />
-                  <span>{{ child.name }}</span>
-                  <Lock
-                    v-if="child.locked"
-                    class="h-3 w-3 ml-auto text-muted-foreground"
-                  />
-                </RouterLink>
-              </div>
-            </div>
-
-            <!-- Collapsed view for items with children - show as simple link to first child or parent -->
-            <RouterLink
-              v-else-if="sidebarCollapsed && item.children"
-              :to="item.children[0]?.path || item.path"
-              :class="[
-                'flex items-center py-2 mt-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors px-3 justify-center',
-                {
-                  'bg-accent/50 text-accent-foreground': item.children.some(
-                    (child) => $route.path === child.path
-                  ),
-                  'opacity-50 cursor-not-allowed': item.locked,
-                },
-              ]"
-              @click.prevent="$router.push(item.children[0]?.path || item.path)"
-              :title="item.name"
-            >
-              <component :is="item.icon" class="h-5 w-5" />
-            </RouterLink>
-          </template>
-        </nav>
-        <div
-          :class="['border-t border-border', sidebarCollapsed ? 'p-2' : 'p-4']"
+        <RouterLink
+          v-for="item in navigationItems"
+          :key="item.name"
+          :to="item.path"
+          :title="sidebarCollapsed ? item.name : ''"
+          :class="[
+            'flex items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors',
+            sidebarCollapsed ? 'justify-center px-3 py-2' : 'px-4 py-2',
+            route.path === item.path ? 'bg-accent/60 text-accent-foreground' : '',
+          ]"
         >
-          <Button
-            variant="ghost"
-            :class="[
-              sidebarCollapsed
-                ? 'w-full justify-center p-2'
-                : 'w-full justify-start',
-            ]"
-            size="sm"
-            @click="handleLogout"
-            :title="sidebarCollapsed ? 'Logout' : ''"
-          >
-            <LogOut :class="[sidebarCollapsed ? 'h-4 w-4' : 'mr-2 h-4 w-4']" />
-            <span v-if="!sidebarCollapsed">Logout</span>
-          </Button>
-        </div>
-      </aside>
+          <component
+            :is="item.icon"
+            :class="['h-5 w-5', sidebarCollapsed ? '' : 'mr-3']"
+          />
+          <span v-if="!sidebarCollapsed">{{ item.name }}</span>
+        </RouterLink>
+      </nav>
 
-      <!-- Mobile Header -->
       <div
-        class="lg:hidden fixed w-full bg-card dark:bg-slate-900 border-b border-border z-50"
+        :class="[
+          'border-t border-border',
+          sidebarCollapsed ? 'p-2 flex justify-center' : 'p-4',
+        ]"
       >
-        <div class="flex items-center justify-between p-4">
-          <h1 class="text-xl font-bold">Telemediker</h1>
-          <div class="flex items-center gap-4">
-            <!-- User Avatar -->
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  class="rounded-full flex items-center gap-2 px-2"
-                >
-                  <div
-                    class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden"
-                  >
-                    <img
-                      v-if="doctor?.photoUrl"
-                      :src="doctor.photoUrl"
-                      alt="Profile"
-                      class="h-full w-full object-cover"
-                    />
-                    <User v-else class="h-5 w-5" />
-                  </div>
-                  <span class="hidden md:inline-block">{{ userFullName }}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div class="p-2 border-b border-border">
-                  <div class="flex items-center gap-3 mb-2">
-                    <div
-                      class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden"
-                    >
-                      <img
-                        v-if="doctor?.photoUrl"
-                        :src="doctor.photoUrl"
-                        alt="Profile"
-                        class="h-full w-full object-cover"
-                      />
-                      <User v-else class="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p class="font-medium">{{ userFullName }}</p>
-                      <div class="flex items-center gap-2">
-                        <span class="text-sm text-muted-foreground">
-                          Doctor
-                        </span>
-                        <span
-                          v-if="doctor?.isAdmin"
-                          class="text-sm text-muted-foreground"
-                        >
-                          (Admin)
-                        </span>
-                      </div>
-                      <p class="text-xs text-muted-foreground">
-                        {{ doctor?.email || "" }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <DropdownMenuItem asChild>
-                  <RouterLink to="/settings" class="cursor-pointer"
-                    >Profile</RouterLink
-                  >
-                </DropdownMenuItem>
-                <DropdownMenuItem v-if="isDoctor" asChild>
-                  <RouterLink to="/calendar" class="cursor-pointer"
-                    >Calendar</RouterLink
-                  >
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  @click="handleLogout"
-                  class="cursor-pointer text-destructive"
-                >
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <ThemeToggle v-if="sidebarCollapsed" />
+      </div>
+    </aside>
 
-            <Button variant="ghost" size="icon" @click="toggleDark()">
-              <Sun v-if="isDark" class="h-5 w-5" />
-              <Moon v-else class="h-5 w-5" />
-            </Button>
-
-            <!-- Mobile Menu -->
+    <div
+      class="flex-1 flex flex-col transition-[margin] duration-300"
+      :class="sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'"
+    >
+      <div
+        class="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border"
+      >
+        <div class="flex items-center justify-between px-4 py-3">
+          <span class="text-lg font-semibold">{{ brandName }}</span>
+          <div class="flex items-center gap-2">
+            <ThemeToggle />
             <Sheet v-model:open="isOpen">
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -381,85 +189,25 @@ onMounted(async () => {
               </SheetTrigger>
               <SheetContent side="left" class="w-64 p-0">
                 <div class="h-full flex flex-col">
-                  <div class="p-6 border-b border-border">
-                    <h1 class="text-2xl font-bold">Telemediker</h1>
+                  <div class="px-6 py-4 border-b border-border">
+                    <span class="text-xl font-semibold">{{ brandName }}</span>
                   </div>
                   <nav class="flex-1 px-4 py-4">
-                    <template v-for="item in navigationItems" :key="item.name">
-                      <!-- Regular menu item without children -->
-                      <RouterLink
-                        v-if="!item.children"
-                        :to="item.path"
-                        class="flex items-center px-4 py-2 mt-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-                        :class="{
-                          'bg-accent/50 text-accent-foreground':
-                            $route.path === item.path,
-                          'opacity-50 cursor-not-allowed': item.locked,
-                        }"
-                        @click="isOpen = false"
-                      >
-                        <component :is="item.icon" class="h-5 w-5 mr-3" />
-                        <span>{{ item.name }}</span>
-                        <Lock
-                          v-if="item.locked"
-                          class="h-4 w-4 ml-auto text-muted-foreground"
-                        />
-                      </RouterLink>
-
-                      <!-- Menu item with children -->
-                      <div v-else class="mt-2">
-                        <Button
-                          variant="ghost"
-                          class="w-full justify-start px-4 py-2 text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-                          @click="toggleExpand(item.name)"
-                        >
-                          <component :is="item.icon" class="h-5 w-5 mr-3" />
-                          <span>{{ item.name }}</span>
-                          <ChevronDown
-                            class="ml-auto h-4 w-4 transition-transform"
-                            :class="{
-                              'rotate-180': expandedItems.includes(item.name),
-                            }"
-                          />
-                        </Button>
-                        <div
-                          v-if="expandedItems.includes(item.name)"
-                          class="ml-8 mt-1 space-y-1"
-                        >
-                          <RouterLink
-                            v-for="child in item.children"
-                            :key="child.name"
-                            :to="child.path"
-                            class="flex items-center px-4 py-2 text-sm text-muted-foreground rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-                            :class="{
-                              'bg-accent/50 text-accent-foreground':
-                                $route.path === child.path,
-                              'opacity-50 cursor-not-allowed': child.locked,
-                            }"
-                            @click="isOpen = false"
-                          >
-                            <component :is="child.icon" class="h-4 w-4 mr-3" />
-                            <span>{{ child.name }}</span>
-                            <Lock
-                              v-if="child.locked"
-                              class="h-3 w-3 ml-auto text-muted-foreground"
-                            />
-                          </RouterLink>
-                        </div>
-                      </div>
-                    </template>
-                  </nav>
-                  <div class="p-4 border-t border-border">
-                    <Button
-                      variant="ghost"
-                      class="w-full justify-start"
-                      size="sm"
-                      @click="handleLogout"
+                    <RouterLink
+                      v-for="item in navigationItems"
+                      :key="item.name"
+                      :to="item.path"
+                      class="flex items-center gap-3 rounded-lg px-4 py-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                      :class="{
+                        'bg-accent/60 text-accent-foreground':
+                          route.path === item.path,
+                      }"
+                      @click="closeSheet"
                     >
-                      <LogOut class="mr-2 h-4 w-4" />
-                      Logout
-                    </Button>
-                  </div>
+                      <component :is="item.icon" class="h-5 w-5" />
+                      <span>{{ item.name }}</span>
+                    </RouterLink>
+                  </nav>
                 </div>
               </SheetContent>
             </Sheet>
@@ -467,160 +215,37 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Main Content -->
-      <main
-        :class="[
-          'flex-1 lg:pt-0 pt-16 transition-all duration-300',
-          sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64',
-        ]"
+      <header
+        class="hidden lg:flex items-center justify-end bg-card border-b border-border px-6 py-4 sticky top-0 z-40"
       >
-        <!-- Desktop Header -->
-        <header
-          class="hidden lg:flex bg-card dark:bg-slate-900 border-b border-border px-6 py-4 sticky top-0 z-40"
-        >
-          <div class="flex items-center justify-between w-full">
-            <!-- Doctor Info -->
-            <div class="flex items-center gap-4">
-              <div
-                class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ring-2 ring-border"
-              >
-                <img
-                  v-if="doctor?.photoUrl"
-                  :src="doctor.photoUrl"
-                  alt="Profile"
-                  class="h-full w-full object-cover"
-                />
-                <User v-else class="h-6 w-6 text-muted-foreground" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" class="gap-3">
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                <User class="h-5 w-5 text-primary" />
+              </span>
+              <div class="text-left">
+                <p class="text-sm font-medium leading-none">{{ userName }}</p>
+                <p class="text-xs text-muted-foreground">{{ userEmail }}</p>
               </div>
-              <div>
-                <h2 class="text-xl font-semibold text-foreground">
-                  Dr. {{ userFullName }}
-                </h2>
-                <div
-                  class="flex items-center gap-2 text-sm text-muted-foreground"
-                >
-                  <span>{{
-                    doctor?.specialties?.join(", ") || "General Practice"
-                  }}</span>
-                  <span
-                    v-if="doctor?.isAdmin"
-                    class="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
-                  >
-                    Admin
-                  </span>
-                </div>
-              </div>
-            </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-48">
+            <DropdownMenuItem class="gap-2">
+              <User class="h-4 w-4" />
+              <span>Профил</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem class="gap-2">
+              <Settings class="h-4 w-4" />
+              <span>Настройки</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </header>
 
-            <!-- Right Side Actions -->
-            <div class="flex items-center gap-3">
-              <!-- Theme Toggle -->
-              <Button variant="ghost" size="icon" @click="toggleDark()">
-                <Sun v-if="isDark" class="h-5 w-5" />
-                <Moon v-else class="h-5 w-5" />
-              </Button>
-
-              <!-- User Dropdown -->
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" class="gap-2">
-                    <ChevronDown class="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="w-56">
-                  <div class="p-2 border-b border-border">
-                    <p class="font-medium">Dr. {{ userFullName }}</p>
-                    <p class="text-xs text-muted-foreground">
-                      {{ doctor?.email }}
-                    </p>
-                  </div>
-                  <DropdownMenuItem asChild>
-                    <RouterLink to="/profile" class="cursor-pointer">
-                      <User class="mr-2 h-4 w-4" />
-                      My Profile
-                    </RouterLink>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem v-if="isDoctor" asChild>
-                    <RouterLink to="/calendar" class="cursor-pointer">
-                      <Calendar class="mr-2 h-4 w-4" />
-                      Calendar
-                    </RouterLink>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    @click="handleLogout"
-                    class="cursor-pointer text-destructive"
-                  >
-                    <LogOut class="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </header>
-
-        <!-- Content Area -->
-        <div class="lg:pt-0 px-4 md:px-6 lg:px-8 py-6">
-          <RouterView />
-        </div>
+      <main class="flex-1 lg:pt-0 pt-16 px-4 md:px-6 lg:px-8 py-6">
+        <RouterView />
       </main>
     </div>
-  </ToastProvider>
+  </div>
 </template>
-
-<style>
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 84% 4.9%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 84% 4.9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222.2 84% 4.9%;
-  --chart-1: 12 76% 61%;
-  --chart-2: 173 58% 39%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 84% 4.9%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 212.7 26.8% 83.9%;
-  --chart-1: 220 70% 50%;
-  --chart-2: 160 60% 45%;
-  --chart-3: 30 80% 55%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 75% 55%;
-}
-</style>
