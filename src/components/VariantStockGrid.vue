@@ -323,7 +323,17 @@ const applyBulkStock = () => {
     });
   });
   
-  bulkSetStock.value = null;
+  bulkSetStock.value = undefined;
+};
+
+const setUserTypingStock = (size: string, color: string) => {
+  const key = `${size}-${color}`;
+  isUserTypingStock.value[key] = true;
+};
+
+const setUserTyping = (size: string, color: string) => {
+  const key = `${size}-${color}`;
+  isUserTyping.value[key] = true;
 };
 </script>
 
@@ -420,7 +430,7 @@ const applyBulkStock = () => {
                     <input
                       :value="getStockInput(size, color)"
                       @input="(e: any) => updateStockInput(size, color, (e.target as HTMLInputElement).value)"
-                      @focus="() => { isUserTypingStock.value[`${size}-${color}` as string] = true; }"
+                      @focus="setUserTypingStock(size, color)"
                       @blur="commitStock(size, color)"
                       type="text"
                       inputmode="numeric"
@@ -443,7 +453,7 @@ const applyBulkStock = () => {
                     <input
                       :value="getPriceInput(size, color)"
                       @input="(e: any) => updatePriceInput(size, color, (e.target as HTMLInputElement).value)"
-                      @focus="() => { isUserTyping.value[`${size}-${color}` as string] = true; }"
+                      @focus="setUserTyping(size, color)"
                       @blur="commitPrice(size, color)"
                       type="text"
                       inputmode="decimal"

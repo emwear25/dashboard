@@ -61,7 +61,8 @@ const fetchProducts = async () => {
       const categoryStrings: string[] = result.data
         .map((p: Product) => p.category)
         .filter(
-          (cat): cat is string => typeof cat === "string" && cat.length > 0
+          (cat: unknown): cat is string =>
+            typeof cat === "string" && cat.length > 0
         );
       const uniqueCategories = [...new Set(categoryStrings)];
       categories.value = uniqueCategories;
