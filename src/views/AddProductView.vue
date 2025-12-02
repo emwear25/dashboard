@@ -177,6 +177,12 @@ const allImagePreviews = computed(() => {
   ];
 });
 
+const getPreviewUrl = (
+  preview: string | { url: string; publicId: string }
+): string => {
+  return typeof preview === "string" ? preview : preview.url;
+};
+
 const toggleColor = (colorName: string) => {
   const index = form.colors.indexOf(colorName);
   if (index > -1) {
@@ -1174,11 +1180,7 @@ onMounted(async () => {
                   class="relative group aspect-square"
                 >
                   <img
-                    :src="
-                      typeof preview === 'string'
-                        ? preview
-                        : (preview as { url: string; publicId: string }).url
-                    "
+                    :src="getPreviewUrl(preview)"
                     :alt="`Product preview ${index + 1}`"
                     class="w-full h-full object-contain rounded-lg border-2 border-border bg-muted"
                   />
