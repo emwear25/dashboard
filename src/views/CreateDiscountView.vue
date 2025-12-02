@@ -58,7 +58,7 @@ const fetchProducts = async () => {
     const result = await apiGet("products?limit=1000");
     if (result.success && Array.isArray(result.data)) {
       products.value = result.data;
-      const categoryStrings = result.data
+      const categoryStrings: string[] = result.data
         .map((p: Product) => p.category)
         .filter(
           (cat): cat is string => typeof cat === "string" && cat.length > 0

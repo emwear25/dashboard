@@ -93,8 +93,8 @@ const initializeMatrix = () => {
 
 // Watch for external variant changes (but not our own updates)
 let isInternalUpdate = false;
-let isUserTyping = ref<Record<string, boolean>>({});
-let isUserTypingStock = ref<Record<string, boolean>>({});
+const isUserTyping = ref<Record<string, boolean>>({});
+const isUserTypingStock = ref<Record<string, boolean>>({});
 
 // Initialize on mount and when props change
 const initializeWhenReady = () => {
@@ -313,9 +313,9 @@ const saveChanges = () => {
 };
 
 // Bulk operations
-const bulkSetStock = ref<number | null>(null);
+const bulkSetStock = ref<number | undefined>(undefined);
 const applyBulkStock = () => {
-  if (bulkSetStock.value === null || bulkSetStock.value < 0) return;
+  if (bulkSetStock.value === undefined || bulkSetStock.value < 0) return;
   
   props.sizes.forEach(size => {
     props.colors.forEach(color => {
@@ -362,11 +362,10 @@ const applyBulkStock = () => {
           min="0"
           placeholder="Количество"
           class="w-32 h-9"
-          :value="bulkSetStock ?? ''"
         />
         <Button
           @click="applyBulkStock"
-          :disabled="bulkSetStock === null || bulkSetStock < 0"
+          :disabled="bulkSetStock === undefined || bulkSetStock < 0"
           size="sm"
           variant="secondary"
         >
@@ -421,7 +420,7 @@ const applyBulkStock = () => {
                     <input
                       :value="getStockInput(size, color)"
                       @input="(e: any) => updateStockInput(size, color, (e.target as HTMLInputElement).value)"
-                      @focus="() => { isUserTypingStock.value[`${size}-${color}`] = true; }"
+                      @focus="() => { isUserTypingStock.value[`${size}-${color}` as string] = true; }"
                       @blur="commitStock(size, color)"
                       type="text"
                       inputmode="numeric"
@@ -444,7 +443,7 @@ const applyBulkStock = () => {
                     <input
                       :value="getPriceInput(size, color)"
                       @input="(e: any) => updatePriceInput(size, color, (e.target as HTMLInputElement).value)"
-                      @focus="() => { isUserTyping.value[`${size}-${color}`] = true; }"
+                      @focus="() => { isUserTyping.value[`${size}-${color}` as string] = true; }"
                       @blur="commitPrice(size, color)"
                       type="text"
                       inputmode="decimal"

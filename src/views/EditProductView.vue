@@ -570,7 +570,7 @@ const submitForm = async () => {
           .join(", ");
         throw new Error(errorMessages);
       } else {
-        throw new Error(result.message || `Server error: ${response.status}`);
+        throw new Error(result.message || "Server error occurred");
       }
     }
   } catch (error: unknown) {
@@ -1131,7 +1131,11 @@ onMounted(async () => {
                   class="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
                 >
                   <img
-                    :src="preview.url || preview"
+                    :src="
+                      typeof preview === 'string'
+                        ? preview
+                        : (preview as { url: string; publicId: string }).url
+                    "
                     :alt="`Product image ${index + 1}`"
                     class="w-full h-full object-cover"
                   />

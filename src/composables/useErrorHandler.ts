@@ -158,7 +158,7 @@ export const useErrorHandler = () => {
       case 'validation':
         return normalizedError.statusCode === 400 || normalizedError.code === 'VALIDATION_ERROR'
       case 'server':
-        return normalizedError.statusCode >= 500
+        return normalizedError.statusCode !== undefined && normalizedError.statusCode >= 500
       default:
         return false
     }

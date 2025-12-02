@@ -606,7 +606,7 @@ const submitForm = async () => {
           .join(", ");
         throw new Error(errorMessages);
       } else {
-        throw new Error(result.message || `Server error: ${response.status}`);
+        throw new Error(result.message || "Server error occurred");
       }
     }
   } catch (error: unknown) {
@@ -1017,7 +1017,7 @@ onMounted(async () => {
                 :variants="variants"
                 :sizes="form.sizes"
                 :colors="form.colors"
-                :base-price="form.price"
+                :base-price="parseFloat(form.price) || 0"
                 @update="updateVariants"
               />
             </CardContent>
@@ -1174,7 +1174,11 @@ onMounted(async () => {
                   class="relative group aspect-square"
                 >
                   <img
-                    :src="preview.url || preview"
+                    :src="
+                      typeof preview === 'string'
+                        ? preview
+                        : (preview as { url: string; publicId: string }).url
+                    "
                     :alt="`Product preview ${index + 1}`"
                     class="w-full h-full object-contain rounded-lg border-2 border-border bg-muted"
                   />

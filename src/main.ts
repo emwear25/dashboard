@@ -6,7 +6,8 @@ import router from "./router";
 const app = createApp(App);
 
 // Global error handler for Vue
-app.config.errorHandler = (error: Error, instance, info) => {
+app.config.errorHandler = (err: unknown, instance, info) => {
+  const error = err instanceof Error ? err : new Error(String(err));
   console.error('Global Vue error handler:', error, info);
   
   // In production, send to error tracking service
