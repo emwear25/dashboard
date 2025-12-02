@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, watch } from "vue";
+import { useRouter } from "vue-router";
+import { apiGet, apiDelete } from "@/utils/api";
 import {
   Table,
   TableBody,
@@ -8,25 +9,34 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Edit, Trash2, Loader2, AlertCircle, Package } from 'lucide-vue-next';
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  AlertCircle,
+  Package,
+  Eye,
+} from "lucide-vue-next";
 
 type ProductImage = {
   url: string;
@@ -36,11 +46,15 @@ type ProductImage = {
 type Product = {
   _id: string;
   name: string;
-  category: string;
+  category:
+    | string
+    | { _id: string; name: string; slug: string; displayName: string }
+    | null;
   price: number;
   stock: number;
   isActive: boolean;
   image?: ProductImage;
+  images?: ProductImage[];
 };
 
 type ProductsResponse = {
@@ -56,38 +70,30 @@ type ProductsResponse = {
 
 const router = useRouter();
 
-const searchQuery = ref('');
+const searchQuery = ref("");
 const selectedCategory = ref<string | undefined>(undefined);
 const selectedStatus = ref<string | undefined>(undefined);
 const currentPage = ref(1);
 const itemsPerPage = 10;
-const fallbackImageUrl = 'https://via.placeholder.com/80?text=No+Image';
+const fallbackImageUrl = "https://via.placeholder.com/80?text=No+Image";
 
 const products = ref<Product[]>([]);
 const isLoading = ref(false);
-const errorMessage = ref('');
+const errorMessage = ref("");
 
 const fetchProducts = async () => {
   isLoading.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
 
   try {
-    const response = await fetch('http://localhost:3030/api/products?limit=100', {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch products');
-    }
-
-    const result: ProductsResponse = await response.json();
+    const result: ProductsResponse = await apiGet("products?limit=100");
 
     if (result.success && Array.isArray(result.data)) {
       products.value = result.data;
     }
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to load products';
+      error instanceof Error ? error.message : "Failed to load products";
   } finally {
     isLoading.value = false;
   }
@@ -95,21 +101,24 @@ const fetchProducts = async () => {
 
 const productsByFilters = computed(() => {
   return products.value.filter((product) => {
+    const categoryName = getCategoryName(product.category);
+    const categorySlug = getCategorySlug(product.category);
+
     const matchesSearch =
       !searchQuery.value ||
       product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.value.toLowerCase());
+      categoryName.toLowerCase().includes(searchQuery.value.toLowerCase());
 
     const matchesCategory =
       !selectedCategory.value ||
-      selectedCategory.value === 'all' ||
-      product.category.toLowerCase() === selectedCategory.value.toLowerCase();
+      selectedCategory.value === "all" ||
+      categorySlug.toLowerCase() === selectedCategory.value.toLowerCase();
 
     const matchesStatus =
       !selectedStatus.value ||
-      selectedStatus.value === 'all' ||
-      (selectedStatus.value === 'active' && product.isActive) ||
-      (selectedStatus.value === 'inactive' && !product.isActive);
+      selectedStatus.value === "all" ||
+      (selectedStatus.value === "active" && product.isActive) ||
+      (selectedStatus.value === "inactive" && !product.isActive);
 
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -139,19 +148,47 @@ watch(
   }
 );
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
   minimumFractionDigits: 2,
 });
 
 const formatPrice = (value: number) => currencyFormatter.format(value);
 
 const productStatusLabel = (product: Product) =>
-  product.isActive ? 'Активен' : 'Неактивен';
+  product.isActive ? "Активен" : "Неактивен";
+
+const getCategoryName = (
+  category:
+    | string
+    | { name: string; displayName?: string; slug: string }
+    | null
+    | undefined
+): string => {
+  if (!category) return "Без категория";
+  if (typeof category === "string") return category;
+  if (typeof category === "object") {
+    return (
+      category.displayName || category.name || category.slug || "Без категория"
+    );
+  }
+  return "Без категория";
+};
+
+const getCategorySlug = (
+  category: string | { slug: string; name?: string } | null | undefined
+): string => {
+  if (!category) return "";
+  if (typeof category === "string") return category;
+  if (typeof category === "object") {
+    return category.slug || category.name || "";
+  }
+  return "";
+};
 
 const navigateToAddProduct = () => {
-  router.push('/products/add');
+  router.push("/products/add");
 };
 
 const viewProduct = (id: string) => {
@@ -163,25 +200,18 @@ const editProduct = (id: string) => {
 };
 
 const deleteProduct = async (id: string) => {
-  if (!confirm('Are you sure you want to delete this product?')) {
+  if (!confirm("Are you sure you want to delete this product?")) {
     return;
   }
 
   try {
-    const response = await fetch(`http://localhost:3030/api/products/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
+    const result = await apiDelete(`products/${id}`);
 
-    if (!response.ok) {
-      throw new Error('Failed to delete product');
+    if (result.success) {
+      products.value = products.value.filter((product) => product._id !== id);
     }
-
-    products.value = products.value.filter((product) => product._id !== id);
   } catch (error) {
-    alert(
-      error instanceof Error ? error.message : 'Failed to delete product'
-    );
+    alert(error instanceof Error ? error.message : "Failed to delete product");
   }
 };
 
@@ -203,14 +233,20 @@ fetchProducts();
 <template>
   <div class="space-y-8 pb-8 pt-6">
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    >
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Продукти</h1>
         <p class="text-muted-foreground mt-1.5">
           Управлявайте вашия инвентар и списъци с продукти
         </p>
       </div>
-      <Button @click="navigateToAddProduct" size="default" class="sm:self-start">
+      <Button
+        @click="navigateToAddProduct"
+        size="default"
+        class="sm:self-start"
+      >
         <Plus class="mr-2 h-4 w-4" />
         Добави Продукт
       </Button>
@@ -279,7 +315,9 @@ fetchProducts();
         <div v-if="isLoading" class="flex items-center justify-center py-20">
           <div class="text-center">
             <Loader2 class="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p class="text-lg text-muted-foreground">Зареждане на продукти...</p>
+            <p class="text-lg text-muted-foreground">
+              Зареждане на продукти...
+            </p>
           </div>
         </div>
         <div v-else>
@@ -299,39 +337,45 @@ fetchProducts();
                 <TableCell colspan="6" class="text-center py-12">
                   <div class="flex flex-col items-center gap-2">
                     <Package class="h-12 w-12 text-muted-foreground/50" />
-                    <p class="text-muted-foreground font-medium">Няма намерени продукти</p>
-                    <p class="text-sm text-muted-foreground">Опитайте да промените търсенето или филтрите</p>
+                    <p class="text-muted-foreground font-medium">
+                      Няма намерени продукти
+                    </p>
+                    <p class="text-sm text-muted-foreground">
+                      Опитайте да промените търсенето или филтрите
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>
-              <TableRow
-                v-for="product in paginatedProducts"
-                :key="product._id"
-                class="cursor-pointer hover:bg-muted/50"
-                @click="viewProduct(product._id)"
-              >
+              <TableRow v-for="product in paginatedProducts" :key="product._id">
                 <TableCell>
                   <div class="flex items-center space-x-3">
                     <img
-                      :src="product.images?.[0]?.url ?? fallbackImageUrl"
+                      :src="
+                        (product.images?.[0]?.url || product.image?.url) ??
+                        fallbackImageUrl
+                      "
                       :alt="product.name"
                       class="w-10 h-10 rounded-md object-contain bg-muted"
                     />
                     <div>
                       <div class="font-medium">{{ product.name }}</div>
                       <div class="text-sm text-muted-foreground">
-                        {{ product.category }}
+                        {{ getCategoryName(product.category) }}
                       </div>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{{ product.category }}</Badge>
+                  <Badge variant="secondary">{{
+                    getCategoryName(product.category)
+                  }}</Badge>
                 </TableCell>
                 <TableCell>{{ formatPrice(product.price) }}</TableCell>
                 <TableCell>{{ product.stock }}</TableCell>
                 <TableCell>
-                  <Badge :variant="product.isActive ? 'default' : 'destructive'">
+                  <Badge
+                    :variant="product.isActive ? 'default' : 'destructive'"
+                  >
                     {{ productStatusLabel(product) }}
                   </Badge>
                 </TableCell>
@@ -340,14 +384,24 @@ fetchProducts();
                     <Button
                       variant="ghost"
                       size="icon"
-                      @click.stop="editProduct(product._id)"
+                      @click="viewProduct(product._id)"
+                      title="Виж продукта"
+                    >
+                      <Eye class="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      @click="editProduct(product._id)"
+                      title="Редактирай"
                     >
                       <Edit class="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      @click.stop="deleteProduct(product._id)"
+                      @click="deleteProduct(product._id)"
+                      title="Изтрий"
                     >
                       <Trash2 class="h-4 w-4 text-destructive" />
                     </Button>
@@ -361,11 +415,21 @@ fetchProducts();
     </Card>
 
     <!-- Pagination -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+    <div
+      class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2"
+    >
       <p class="text-sm text-muted-foreground">
-        Показване на <span class="font-medium text-foreground">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> до
-        <span class="font-medium text-foreground">{{ Math.min(currentPage * itemsPerPage, totalItems) }}</span> от
-        <span class="font-medium text-foreground">{{ totalItems }}</span> резултата
+        Показване на
+        <span class="font-medium text-foreground">{{
+          (currentPage - 1) * itemsPerPage + 1
+        }}</span>
+        до
+        <span class="font-medium text-foreground">{{
+          Math.min(currentPage * itemsPerPage, totalItems)
+        }}</span>
+        от
+        <span class="font-medium text-foreground">{{ totalItems }}</span>
+        резултата
       </p>
       <div class="flex gap-2">
         <Button
@@ -388,4 +452,3 @@ fetchProducts();
     </div>
   </div>
 </template>
-

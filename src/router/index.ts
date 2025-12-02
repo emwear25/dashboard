@@ -13,6 +13,7 @@ import CouponsView from "@/views/CouponsView.vue";
 import DiscountAnalyticsView from "@/views/DiscountAnalyticsView.vue";
 import CreateDiscountView from "@/views/CreateDiscountView.vue";
 import CreateCouponView from "@/views/CreateCouponView.vue";
+import ContactMessagesView from "@/views/ContactMessagesView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,6 +39,11 @@ const router = createRouter({
         {
           path: "products/add",
           name: "products-add",
+          component: AddProductView,
+        },
+        {
+          path: "products/edit/:id",
+          name: "products-edit",
           component: AddProductView,
         },
         {
@@ -81,6 +87,11 @@ const router = createRouter({
           component: CreateDiscountView,
         },
         {
+          path: "discounts/edit/:id",
+          name: "edit-discount",
+          component: CreateDiscountView,
+        },
+        {
           path: "coupons",
           name: "coupons",
           component: CouponsView,
@@ -94,6 +105,11 @@ const router = createRouter({
           path: "discount-analytics",
           name: "discount-analytics",
           component: DiscountAnalyticsView,
+        },
+        {
+          path: "contact-messages",
+          name: "contact-messages",
+          component: ContactMessagesView,
         },
       ],
     },

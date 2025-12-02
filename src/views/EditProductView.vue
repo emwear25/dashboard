@@ -35,12 +35,6 @@ import { apiGet, apiUpload } from "@/utils/api";
 const router = useRouter();
 const route = useRoute();
 
-// Check if we're in edit mode
-const isEditMode = computed(
-  () => route.name === "products-edit" || !!route.params.id
-);
-const productId = computed(() => route.params.id as string | undefined);
-
 interface Category {
   _id: string;
   name: string;
@@ -50,10 +44,33 @@ interface Category {
   isActive: boolean;
 }
 
+interface ProductImage {
+  url: string;
+  publicId: string;
+}
+
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  compareAt?: number | null;
+  category: string | { _id: string; slug: string; displayName: string };
+  stock: number;
+  sizes: string[];
+  colors: string[];
+  customEmbroidery: boolean;
+  embroideryFonts: string[];
+  embroideryColors: { name: string; value: string }[];
+  images?: ProductImage[];
+  isActive: boolean;
+}
+
 const form = reactive({
   name: "",
   description: "",
   price: "",
+  compareAt: "",
   category: "",
   stock: "",
   sizes: [] as string[],
@@ -110,6 +127,8 @@ const updateVariants = (updatedVariants: Variant[]) => {
 
 const categories = ref<Category[]>([]);
 const categoriesLoading = ref(true);
+const isLoading = ref(true);
+const productId = ref<string>("");
 
 const availableColors = [
   { name: "Black", value: "#000000" },
@@ -125,11 +144,10 @@ const availableColors = [
 ];
 
 const isSubmitting = ref(false);
-const isLoading = ref(false);
 const isDragging = ref(false);
 const imageFiles = ref<File[]>([]);
 const imagePreviews = ref<string[]>([]);
-const existingImages = ref<{ url: string; publicId: string }[]>([]);
+const existingImages = ref<ProductImage[]>([]);
 const removedImageIds = ref<string[]>([]);
 const customColor = ref("");
 const newFont = ref("");
@@ -149,6 +167,15 @@ const activeCategories = computed(() => {
   return categories.value.filter((cat) => cat.isActive);
 });
 
+const allImagePreviews = computed(() => {
+  return [
+    ...existingImages.value.filter(
+      (img) => !removedImageIds.value.includes(img.publicId)
+    ),
+    ...imagePreviews.value,
+  ];
+});
+
 const toggleSize = (size: string) => {
   const index = form.sizes.indexOf(size);
   if (index > -1) {
@@ -156,7 +183,6 @@ const toggleSize = (size: string) => {
   } else {
     form.sizes.push(size);
   }
-  // Regenerate variants when sizes change
   generateVariants();
   clearError("sizes");
 };
@@ -168,23 +194,13 @@ const onCategoryChange = (newCategory: string) => {
   clearError("category");
 };
 
-const allImagePreviews = computed(() => {
-  return [
-    ...existingImages.value.filter(
-      (img) => !removedImageIds.value.includes(img.publicId)
-    ),
-    ...imagePreviews.value,
-  ];
-});
-
-const toggleColor = (colorName: string) => {
-  const index = form.colors.indexOf(colorName);
+const toggleColor = (color: string) => {
+  const index = form.colors.indexOf(color);
   if (index > -1) {
     form.colors.splice(index, 1);
   } else {
-    form.colors.push(colorName);
+    form.colors.push(color);
   }
-  // Regenerate variants when colors change
   generateVariants();
   clearError("colors");
 };
@@ -238,6 +254,7 @@ const handleFileSelect = (event: Event) => {
 };
 
 const handleDrop = (event: DragEvent) => {
+  event.preventDefault();
   isDragging.value = false;
   const files = Array.from(event.dataTransfer?.files || []);
   const imageFiles = files.filter((file) => file.type.startsWith("image/"));
@@ -247,14 +264,12 @@ const handleDrop = (event: DragEvent) => {
 };
 
 const addImages = (files: File[]) => {
-  // Check if adding these files would exceed the limit (including existing images)
   const totalImages = allImagePreviews.value.length;
   if (totalImages + files.length > 5) {
     showMessage("error", "Можете да качите максимум 5 снимки общо");
     return;
   }
 
-  // Check file types and sizes
   const validTypes = [
     "image/jpeg",
     "image/jpg",
@@ -272,7 +287,6 @@ const addImages = (files: File[]) => {
       return;
     }
 
-    // Check file size (5MB limit per file)
     if (file.size > 5 * 1024 * 1024) {
       showMessage(
         "error",
@@ -282,7 +296,6 @@ const addImages = (files: File[]) => {
     }
   }
 
-  // Add files and generate previews
   files.forEach((file) => {
     imageFiles.value.push(file);
     const reader = new FileReader();
@@ -322,7 +335,7 @@ const removeImage = (index: number) => {
 const removeAllImages = () => {
   imageFiles.value = [];
   imagePreviews.value = [];
-  removedImageIds.value = existingImages.value.map((img) => img.publicId);
+  removedImageIds.value = [];
   if (fileInput.value) {
     fileInput.value.value = "";
   }
@@ -362,7 +375,6 @@ const validateForm = () => {
     errors.value.sizes = "Поне един размер е задължителен";
   }
 
-  // Colors are optional for bags category
   const isBagsCategory = form.category === "bags";
   if (!isBagsCategory && form.colors.length === 0) {
     errors.value.colors = "Поне един цвят е задължителен";
@@ -404,8 +416,6 @@ const fetchCategories = async () => {
 };
 
 const fetchProduct = async () => {
-  if (!productId.value) return;
-
   isLoading.value = true;
   try {
     const result = await apiGet(`products/${productId.value}`);
@@ -416,6 +426,7 @@ const fetchProduct = async () => {
       form.name = product.name || "";
       form.description = product.description || "";
       form.price = product.price?.toString() || "";
+      form.compareAt = product.compareAt?.toString() || "";
       form.stock = product.stock?.toString() || "";
       form.customEmbroidery = product.customEmbroidery || false;
 
@@ -469,46 +480,16 @@ const translateErrorMessage = (msg: string): string => {
     "Image size must be less than 5MB":
       "Размерът на снимката трябва да бъде по-малък от 5MB",
     "Failed to fetch products": "Неуспешно зареждане на продукти",
-    "Failed to create product": "Неуспешно създаване на продукт",
     "Failed to update product": "Неуспешно актуализиране на продукт",
     "Product not found": "Продуктът не е намерен",
     "Unable to connect to server. Please check your connection.":
       "Не може да се свърже със сървъра. Моля, проверете връзката си.",
     "File too large. Please choose a smaller image.":
       "Файлът е твърде голям. Моля, изберете по-малка снимка.",
-    "Failed to create product. Please try again.":
-      "Неуспешно създаване на продукт. Моля, опитайте отново.",
     "Failed to update product. Please try again.":
       "Неуспешно актуализиране на продукт. Моля, опитайте отново.",
   };
   return translations[msg] || msg;
-};
-
-const resetForm = () => {
-  form.name = "";
-  form.description = "";
-  form.price = "";
-  form.category = "";
-  form.stock = "";
-  form.sizes = [];
-  form.colors = [];
-  form.customEmbroidery = false;
-  form.embroideryFonts = [];
-  form.embroideryColors = [];
-
-  imageFiles.value = [];
-  imagePreviews.value = [];
-  existingImages.value = [];
-  removedImageIds.value = [];
-  customColor.value = "";
-  newFont.value = "";
-  newEmbroideryColorName.value = "";
-  newEmbroideryColorValue.value = "#000000";
-  errors.value = {};
-
-  if (fileInput.value) {
-    fileInput.value.value = "";
-  }
 };
 
 const submitForm = async () => {
@@ -540,59 +521,42 @@ const submitForm = async () => {
       );
     }
 
+    if (form.compareAt) {
+      formData.append("compareAt", form.compareAt.toString());
+    }
+
     // Append new images
     imageFiles.value.forEach((file) => {
       formData.append("images", file, file.name);
     });
 
-    // Handle existing images in edit mode
-    if (isEditMode.value) {
-      const remainingExisting = existingImages.value.filter(
-        (img) => !removedImageIds.value.includes(img.publicId)
-      );
+    // Handle existing images
+    const remainingExisting = existingImages.value.filter(
+      (img) => !removedImageIds.value.includes(img.publicId)
+    );
 
-      if (imageFiles.value.length > 0 && remainingExisting.length > 0) {
-        // New images + keeping some existing
-        formData.append("keepExistingImages", "true");
-      } else if (
-        imageFiles.value.length === 0 &&
-        remainingExisting.length > 0
-      ) {
-        // Only keeping existing, no new images
-        formData.append("keepExistingImages", "true");
-      }
+    if (imageFiles.value.length > 0 && remainingExisting.length > 0) {
+      // New images + keeping some existing
+      formData.append("keepExistingImages", "true");
+    } else if (imageFiles.value.length === 0 && remainingExisting.length > 0) {
+      // Only keeping existing, no new images
+      formData.append("keepExistingImages", "true");
+    }
 
-      // Send removed image IDs
-      if (removedImageIds.value.length > 0) {
-        formData.append(
-          "removedImageIds",
-          JSON.stringify(removedImageIds.value)
-        );
-      }
+    // Send removed image IDs
+    if (removedImageIds.value.length > 0) {
+      formData.append("removedImageIds", JSON.stringify(removedImageIds.value));
     }
 
     let result;
     try {
-      if (isEditMode.value) {
-        result = await apiUpload(`products/${productId.value}`, formData);
-      } else {
-        result = await apiUpload("products", formData);
-      }
+      result = await apiUpload(`products/${productId.value}`, formData);
     } catch {
       throw new Error("Invalid response from server");
     }
 
     if (result.success) {
-      showMessage(
-        "success",
-        isEditMode.value
-          ? "Продуктът е актуализиран успешно!"
-          : "Продуктът е създаден успешно!"
-      );
-
-      if (!isEditMode.value) {
-        resetForm();
-      }
+      showMessage("success", "Продуктът е актуализиран успешно!");
 
       setTimeout(() => {
         router.push("/products");
@@ -610,7 +574,7 @@ const submitForm = async () => {
       }
     }
   } catch (error: unknown) {
-    console.error("Error creating product:", error);
+    console.error("Error updating product:", error);
 
     if (
       error instanceof Error &&
@@ -631,9 +595,7 @@ const submitForm = async () => {
         "error",
         error instanceof Error
           ? translateErrorMessage(error.message)
-          : isEditMode.value
-            ? "Неуспешно актуализиране на продукт. Моля, опитайте отново."
-            : "Неуспешно създаване на продукт. Моля, опитайте отново."
+          : "Неуспешно актуализиране на продукт. Моля, опитайте отново."
       );
     }
   } finally {
@@ -642,13 +604,10 @@ const submitForm = async () => {
 };
 
 onMounted(async () => {
-  // Fetch categories on mount
-  await fetchCategories();
+  productId.value = route.params.id as string;
 
-  // If in edit mode, fetch product data
-  if (isEditMode.value && productId.value) {
-    await fetchProduct();
-  }
+  await fetchCategories();
+  await fetchProduct();
 
   const handleDragEnter = () => {
     isDragging.value = true;
@@ -678,15 +637,9 @@ onMounted(async () => {
           <ArrowLeft class="h-4 w-4" />
         </Button>
         <div>
-          <h1 class="text-3xl font-bold tracking-tight">
-            {{ isEditMode ? "Редактирай Продукт" : "Добави Нов Продукт" }}
-          </h1>
+          <h1 class="text-3xl font-bold tracking-tight">Редактирай Продукт</h1>
           <p class="text-sm text-muted-foreground mt-1">
-            {{
-              isEditMode
-                ? "Актуализирайте информацията за продукта"
-                : "Попълнете информацията по-долу, за да създадете нов продукт"
-            }}
+            Актуализирайте информацията за продукта
           </p>
         </div>
       </div>
@@ -700,20 +653,11 @@ onMounted(async () => {
           @click="submitForm"
         >
           <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
-          {{
-            isSubmitting
-              ? isEditMode
-                ? "Актуализация..."
-                : "Създаване..."
-              : isEditMode
-                ? "Актуализирай Продукт"
-                : "Създай Продукт"
-          }}
+          {{ isSubmitting ? "Актуализация..." : "Актуализирай Продукт" }}
         </Button>
       </div>
     </div>
 
-    <!-- Loading State for Edit Mode -->
     <div v-if="isLoading" class="flex items-center justify-center py-20">
       <div class="text-center">
         <Loader2 class="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
@@ -777,36 +721,61 @@ onMounted(async () => {
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                  <div class="space-y-2">
-                    <Label for="price" class="text-sm font-medium"
-                      >Цена (BGN) <span class="text-destructive">*</span></Label
-                    >
-                    <div class="relative">
-                      <span
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <Label for="price" class="text-sm font-medium"
+                        >Цена (BGN)
+                        <span class="text-destructive">*</span></Label
                       >
-                        лв.
-                      </span>
-                      <Input
-                        id="price"
-                        v-model="form.price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        class="h-11 pl-9"
-                        :class="{ 'border-destructive': errors.price }"
-                      />
+                      <div class="relative">
+                        <span
+                          class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        >
+                          лв.
+                        </span>
+                        <Input
+                          id="price"
+                          v-model="form.price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          class="h-11 pl-9"
+                          :class="{ 'border-destructive': errors.price }"
+                        />
+                      </div>
+                      <p
+                        v-if="errors.price"
+                        class="text-xs text-destructive mt-1"
+                      >
+                        {{ errors.price }}
+                      </p>
                     </div>
-                    <p
-                      v-if="errors.price"
-                      class="text-xs text-destructive mt-1"
-                    >
-                      {{ errors.price }}
-                    </p>
-                    <p class="text-xs text-muted-foreground mt-1">
-                      За отстъпки използвайте страницата "Отстъпки"
-                    </p>
+
+                    <div class="space-y-2">
+                      <Label for="compareAt" class="text-sm font-medium"
+                        >Стара Цена (опц.)</Label
+                      >
+                      <div class="relative">
+                        <span
+                          class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        >
+                          лв.
+                        </span>
+                        <Input
+                          id="compareAt"
+                          v-model="form.compareAt"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          class="h-11 pl-9"
+                        />
+                      </div>
+                      <p class="text-xs text-muted-foreground mt-1">
+                        За показване на "Save %" badge
+                      </p>
+                    </div>
                   </div>
 
                   <div class="space-y-2">
@@ -851,7 +820,7 @@ onMounted(async () => {
 
                 <div class="space-y-2">
                   <Label for="stock" class="text-sm font-medium"
-                    >Начална Наличност (по подразбиране)
+                    >Начално Количество на Склад
                     <span class="text-destructive">*</span></Label
                   >
                   <Input
@@ -859,14 +828,13 @@ onMounted(async () => {
                     v-model="form.stock"
                     type="number"
                     min="0"
-                    placeholder="0"
+                    placeholder="Въведете количество"
                     class="h-11"
                     :class="{ 'border-destructive': errors.stock }"
                   />
-                  <p class="text-xs text-muted-foreground mt-1">
-                    Това количество ще се приложи към всички варианти. Можете да
-                    промените наличността за всеки вариант отделно в секцията
-                    "Наличност по Варианти" по-долу.
+                  <p class="text-xs text-muted-foreground">
+                    Можете да управлявате склада по-късно от страницата
+                    Управление на Склада
                   </p>
                   <p v-if="errors.stock" class="text-xs text-destructive mt-1">
                     {{ errors.stock }}
@@ -939,8 +907,6 @@ onMounted(async () => {
                 </p>
               </div>
 
-              <div class="h-px bg-border"></div>
-
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <Label class="text-sm font-medium"
@@ -951,7 +917,13 @@ onMounted(async () => {
                     {{ form.colors.length }} избрани
                   </span>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div
+                  v-if="form.category === 'bags'"
+                  class="text-sm text-muted-foreground p-4 bg-muted/30 rounded-lg text-center"
+                >
+                  Цветовете са незадължителни за категория "Чанти"
+                </div>
+                <div v-else class="grid grid-cols-5 gap-2">
                   <Button
                     v-for="color in availableColors"
                     :key="color.name"
@@ -968,28 +940,43 @@ onMounted(async () => {
                     }"
                   >
                     <div
-                      class="w-4 h-4 rounded-full border-2 border-background shadow-sm"
-                      :style="{ backgroundColor: color.value }"
+                      class="w-4 h-4 rounded-full border border-border"
+                      :style="{ background: color.value }"
                     ></div>
-                    <span class="text-sm">{{ color.name }}</span>
+                    {{ color.name }}
                   </Button>
                 </div>
-                <div class="flex items-center gap-2 pt-2">
+                <div class="flex gap-2 mt-2">
                   <Input
                     v-model="customColor"
                     type="text"
-                    placeholder="Добавете персонализирано име на цвят"
-                    class="flex-1 h-10"
+                    placeholder="Добави персонализиран цвят"
+                    class="flex-1 h-9"
+                    @keyup.enter="addCustomColor"
                   />
-                  <Button
-                    type="button"
-                    @click="addCustomColor"
-                    :disabled="!customColor.trim()"
-                    variant="secondary"
-                    class="h-10"
-                  >
+                  <Button type="button" @click="addCustomColor" size="sm">
                     Добави
                   </Button>
+                </div>
+                <div
+                  v-if="form.colors.length > 0"
+                  class="flex flex-wrap gap-2 mt-2"
+                >
+                  <Badge
+                    v-for="color in form.colors"
+                    :key="color"
+                    variant="secondary"
+                    class="px-3 py-1"
+                  >
+                    {{ color }}
+                    <button
+                      type="button"
+                      @click="toggleColor(color)"
+                      class="ml-2 hover:text-destructive"
+                    >
+                      <X class="h-3 w-3" />
+                    </button>
+                  </Badge>
                 </div>
                 <p v-if="errors.colors" class="text-xs text-destructive mt-1">
                   {{ errors.colors }}
@@ -998,32 +985,7 @@ onMounted(async () => {
             </CardContent>
           </Card>
 
-          <!-- Variant Stock Grid -->
-          <Card v-if="variants.length > 0">
-            <CardHeader class="pb-4">
-              <div class="flex items-center gap-2">
-                <div class="h-8 w-1 bg-primary rounded-full"></div>
-                <div>
-                  <CardTitle class="text-lg">Наличност по Варианти</CardTitle>
-                  <CardDescription class="text-xs">
-                    Задайте начална наличност за всяка комбинация размер/цвят
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <VariantStockGrid
-                v-if="form.sizes.length > 0 && form.colors.length > 0"
-                :variants="variants"
-                :sizes="form.sizes"
-                :colors="form.colors"
-                :base-price="form.price"
-                @update="updateVariants"
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
+          <Card v-if="form.customEmbroidery">
             <CardHeader class="pb-4">
               <div class="flex items-center gap-2">
                 <div class="h-8 w-1 bg-primary rounded-full"></div>
@@ -1036,10 +998,8 @@ onMounted(async () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent class="space-y-4">
-              <div
-                class="flex items-center justify-between p-4 rounded-lg border bg-muted/30"
-              >
+            <CardContent class="space-y-6">
+              <div class="flex items-center justify-between">
                 <div class="space-y-0.5">
                   <Label
                     for="embroidered"
@@ -1047,7 +1007,7 @@ onMounted(async () => {
                     >Активирай Бродерия</Label
                   >
                   <p class="text-xs text-muted-foreground">
-                    Позволете на клиентите да добавят персонализирана бродерия
+                    Позволи на клиентите да персонализират продукта
                   </p>
                 </div>
                 <Switch
@@ -1056,15 +1016,8 @@ onMounted(async () => {
                 />
               </div>
 
-              <div
-                v-if="form.customEmbroidery"
-                class="space-y-4 rounded-lg border border-gray-200 p-4"
-              >
-                <h4 class="text-sm font-semibold text-gray-900 mb-3">
-                  Опции за Бродерия
-                </h4>
-
-                <!-- Available Fonts -->
+              <div v-if="form.customEmbroidery" class="space-y-4 pt-4 border-t">
+                <!-- Available Embroidery Fonts -->
                 <div class="space-y-2">
                   <Label class="text-sm font-medium">Налични Шрифтове</Label>
                   <div class="flex flex-wrap gap-2 mb-2">
@@ -1072,19 +1025,24 @@ onMounted(async () => {
                       v-for="(font, index) in form.embroideryFonts"
                       :key="index"
                       variant="secondary"
-                      class="cursor-pointer hover:bg-red-100"
-                      @click="removeFont(index)"
+                      class="px-3 py-1"
                     >
                       {{ font }}
-                      <X class="ml-1 h-3 w-3" />
+                      <button
+                        type="button"
+                        @click="removeFont(index)"
+                        class="ml-2 hover:text-destructive"
+                      >
+                        <X class="h-3 w-3" />
+                      </button>
                     </Badge>
                   </div>
                   <div class="flex gap-2">
                     <Input
                       v-model="newFont"
                       type="text"
-                      placeholder="напр., Arial, Times New Roman, Script"
-                      class="h-10 flex-1"
+                      placeholder="Добави нов шрифт"
+                      class="flex-1 h-9"
                       @keyup.enter="addFont"
                     />
                     <Button type="button" @click="addFont" size="sm">
@@ -1103,63 +1061,62 @@ onMounted(async () => {
                       v-for="(color, index) in form.embroideryColors"
                       :key="index"
                       variant="secondary"
-                      class="cursor-pointer hover:bg-red-100 flex items-center gap-2"
-                      @click="removeEmbroideryColor(index)"
+                      class="px-3 py-1"
                     >
-                      <span
-                        class="w-4 h-4 rounded-full border border-gray-300"
+                      <div
+                        class="w-3 h-3 rounded-full inline-block mr-2 border border-border"
                         :style="{ background: color.value }"
-                      ></span>
+                      ></div>
                       {{ color.name }}
-                      <X class="ml-1 h-3 w-3" />
+                      <button
+                        type="button"
+                        @click="removeEmbroideryColor(index)"
+                        class="ml-2 hover:text-destructive"
+                      >
+                        <X class="h-3 w-3" />
+                      </button>
                     </Badge>
                   </div>
-                  <div class="flex gap-2">
+                  <div class="grid grid-cols-2 gap-2">
                     <Input
                       v-model="newEmbroideryColorName"
                       type="text"
-                      placeholder="Име (напр., Черен)"
-                      class="h-10 flex-1"
+                      placeholder="Име на цвят"
+                      class="h-9"
+                      @keyup.enter="addEmbroideryColor"
                     />
-                    <Input
-                      v-model="newEmbroideryColorValue"
-                      type="color"
-                      class="h-10 w-20"
-                    />
-                    <Button type="button" @click="addEmbroideryColor" size="sm">
-                      Добави
-                    </Button>
+                    <div class="flex gap-2">
+                      <Input
+                        v-model="newEmbroideryColorValue"
+                        type="color"
+                        class="h-9 w-20 p-1"
+                      />
+                      <Button
+                        type="button"
+                        @click="addEmbroideryColor"
+                        size="sm"
+                      >
+                        Добави
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        <div class="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader class="pb-4">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <div class="h-8 w-1 bg-primary rounded-full"></div>
-                  <div>
-                    <CardTitle class="text-lg">Снимки на Продукта</CardTitle>
-                    <CardDescription class="text-xs">
-                      Качете до 5 висококачествени снимки ({{
-                        allImagePreviews.length
-                      }}/5)
-                    </CardDescription>
-                  </div>
+              <div class="flex items-center gap-2">
+                <div class="h-8 w-1 bg-primary rounded-full"></div>
+                <div>
+                  <CardTitle class="text-lg">Снимки на Продукта</CardTitle>
+                  <CardDescription class="text-xs">
+                    Качете до 5 висококачествени снимки ({{
+                      allImagePreviews.length
+                    }}/5)
+                  </CardDescription>
                 </div>
-                <Button
-                  v-if="allImagePreviews.length > 0"
-                  @click="removeAllImages"
-                  variant="ghost"
-                  size="sm"
-                  type="button"
-                >
-                  Изчисти Всички
-                </Button>
               </div>
             </CardHeader>
             <CardContent class="space-y-4">
@@ -1171,31 +1128,20 @@ onMounted(async () => {
                 <div
                   v-for="(preview, index) in allImagePreviews"
                   :key="index"
-                  class="relative group aspect-square"
+                  class="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
                 >
                   <img
                     :src="preview.url || preview"
-                    :alt="`Product preview ${index + 1}`"
-                    class="w-full h-full object-contain rounded-lg border-2 border-border bg-muted"
+                    :alt="`Product image ${index + 1}`"
+                    class="w-full h-full object-cover"
                   />
-                  <div
-                    class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center"
+                  <button
+                    type="button"
+                    @click="removeImage(index)"
+                    class="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <Button
-                      type="button"
-                      @click="removeImage(index)"
-                      variant="destructive"
-                      size="icon"
-                    >
-                      <X class="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div
-                    v-if="index === 0"
-                    class="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-medium px-2 py-1 rounded"
-                  >
-                    Главна
-                  </div>
+                    <X class="h-4 w-4" />
+                  </button>
                 </div>
               </div>
 
@@ -1204,19 +1150,24 @@ onMounted(async () => {
                 v-if="allImagePreviews.length < 5"
                 @drop.prevent="handleDrop"
                 @dragover.prevent
-                @dragenter.prevent
-                class="border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer hover:border-primary/50 hover:bg-primary/5"
-                :class="
+                @dragenter.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+                :class="[
+                  'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
                   isDragging
-                    ? 'border-primary bg-primary/10 scale-105'
-                    : 'border-muted-foreground/25'
-                "
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50',
+                ]"
               >
-                <div
-                  class="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3"
-                >
-                  <Upload class="w-6 h-6 text-primary" />
-                </div>
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  @change="handleFileSelect"
+                  class="hidden"
+                />
+                <Upload class="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <h3 class="text-sm font-medium mb-2">
                   {{
                     allImagePreviews.length > 0
@@ -1243,8 +1194,8 @@ onMounted(async () => {
                     class="hidden"
                   />
                 </label>
-                <p class="text-xs text-muted-foreground mt-4">
-                  Поддържани: PNG, JPG • Макс. размер: 5MB
+                <p class="text-xs text-muted-foreground mt-2">
+                  Поддържани формати: JPEG, PNG, GIF, WEBP (макс. 5MB на файл)
                 </p>
               </div>
               <p
@@ -1256,13 +1207,15 @@ onMounted(async () => {
               </p>
             </CardContent>
           </Card>
+        </div>
 
-          <Card class="bg-muted/30">
-            <CardHeader class="pb-3">
-              <CardTitle class="text-sm font-medium">Бързи Съвети</CardTitle>
+        <div class="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle class="text-lg">Съвети</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul class="space-y-2 text-xs text-muted-foreground">
+              <ul class="space-y-3 text-sm text-muted-foreground">
                 <li class="flex items-start gap-2">
                   <div class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>
                   <span
@@ -1279,11 +1232,11 @@ onMounted(async () => {
                 </li>
                 <li class="flex items-start gap-2">
                   <div class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>
-                  <span>Изберете всички приложими размери и цветове</span>
+                  <span>Покажете продукта от различни ъгли</span>
                 </li>
                 <li class="flex items-start gap-2">
                   <div class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>
-                  <span>Напишете ясни, описателни детайли за продукта</span>
+                  <span>Използвайте неутрален фон за по-добър вид</span>
                 </li>
               </ul>
             </CardContent>
@@ -1292,59 +1245,27 @@ onMounted(async () => {
       </div>
     </form>
 
+    <!-- Success/Error Message -->
     <div
       v-if="message"
-      class="fixed bottom-6 right-6 z-50 max-w-md animate-in slide-in-from-bottom-5"
+      :class="[
+        'fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border p-4 shadow-lg transition-all',
+        message.type === 'success'
+          ? 'bg-green-50 border-green-200 text-green-900'
+          : 'bg-red-50 border-red-200 text-red-900',
+      ]"
     >
-      <Card
-        class="shadow-lg border-2"
-        :class="
-          message.type === 'success'
-            ? 'border-green-500 bg-green-50 dark:bg-green-950'
-            : 'border-destructive bg-destructive/10'
-        "
-      >
-        <CardContent class="p-4">
-          <div class="flex items-start gap-3">
-            <div
-              class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              :class="
-                message.type === 'success'
-                  ? 'bg-green-100 dark:bg-green-900'
-                  : 'bg-destructive/20'
-              "
-            >
-              <CheckCircle
-                v-if="message.type === 'success'"
-                class="h-5 w-5 text-green-600 dark:text-green-400"
-              />
-              <AlertCircle v-else class="h-5 w-5 text-destructive" />
-            </div>
-            <div class="flex-1 pt-0.5">
-              <p
-                class="text-sm font-semibold mb-0.5"
-                :class="
-                  message.type === 'success'
-                    ? 'text-green-900 dark:text-green-100'
-                    : 'text-destructive'
-                "
-              >
-                {{ message.type === "success" ? "Успешно!" : "Грешка" }}
-              </p>
-              <p
-                class="text-sm"
-                :class="
-                  message.type === 'success'
-                    ? 'text-green-700 dark:text-green-300'
-                    : 'text-destructive/90'
-                "
-              >
-                {{ message.text }}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <CheckCircle
+        v-if="message.type === 'success'"
+        class="h-5 w-5 flex-shrink-0"
+      />
+      <AlertCircle v-else class="h-5 w-5 flex-shrink-0" />
+      <div>
+        <p class="font-semibold">
+          {{ message.type === "success" ? "Успешно!" : "Грешка" }}
+        </p>
+        <p class="text-sm">{{ message.text }}</p>
+      </div>
     </div>
   </div>
 </template>

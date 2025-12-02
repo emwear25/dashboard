@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import {
   Table,
   TableBody,
@@ -8,24 +8,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -33,15 +33,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Search, Plus, Edit, Trash2, Loader2, AlertCircle, Tag, Percent } from 'lucide-vue-next';
+} from "@/components/ui/dialog";
+import {
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  AlertCircle,
+  Tag,
+  Percent,
+} from "lucide-vue-next";
+import { apiGet, apiPut, apiDelete } from "@/utils/api";
 
 type Discount = {
   _id: string;
   name: string;
-  type: 'percentage' | 'fixed_amount' | 'buy_x_get_y' | 'free_shipping';
+  type: "percentage" | "fixed_amount" | "buy_x_get_y" | "free_shipping";
   value: number;
-  scope: 'product' | 'category' | 'cart' | 'shipping';
+  scope: "product" | "category" | "cart" | "shipping";
   isActive: boolean;
   startDate?: string;
   endDate?: string;
@@ -55,7 +65,7 @@ type Discount = {
 
 const router = useRouter();
 
-const searchQuery = ref('');
+const searchQuery = ref("");
 const selectedType = ref<string | undefined>(undefined);
 const selectedStatus = ref<string | undefined>(undefined);
 const currentPage = ref(1);
@@ -63,34 +73,23 @@ const itemsPerPage = 10;
 
 const discounts = ref<Discount[]>([]);
 const isLoading = ref(false);
-const errorMessage = ref('');
+const errorMessage = ref("");
 const showDeleteDialog = ref(false);
 const discountToDelete = ref<string | null>(null);
 
 const fetchDiscounts = async () => {
   isLoading.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
 
   try {
-    const response = await fetch('http://localhost:3030/api/discounts', {
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch discounts');
-    }
-
-    const result = await response.json();
+    const result = await apiGet("discounts");
 
     if (result.success && Array.isArray(result.data)) {
       discounts.value = result.data;
     }
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to load discounts';
+      error instanceof Error ? error.message : "Failed to load discounts";
   } finally {
     isLoading.value = false;
   }
@@ -104,14 +103,14 @@ const discountsByFilters = computed(() => {
 
     const matchesType =
       !selectedType.value ||
-      selectedType.value === 'all' ||
+      selectedType.value === "all" ||
       discount.type === selectedType.value;
 
     const matchesStatus =
       !selectedStatus.value ||
-      selectedStatus.value === 'all' ||
-      (selectedStatus.value === 'active' && discount.isActive) ||
-      (selectedStatus.value === 'inactive' && !discount.isActive);
+      selectedStatus.value === "all" ||
+      (selectedStatus.value === "active" && discount.isActive) ||
+      (selectedStatus.value === "inactive" && !discount.isActive);
 
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -130,57 +129,45 @@ const totalPages = computed(() =>
 
 const formatDiscountType = (type: string) => {
   const types: Record<string, string> = {
-    percentage: 'Процент',
-    fixed_amount: 'Фиксирана сума',
-    buy_x_get_y: 'Купи X Вземи Y',
-    free_shipping: 'Безплатна доставка'
+    percentage: "Процент",
+    fixed_amount: "Фиксирана сума",
+    buy_x_get_y: "Купи X Вземи Y",
+    free_shipping: "Безплатна доставка",
   };
   return types[type] || type;
 };
 
 const formatDiscountValue = (discount: Discount) => {
-  if (discount.type === 'percentage') {
+  if (discount.type === "percentage") {
     return `${discount.value}%`;
-  } else if (discount.type === 'fixed_amount') {
+  } else if (discount.type === "fixed_amount") {
     return `${discount.value} лв`;
-  } else if (discount.type === 'free_shipping') {
-    return 'Безплатна';
+  } else if (discount.type === "free_shipping") {
+    return "Безплатна";
   }
   return discount.value.toString();
 };
 
 const formatScope = (scope: string) => {
   const scopes: Record<string, string> = {
-    product: 'Продукт',
-    category: 'Категория',
-    cart: 'Количка',
-    shipping: 'Доставка'
+    product: "Продукт",
+    category: "Категория",
+    cart: "Количка",
+    shipping: "Доставка",
   };
   return scopes[scope] || scope;
 };
 
 const toggleDiscountStatus = async (discount: Discount) => {
   try {
-    const response = await fetch(`http://localhost:3030/api/discounts/${discount._id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        ...discount,
-        isActive: !discount.isActive
-      })
+    await apiPut(`discounts/${discount._id}`, {
+      ...discount,
+      isActive: !discount.isActive,
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to update discount');
-    }
 
     await fetchDiscounts();
   } catch (error) {
-    alert(error instanceof Error ? error.message : 'Failed to update discount');
+    alert(error instanceof Error ? error.message : "Failed to update discount");
   }
 };
 
@@ -193,23 +180,15 @@ const deleteDiscount = async () => {
   if (!discountToDelete.value) return;
 
   try {
-    const response = await fetch(`http://localhost:3030/api/discounts/${discountToDelete.value}`, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
-    });
+    await apiDelete(`discounts/${discountToDelete.value}`);
 
-    if (!response.ok) {
-      throw new Error('Failed to delete discount');
-    }
-
-    discounts.value = discounts.value.filter((d) => d._id !== discountToDelete.value);
+    discounts.value = discounts.value.filter(
+      (d) => d._id !== discountToDelete.value
+    );
     showDeleteDialog.value = false;
     discountToDelete.value = null;
   } catch (error) {
-    alert(error instanceof Error ? error.message : 'Failed to delete discount');
+    alert(error instanceof Error ? error.message : "Failed to delete discount");
   }
 };
 
@@ -226,11 +205,11 @@ const nextPage = () => {
 };
 
 const navigateToCoupons = () => {
-  router.push('/coupons');
+  router.push("/coupons");
 };
 
 const navigateToAnalytics = () => {
-  router.push('/discount-analytics');
+  router.push("/discount-analytics");
 };
 
 onMounted(() => {
@@ -241,7 +220,9 @@ onMounted(() => {
 <template>
   <div class="space-y-8 pb-8 pt-6">
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    >
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Отстъпки</h1>
         <p class="text-muted-foreground mt-1.5">
@@ -267,16 +248,22 @@ onMounted(() => {
     <!-- Stats Cards -->
     <div class="grid gap-4 md:grid-cols-3">
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Активни отстъпки</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">{{ discounts.filter(d => d.isActive).length }}</div>
+          <div class="text-2xl font-bold">
+            {{ discounts.filter((d) => d.isActive).length }}
+          </div>
         </CardContent>
       </Card>
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Общо отстъпки</CardTitle>
           <Percent class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -285,12 +272,16 @@ onMounted(() => {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Общо използвания</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">{{ discounts.reduce((sum, d) => sum + d.usageCount, 0) }}</div>
+          <div class="text-2xl font-bold">
+            {{ discounts.reduce((sum, d) => sum + d.usageCount, 0) }}
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -355,7 +346,9 @@ onMounted(() => {
         <div v-if="isLoading" class="flex items-center justify-center py-20">
           <div class="text-center">
             <Loader2 class="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p class="text-lg text-muted-foreground">Зареждане на отстъпки...</p>
+            <p class="text-lg text-muted-foreground">
+              Зареждане на отстъпки...
+            </p>
           </div>
         </div>
         <div v-else>
@@ -376,8 +369,12 @@ onMounted(() => {
                 <TableCell colspan="7" class="text-center py-12">
                   <div class="flex flex-col items-center gap-2">
                     <Tag class="h-12 w-12 text-muted-foreground/50" />
-                    <p class="text-muted-foreground font-medium">Няма намерени отстъпки</p>
-                    <p class="text-sm text-muted-foreground">Опитайте да промените търсенето или филтрите</p>
+                    <p class="text-muted-foreground font-medium">
+                      Няма намерени отстъпки
+                    </p>
+                    <p class="text-sm text-muted-foreground">
+                      Опитайте да промените търсенето или филтрите
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -388,23 +385,35 @@ onMounted(() => {
               >
                 <TableCell>
                   <div class="font-medium">{{ discount.name }}</div>
-                  <div v-if="discount.conditions?.minPurchaseAmount" class="text-sm text-muted-foreground">
+                  <div
+                    v-if="discount.conditions?.minPurchaseAmount"
+                    class="text-sm text-muted-foreground"
+                  >
                     Мин. {{ discount.conditions.minPurchaseAmount }} лв
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{{ formatDiscountType(discount.type) }}</Badge>
+                  <Badge variant="secondary">{{
+                    formatDiscountType(discount.type)
+                  }}</Badge>
                 </TableCell>
-                <TableCell class="font-semibold">{{ formatDiscountValue(discount) }}</TableCell>
+                <TableCell class="font-semibold">{{
+                  formatDiscountValue(discount)
+                }}</TableCell>
                 <TableCell>{{ formatScope(discount.scope) }}</TableCell>
                 <TableCell>
                   <div class="text-sm">
-                    {{ discount.usageCount }}{{ discount.usageLimit ? ` / ${discount.usageLimit}` : '' }}
+                    {{ discount.usageCount
+                    }}{{
+                      discount.usageLimit ? ` / ${discount.usageLimit}` : ""
+                    }}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge :variant="discount.isActive ? 'default' : 'destructive'">
-                    {{ discount.isActive ? 'Активна' : 'Неактивна' }}
+                  <Badge
+                    :variant="discount.isActive ? 'default' : 'destructive'"
+                  >
+                    {{ discount.isActive ? "Активна" : "Неактивна" }}
                   </Badge>
                 </TableCell>
                 <TableCell class="text-right">
@@ -412,8 +421,8 @@ onMounted(() => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      @click="toggleDiscountStatus(discount)"
-                      :title="discount.isActive ? 'Деактивирай' : 'Активирай'"
+                      @click="router.push(`/discounts/edit/${discount._id}`)"
+                      title="Редактирай"
                     >
                       <Edit class="h-4 w-4" />
                     </Button>
@@ -434,11 +443,21 @@ onMounted(() => {
     </Card>
 
     <!-- Pagination -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+    <div
+      class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2"
+    >
       <p class="text-sm text-muted-foreground">
-        Показване на <span class="font-medium text-foreground">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> до
-        <span class="font-medium text-foreground">{{ Math.min(currentPage * itemsPerPage, totalItems) }}</span> от
-        <span class="font-medium text-foreground">{{ totalItems }}</span> резултата
+        Показване на
+        <span class="font-medium text-foreground">{{
+          (currentPage - 1) * itemsPerPage + 1
+        }}</span>
+        до
+        <span class="font-medium text-foreground">{{
+          Math.min(currentPage * itemsPerPage, totalItems)
+        }}</span>
+        от
+        <span class="font-medium text-foreground">{{ totalItems }}</span>
+        резултата
       </p>
       <div class="flex gap-2">
         <Button
@@ -466,7 +485,8 @@ onMounted(() => {
         <DialogHeader>
           <DialogTitle>Изтриване на отстъпка</DialogTitle>
           <DialogDescription>
-            Сигурни ли сте, че искате да изтриете тази отстъпка? Това действие не може да бъде отменено.
+            Сигурни ли сте, че искате да изтриете тази отстъпка? Това действие
+            не може да бъде отменено.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

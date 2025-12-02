@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ref, reactive, computed, onMounted } from "vue";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -10,17 +16,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Loader2,
   Plus,
@@ -33,8 +39,10 @@ import {
   Package,
   Minus,
   X,
-} from 'lucide-vue-next';
-import { useToast } from '@/components/ui/toast/use-toast';
+  Search,
+} from "lucide-vue-next";
+import { useToast } from "@/components/ui/toast/use-toast";
+import { apiGet, apiPost, apiPatch } from "@/utils/api";
 
 interface Category {
   _id: string;
@@ -45,11 +53,21 @@ interface Category {
   isActive: boolean;
 }
 
+interface Variant {
+  size: string;
+  color: string;
+  stock: number;
+  reserved?: number;
+}
+
 interface Product {
   _id: string;
   name: string;
   price: number;
   stock: number;
+  variants?: Variant[];
+  sizes?: string[];
+  colors?: string[];
   category: string;
   images: Array<{ url: string; public_id: string }>;
 }
@@ -57,9 +75,12 @@ interface Product {
 interface OrderItem {
   product: string;
   productName: string;
+  size?: string;
+  color?: string;
   quantity: number;
   price: number;
   maxStock: number;
+  availableVariants?: Variant[];
 }
 
 interface ExternalOrder {
@@ -98,50 +119,84 @@ const categories = ref<Category[]>([]);
 const products = ref<Product[]>([]);
 const orders = ref<ExternalOrder[]>([]);
 
-const selectedCategory = ref('');
+const selectedCategory = ref("");
 const orderItems = ref<OrderItem[]>([]);
+const selectedVariants = ref<Record<string, { size?: string; color?: string }>>(
+  {}
+);
+const productSearch = ref("");
+const editingShipping = ref<string | null>(null);
+const editShippingNumber = ref("");
 
 // Form state
 const form = reactive({
-  source: '',
-  customerName: '',
-  customerPhone: '',
-  customerAddress: '',
-  shippingProvider: '',
-  shippingNumber: '',
-  notes: '',
+  source: "",
+  customerName: "",
+  customerPhone: "",
+  customerAddress: "",
+  shippingProvider: "",
+  shippingNumber: "",
+  notes: "",
 });
 
 const formErrors = reactive({
-  source: '',
-  customerName: '',
-  customerPhone: '',
-  customerAddress: '',
-  shippingProvider: '',
-  shippingNumber: '',
-  items: '',
+  source: "",
+  customerName: "",
+  customerPhone: "",
+  customerAddress: "",
+  shippingProvider: "",
+  shippingNumber: "",
+  items: "",
 });
 
 // Computed
 const filteredProducts = computed(() => {
   if (!selectedCategory.value) return [];
-  return products.value.filter((p) => p.category === selectedCategory.value && p.stock > 0);
+
+  let filtered = products.value.filter((p) => {
+    // Handle category comparison (can be string or object)
+    const productCategory =
+      typeof p.category === "object" && p.category !== null
+        ? (p.category as any).slug || (p.category as any).name
+        : p.category;
+
+    if (productCategory !== selectedCategory.value) return false;
+
+    // Check variant stock if product has variants
+    if (p.variants && p.variants.length > 0) {
+      return p.variants.some((v) => v.stock - (v.reserved || 0) > 0);
+    }
+
+    // Fallback to old stock field
+    return p.stock > 0;
+  });
+
+  // Apply search filter
+  if (productSearch.value.trim()) {
+    const search = productSearch.value.toLowerCase();
+    filtered = filtered.filter((p) => p.name.toLowerCase().includes(search));
+  }
+
+  return filtered;
 });
 
 const totalAmount = computed(() => {
-  return orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  return orderItems.value.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 });
 
 const sourceIcon = (source: string) => {
   switch (source) {
-    case 'phone':
+    case "phone":
       return Phone;
-    case 'instagram':
+    case "instagram":
       return Instagram;
-    case 'facebook':
+    case "facebook":
       return Facebook;
-    case 'tiktok':
-    case 'other':
+    case "tiktok":
+    case "other":
       return MessageCircle;
     default:
       return Package;
@@ -150,49 +205,48 @@ const sourceIcon = (source: string) => {
 
 const sourceLabel = (source: string) => {
   const labels: Record<string, string> = {
-    phone: 'Телефон',
-    instagram: 'Instagram',
-    facebook: 'Facebook',
-    tiktok: 'TikTok',
-    other: 'Друго',
+    phone: "Телефон",
+    instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
+    other: "Друго",
   };
   return labels[source] || source;
 };
 
 const statusLabel = (status: string) => {
   const labels: Record<string, string> = {
-    pending: 'Чакаща',
-    processing: 'В Обработка',
-    shipped: 'Изпратена',
-    delivered: 'Доставена',
-    cancelled: 'Отказана',
+    pending: "Чакаща",
+    processing: "В Обработка",
+    shipped: "Изпратена",
+    delivered: "Доставена",
+    cancelled: "Отказана",
   };
   return labels[status] || status;
 };
 
 const statusVariant = (status: string) => {
-  const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-    pending: 'secondary',
-    processing: 'default',
-    shipped: 'default',
-    delivered: 'default',
-    cancelled: 'destructive',
+  const variants: Record<string, "default" | "secondary" | "destructive"> = {
+    pending: "secondary",
+    processing: "default",
+    shipped: "default",
+    delivered: "default",
+    cancelled: "destructive",
   };
-  return variants[status] || 'default';
+  return variants[status] || "default";
 };
 
 // Functions
 const fetchCategories = async () => {
   try {
     categoriesLoading.value = true;
-    const response = await fetch('http://localhost:3030/api/categories?active=true');
-    const data = await response.json();
+    const data = await apiGet("categories?active=true");
 
     if (data.success) {
       categories.value = data.data;
     }
   } catch (error) {
-    console.error('Грешка при зареждане на категориите:', error);
+    console.error("Грешка при зареждане на категориите:", error);
   } finally {
     categoriesLoading.value = false;
   }
@@ -201,14 +255,22 @@ const fetchCategories = async () => {
 const fetchProducts = async () => {
   try {
     productsLoading.value = true;
-    const response = await fetch('http://localhost:3030/api/products?limit=1000');
-    const data = await response.json();
+    const data = await apiGet("products?limit=1000");
 
     if (data.success) {
       products.value = data.data;
+      // Initialize selectedVariants for each product
+      products.value.forEach((product) => {
+        if (!selectedVariants.value[product._id]) {
+          selectedVariants.value[product._id] = {
+            size: undefined,
+            color: undefined,
+          };
+        }
+      });
     }
   } catch (error) {
-    console.error('Грешка при зареждане на продуктите:', error);
+    console.error("Грешка при зареждане на продуктите:", error);
   } finally {
     productsLoading.value = false;
   }
@@ -217,18 +279,17 @@ const fetchProducts = async () => {
 const fetchOrders = async () => {
   try {
     ordersLoading.value = true;
-    const response = await fetch('http://localhost:3030/api/external-orders');
-    const data = await response.json();
+    const data = await apiGet("external-orders");
 
     if (data.success) {
       orders.value = data.data;
     }
   } catch (error) {
-    console.error('Грешка при зареждане на поръчките:', error);
+    console.error("Грешка при зареждане на поръчките:", error);
     toast({
-      title: 'Грешка',
-      description: 'Неуспешно зареждане на поръчките',
-      variant: 'destructive',
+      title: "Грешка",
+      description: "Неуспешно зареждане на поръчките",
+      variant: "destructive",
     });
   } finally {
     ordersLoading.value = false;
@@ -246,51 +307,86 @@ const closeDialog = () => {
 };
 
 const resetForm = () => {
-  form.source = '';
-  form.customerName = '';
-  form.customerPhone = '';
-  form.customerAddress = '';
-  form.shippingProvider = '';
-  form.shippingNumber = '';
-  form.notes = '';
-  selectedCategory.value = '';
+  form.source = "";
+  form.customerName = "";
+  form.customerPhone = "";
+  form.customerAddress = "";
+  form.shippingProvider = "";
+  form.shippingNumber = "";
+  form.notes = "";
+  selectedCategory.value = "";
   orderItems.value = [];
   resetFormErrors();
 };
 
 const resetFormErrors = () => {
-  formErrors.source = '';
-  formErrors.customerName = '';
-  formErrors.customerPhone = '';
-  formErrors.customerAddress = '';
-  formErrors.shippingProvider = '';
-  formErrors.shippingNumber = '';
-  formErrors.items = '';
+  formErrors.source = "";
+  formErrors.customerName = "";
+  formErrors.customerPhone = "";
+  formErrors.customerAddress = "";
+  formErrors.shippingProvider = "";
+  formErrors.shippingNumber = "";
+  formErrors.items = "";
 };
 
-const addProductToOrder = (product: Product) => {
-  const existingItem = orderItems.value.find((item) => item.product === product._id);
+const addProductToOrder = (product: Product, size?: string, color?: string) => {
+  // For products with variants, size and color are required
+  if (product.variants && product.variants.length > 0) {
+    if (!size || !color) {
+      toast({
+        title: "Грешка",
+        description: "Моля, изберете размер и цвят",
+        variant: "destructive",
+      });
+      return;
+    }
+  }
+
+  const itemKey =
+    size && color ? `${product._id}-${size}-${color}` : product._id;
+  const existingItem = orderItems.value.find((item) => {
+    if (size && color) {
+      return (
+        item.product === product._id &&
+        item.size === size &&
+        item.color === color
+      );
+    }
+    return item.product === product._id;
+  });
+
+  // Get max stock for this variant
+  let maxStock = product.stock;
+  if (product.variants && size && color) {
+    const variant = product.variants.find(
+      (v) => v.size === size && v.color === color
+    );
+    maxStock = variant ? variant.stock - (variant.reserved || 0) : 0;
+  }
 
   if (existingItem) {
-    if (existingItem.quantity < product.stock) {
+    if (existingItem.quantity < maxStock) {
       existingItem.quantity++;
     } else {
       toast({
-        title: 'Грешка',
-        description: `Максималната наличност за ${product.name} е ${product.stock}`,
-        variant: 'destructive',
+        title: "Грешка",
+        description: `Максималната наличност за ${product.name} ${size ? `(${size}, ${color})` : ""} е ${maxStock}`,
+        variant: "destructive",
       });
     }
   } else {
     orderItems.value.push({
       product: product._id,
       productName: product.name,
+      size,
+      color,
       quantity: 1,
       price: product.price,
-      maxStock: product.stock,
+      maxStock,
+      availableVariants: product.variants,
     });
   }
-  formErrors.items = '';
+  formErrors.items = "";
 };
 
 const increaseQuantity = (item: OrderItem) => {
@@ -298,9 +394,9 @@ const increaseQuantity = (item: OrderItem) => {
     item.quantity++;
   } else {
     toast({
-      title: 'Грешка',
+      title: "Грешка",
       description: `Максималната наличност за ${item.productName} е ${item.maxStock}`,
-      variant: 'destructive',
+      variant: "destructive",
     });
   }
 };
@@ -320,37 +416,34 @@ const validateForm = (): boolean => {
   let isValid = true;
 
   if (!form.source) {
-    formErrors.source = 'Източникът е задължителен';
+    formErrors.source = "Източникът е задължителен";
     isValid = false;
   }
 
   if (!form.customerName.trim()) {
-    formErrors.customerName = 'Името на клиента е задължително';
+    formErrors.customerName = "Името на клиента е задължително";
     isValid = false;
   }
 
   if (!form.customerPhone.trim()) {
-    formErrors.customerPhone = 'Телефонът на клиента е задължителен';
+    formErrors.customerPhone = "Телефонът на клиента е задължителен";
     isValid = false;
   }
 
   if (!form.customerAddress.trim()) {
-    formErrors.customerAddress = 'Адресът на клиента е задължителен';
+    formErrors.customerAddress = "Адресът на клиента е задължителен";
     isValid = false;
   }
 
   if (!form.shippingProvider) {
-    formErrors.shippingProvider = 'Доставчикът е задължителен';
+    formErrors.shippingProvider = "Доставчикът е задължителен";
     isValid = false;
   }
 
-  if (form.shippingProvider === 'speedy' && !form.shippingNumber.trim()) {
-    formErrors.shippingNumber = 'Номерът за пратка е задължителен за Speedy';
-    isValid = false;
-  }
+  // Shipping number is optional - can be added later
 
   if (orderItems.value.length === 0) {
-    formErrors.items = 'Добавете поне един продукт';
+    formErrors.items = "Добавете поне един продукт";
     isValid = false;
   }
 
@@ -372,6 +465,8 @@ const handleSubmit = async () => {
       },
       items: orderItems.value.map((item) => ({
         product: item.product,
+        size: item.size,
+        color: item.color,
         quantity: item.quantity,
       })),
       shippingProvider: form.shippingProvider,
@@ -379,17 +474,11 @@ const handleSubmit = async () => {
       notes: form.notes.trim(),
     };
 
-    const response = await fetch('http://localhost:3030/api/external-orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
+    const data = await apiPost("external-orders", payload);
 
     if (data.success) {
       toast({
-        title: 'Успех',
+        title: "Успех",
         description: `Поръчка ${data.data.orderNumber} беше създадена успешно`,
       });
       closeDialog();
@@ -397,17 +486,60 @@ const handleSubmit = async () => {
       // Refresh products to update stock
       fetchProducts();
     } else {
-      throw new Error(data.message || 'Неуспешна операция');
+      throw new Error(data.message || "Неуспешна операция");
     }
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Възникна грешка';
+    const errorMessage = err instanceof Error ? err.message : "Възникна грешка";
     toast({
-      title: 'Грешка',
+      title: "Грешка",
       description: errorMessage,
-      variant: 'destructive',
+      variant: "destructive",
     });
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+// Shipping number inline edit functions
+const startEditShipping = (order: ExternalOrder) => {
+  editingShipping.value = order._id;
+  editShippingNumber.value = order.shippingNumber || "";
+};
+
+const cancelEditShipping = () => {
+  editingShipping.value = null;
+  editShippingNumber.value = "";
+};
+
+const saveShippingNumber = async (orderId: string) => {
+  try {
+    const data = await apiPatch(`external-orders/${orderId}/shipping`, {
+      shippingNumber: editShippingNumber.value.trim(),
+    });
+
+    if (data.success) {
+      // Update the order in the list
+      const order = orders.value.find((o) => o._id === orderId);
+      if (order) {
+        order.shippingNumber = editShippingNumber.value.trim();
+      }
+
+      toast({
+        title: "Успешно",
+        description: "Номерът на пратката е обновен",
+      });
+
+      cancelEditShipping();
+    } else {
+      throw new Error(data.message);
+    }
+  } catch (error) {
+    console.error("Грешка при запазване на номер:", error);
+    toast({
+      title: "Грешка",
+      description: "Неуспешно запазване на номера",
+      variant: "destructive",
+    });
   }
 };
 
@@ -421,7 +553,9 @@ onMounted(() => {
 <template>
   <div class="space-y-8 pt-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    >
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Външни Поръчки</h1>
         <p class="text-muted-foreground mt-1.5">
@@ -450,7 +584,7 @@ onMounted(() => {
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold">
-            {{ orders.filter((o) => o.status === 'pending').length }}
+            {{ orders.filter((o) => o.status === "pending").length }}
           </div>
         </CardContent>
       </Card>
@@ -460,7 +594,7 @@ onMounted(() => {
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold">
-            {{ orders.filter((o) => o.status === 'processing').length }}
+            {{ orders.filter((o) => o.status === "processing").length }}
           </div>
         </CardContent>
       </Card>
@@ -470,7 +604,7 @@ onMounted(() => {
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold">
-            {{ orders.filter((o) => o.status === 'shipped').length }}
+            {{ orders.filter((o) => o.status === "shipped").length }}
           </div>
         </CardContent>
       </Card>
@@ -483,7 +617,10 @@ onMounted(() => {
         <CardDescription>Преглеждайте всички външни поръчки</CardDescription>
       </CardHeader>
       <CardContent>
-        <div v-if="ordersLoading" class="flex items-center justify-center py-12">
+        <div
+          v-if="ordersLoading"
+          class="flex items-center justify-center py-12"
+        >
           <Loader2 class="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
 
@@ -509,16 +646,25 @@ onMounted(() => {
             }"
           >
             <CardContent class="pt-6">
-              <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div
+                class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4"
+              >
                 <!-- Order Info -->
                 <div class="space-y-3 flex-1">
                   <div class="flex items-center gap-3 flex-wrap">
-                    <h3 class="text-lg font-semibold">{{ order.orderNumber }}</h3>
+                    <h3 class="text-lg font-semibold">
+                      {{ order.orderNumber }}
+                    </h3>
                     <Badge :variant="statusVariant(order.status)">
                       {{ statusLabel(order.status) }}
                     </Badge>
-                    <div class="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <component :is="sourceIcon(order.source)" class="h-4 w-4" />
+                    <div
+                      class="flex items-center gap-1.5 text-sm text-muted-foreground"
+                    >
+                      <component
+                        :is="sourceIcon(order.source)"
+                        class="h-4 w-4"
+                      />
                       {{ sourceLabel(order.source) }}
                     </div>
                   </div>
@@ -538,11 +684,50 @@ onMounted(() => {
                     </div>
                     <div>
                       <span class="font-medium">Доставчик:</span>
-                      {{ order.shippingProvider === 'ekont' ? 'Еконт' : 'Speedy' }}
+                      {{
+                        order.shippingProvider === "ekont" ? "Еконт" : "Speedy"
+                      }}
                     </div>
-                    <div v-if="order.shippingNumber">
+                    <div>
                       <span class="font-medium">Номер на пратка:</span>
-                      {{ order.shippingNumber }}
+                      <div
+                        v-if="editingShipping === order._id"
+                        class="flex items-center gap-2 mt-1"
+                      >
+                        <Input
+                          v-model="editShippingNumber"
+                          placeholder="Въведете номер"
+                          class="h-8"
+                        />
+                        <Button
+                          @click="saveShippingNumber(order._id)"
+                          size="sm"
+                          class="h-8"
+                        >
+                          Запази
+                        </Button>
+                        <Button
+                          @click="cancelEditShipping"
+                          size="sm"
+                          variant="outline"
+                          class="h-8"
+                        >
+                          Отказ
+                        </Button>
+                      </div>
+                      <div v-else class="flex items-center gap-2 mt-1">
+                        <span>{{
+                          order.shippingNumber || "Не е добавен"
+                        }}</span>
+                        <Button
+                          @click="startEditShipping(order)"
+                          size="sm"
+                          variant="ghost"
+                          class="h-6 px-2"
+                        >
+                          Редактирай
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -570,9 +755,11 @@ onMounted(() => {
                 <!-- Total Amount -->
                 <div class="text-right">
                   <p class="text-sm text-muted-foreground">Обща Сума</p>
-                  <p class="text-2xl font-bold">{{ order.totalAmount.toFixed(2) }} лв.</p>
+                  <p class="text-2xl font-bold">
+                    {{ order.totalAmount.toFixed(2) }} лв.
+                  </p>
                   <p class="text-xs text-muted-foreground mt-1">
-                    {{ new Date(order.createdAt).toLocaleDateString('bg-BG') }}
+                    {{ new Date(order.createdAt).toLocaleDateString("bg-BG") }}
                   </p>
                 </div>
               </div>
@@ -587,7 +774,9 @@ onMounted(() => {
       <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Създай Нова Поръчка</DialogTitle>
-          <DialogDescription>Въведете информация за поръчката</DialogDescription>
+          <DialogDescription
+            >Въведете информация за поръчката</DialogDescription
+          >
         </DialogHeader>
 
         <div class="space-y-6 py-4">
@@ -597,7 +786,9 @@ onMounted(() => {
               Източник <span class="text-destructive">*</span>
             </Label>
             <Select v-model="form.source">
-              <SelectTrigger :class="{ 'border-destructive': formErrors.source }">
+              <SelectTrigger
+                :class="{ 'border-destructive': formErrors.source }"
+              >
                 <SelectValue placeholder="Изберете източник" />
               </SelectTrigger>
               <SelectContent>
@@ -625,7 +816,10 @@ onMounted(() => {
                 placeholder="Име и Фамилия"
                 :class="{ 'border-destructive': formErrors.customerName }"
               />
-              <p v-if="formErrors.customerName" class="text-xs text-destructive">
+              <p
+                v-if="formErrors.customerName"
+                class="text-xs text-destructive"
+              >
                 {{ formErrors.customerName }}
               </p>
             </div>
@@ -640,7 +834,10 @@ onMounted(() => {
                 placeholder="+359..."
                 :class="{ 'border-destructive': formErrors.customerPhone }"
               />
-              <p v-if="formErrors.customerPhone" class="text-xs text-destructive">
+              <p
+                v-if="formErrors.customerPhone"
+                class="text-xs text-destructive"
+              >
                 {{ formErrors.customerPhone }}
               </p>
             </div>
@@ -657,7 +854,10 @@ onMounted(() => {
               rows="2"
               :class="{ 'border-destructive': formErrors.customerAddress }"
             />
-            <p v-if="formErrors.customerAddress" class="text-xs text-destructive">
+            <p
+              v-if="formErrors.customerAddress"
+              class="text-xs text-destructive"
+            >
               {{ formErrors.customerAddress }}
             </p>
           </div>
@@ -669,7 +869,9 @@ onMounted(() => {
                 Доставчик <span class="text-destructive">*</span>
               </Label>
               <Select v-model="form.shippingProvider">
-                <SelectTrigger :class="{ 'border-destructive': formErrors.shippingProvider }">
+                <SelectTrigger
+                  :class="{ 'border-destructive': formErrors.shippingProvider }"
+                >
                   <SelectValue placeholder="Изберете доставчик" />
                 </SelectTrigger>
                 <SelectContent>
@@ -677,22 +879,29 @@ onMounted(() => {
                   <SelectItem value="speedy">Speedy</SelectItem>
                 </SelectContent>
               </Select>
-              <p v-if="formErrors.shippingProvider" class="text-xs text-destructive">
+              <p
+                v-if="formErrors.shippingProvider"
+                class="text-xs text-destructive"
+              >
                 {{ formErrors.shippingProvider }}
               </p>
             </div>
 
-            <div v-if="form.shippingProvider === 'speedy'" class="space-y-2">
-              <Label for="shippingNumber">
-                Номер на Пратка <span class="text-destructive">*</span>
-              </Label>
+            <div v-if="form.shippingProvider" class="space-y-2">
+              <Label for="shippingNumber"> Номер на Пратка </Label>
               <Input
                 id="shippingNumber"
                 v-model="form.shippingNumber"
-                placeholder="Въведете номер"
+                placeholder="Въведете номер (незадължително)"
                 :class="{ 'border-destructive': formErrors.shippingNumber }"
               />
-              <p v-if="formErrors.shippingNumber" class="text-xs text-destructive">
+              <p class="text-xs text-muted-foreground">
+                Може да бъде добавен по-късно
+              </p>
+              <p
+                v-if="formErrors.shippingNumber"
+                class="text-xs text-destructive"
+              >
                 {{ formErrors.shippingNumber }}
               </p>
             </div>
@@ -724,7 +933,11 @@ onMounted(() => {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem v-for="cat in categories" :key="cat._id" :value="cat.slug">
+                  <SelectItem
+                    v-for="cat in categories"
+                    :key="cat._id"
+                    :value="cat.slug"
+                  >
                     {{ cat.displayName }}
                   </SelectItem>
                 </SelectContent>
@@ -732,32 +945,169 @@ onMounted(() => {
             </div>
 
             <!-- Products Grid -->
-            <div v-if="selectedCategory" class="space-y-2">
-              <Label>Налични Продукти</Label>
+            <div v-if="selectedCategory" class="space-y-3">
+              <div class="flex items-center justify-between">
+                <Label>Налични Продукти ({{ filteredProducts.length }})</Label>
+              </div>
+
+              <!-- Search Input -->
+              <div class="relative">
+                <Search
+                  class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+                />
+                <Input
+                  v-model="productSearch"
+                  placeholder="Търсене по име на продукт..."
+                  class="pl-9"
+                />
+              </div>
+
               <div v-if="productsLoading" class="text-center py-4">
-                <Loader2 class="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                <Loader2
+                  class="h-6 w-6 animate-spin mx-auto text-muted-foreground"
+                />
               </div>
               <div
                 v-else-if="filteredProducts.length === 0"
                 class="text-center py-4 text-sm text-muted-foreground"
               >
-                Няма налични продукти в тази категория
+                {{
+                  productSearch
+                    ? "Няма продукти, съответстващи на търсенето"
+                    : "Няма налични продукти в тази категория"
+                }}
               </div>
-              <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-                <Button
+              <div
+                v-else
+                class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[600px] overflow-y-auto pr-2"
+              >
+                <Card
                   v-for="product in filteredProducts"
                   :key="product._id"
-                  @click="addProductToOrder(product)"
-                  variant="outline"
-                  class="justify-start h-auto py-3"
+                  class="overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  <div class="flex flex-col items-start w-full">
-                    <span class="font-medium">{{ product.name }}</span>
-                    <span class="text-xs text-muted-foreground">
-                      {{ product.price.toFixed(2) }} лв. • Налични: {{ product.stock }}
-                    </span>
-                  </div>
-                </Button>
+                  <CardContent class="p-2">
+                    <!-- Product Image -->
+                    <div
+                      class="aspect-square w-full bg-muted rounded-md mb-2 overflow-hidden"
+                    >
+                      <img
+                        v-if="product.images && product.images.length > 0"
+                        :src="product.images[0].url"
+                        :alt="product.name"
+                        class="w-full h-full object-cover"
+                      />
+                      <div
+                        v-else
+                        class="w-full h-full flex items-center justify-center"
+                      >
+                        <Package class="h-8 w-8 text-muted-foreground/50" />
+                      </div>
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="space-y-1.5">
+                      <div>
+                        <h4
+                          class="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight"
+                        >
+                          {{ product.name }}
+                        </h4>
+                        <p class="text-sm font-bold text-primary mt-0.5">
+                          {{ product.price.toFixed(2) }} лв.
+                        </p>
+                      </div>
+
+                      <!-- Variant Selection for products with variants -->
+                      <div
+                        v-if="product.variants && product.variants.length > 0"
+                        class="space-y-1.5"
+                      >
+                        <div class="grid grid-cols-2 gap-1.5">
+                          <div>
+                            <Label class="text-[10px]">Размер</Label>
+                            <Select
+                              :model-value="selectedVariants[product._id]?.size"
+                              @update:model-value="
+                                (val) => {
+                                  if (!selectedVariants[product._id])
+                                    selectedVariants[product._id] = {};
+                                  selectedVariants[product._id].size = val;
+                                }
+                              "
+                            >
+                              <SelectTrigger class="h-7 text-[10px]">
+                                <SelectValue placeholder="Избери" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem
+                                  v-for="size in product.sizes"
+                                  :key="size"
+                                  :value="size"
+                                >
+                                  {{ size }}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label class="text-[10px]">Цвят</Label>
+                            <Select
+                              :model-value="
+                                selectedVariants[product._id]?.color
+                              "
+                              @update:model-value="
+                                (val) => {
+                                  if (!selectedVariants[product._id])
+                                    selectedVariants[product._id] = {};
+                                  selectedVariants[product._id].color = val;
+                                }
+                              "
+                            >
+                              <SelectTrigger class="h-7 text-[10px]">
+                                <SelectValue placeholder="Избери" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem
+                                  v-for="color in product.colors"
+                                  :key="color"
+                                  :value="color"
+                                >
+                                  {{ color }}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <Button
+                          @click="
+                            addProductToOrder(
+                              product,
+                              selectedVariants[product._id]?.size,
+                              selectedVariants[product._id]?.color
+                            )
+                          "
+                          size="sm"
+                          class="w-full h-7 text-xs"
+                        >
+                          <Plus class="h-3 w-3 mr-1" />
+                          Добави
+                        </Button>
+                      </div>
+
+                      <!-- Simple add button for products without variants -->
+                      <Button
+                        v-else
+                        @click="addProductToOrder(product)"
+                        size="sm"
+                        class="w-full h-7 text-xs"
+                      >
+                        <Plus class="h-3 w-3 mr-1" />
+                        Добави • {{ product.stock }}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
 
@@ -772,6 +1122,12 @@ onMounted(() => {
                 >
                   <div class="flex-1">
                     <p class="font-medium">{{ item.productName }}</p>
+                    <p
+                      v-if="item.size && item.color"
+                      class="text-xs text-muted-foreground"
+                    >
+                      Размер: {{ item.size }}, Цвят: {{ item.color }}
+                    </p>
                     <p class="text-sm text-muted-foreground">
                       {{ item.price.toFixed(2) }} лв. × {{ item.quantity }} =
                       {{ (item.price * item.quantity).toFixed(2) }} лв.
@@ -786,7 +1142,9 @@ onMounted(() => {
                     >
                       <Minus class="h-3 w-3" />
                     </Button>
-                    <span class="w-8 text-center font-medium">{{ item.quantity }}</span>
+                    <span class="w-8 text-center font-medium">{{
+                      item.quantity
+                    }}</span>
                     <Button
                       @click="increaseQuantity(item)"
                       variant="outline"
@@ -808,7 +1166,9 @@ onMounted(() => {
               </div>
               <div class="flex justify-between items-center pt-2 border-t">
                 <span class="font-semibold">Обща Сума:</span>
-                <span class="text-xl font-bold">{{ totalAmount.toFixed(2) }} лв.</span>
+                <span class="text-xl font-bold"
+                  >{{ totalAmount.toFixed(2) }} лв.</span
+                >
               </div>
             </div>
             <p v-if="formErrors.items" class="text-xs text-destructive">
@@ -818,7 +1178,11 @@ onMounted(() => {
         </div>
 
         <DialogFooter>
-          <Button @click="closeDialog" variant="outline" :disabled="isSubmitting">
+          <Button
+            @click="closeDialog"
+            variant="outline"
+            :disabled="isSubmitting"
+          >
             Отказ
           </Button>
           <Button @click="handleSubmit" :disabled="isSubmitting">
@@ -830,4 +1194,3 @@ onMounted(() => {
     </Dialog>
   </div>
 </template>
-

@@ -160,6 +160,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
+import { apiGet, apiPatch } from "@/utils/api";
 
 const router = useRouter();
 
@@ -210,20 +211,7 @@ const loadOrders = async () => {
       params.append("search", searchQuery.value);
     }
 
-    const response = await fetch(
-      `http://localhost:3030/api/orders/admin/all?${params}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await apiGet(`orders/admin/all?${params}`);
 
     if (data.success) {
       orders.value = data.data;
@@ -241,18 +229,7 @@ const loadOrders = async () => {
 
 const loadStats = async () => {
   try {
-    const response = await fetch(
-      "http://localhost:3030/api/orders/admin/stats",
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) return;
-
-    const data = await response.json();
+    const data = await apiGet("orders/admin/stats");
 
     if (data.success) {
       stats.value = data.data;
@@ -267,22 +244,9 @@ const updateOrderStatus = async (orderId: string, event: Event) => {
   const newStatus = select.value;
 
   try {
-    const response = await fetch(
-      `http://localhost:3030/api/orders/admin/${orderId}/status`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await apiPatch(`orders/admin/${orderId}/status`, {
+      status: newStatus,
+    });
 
     if (data.success) {
       // Reload orders to reflect the change

@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ref, reactive, computed, onMounted } from "vue";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -10,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -18,12 +24,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Loader2, Plus, Edit2, Trash2, Tags, X } from 'lucide-vue-next';
-import { useToast } from '@/components/ui/toast/use-toast';
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Plus, Edit2, Trash2, Tags, X } from "lucide-vue-next";
+import { useToast } from "@/components/ui/toast/use-toast";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/utils/api";
 
 interface Category {
   _id: string;
@@ -48,7 +55,7 @@ const { toast } = useToast();
 const categories = ref<Category[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-const searchQuery = ref('');
+const searchQuery = ref("");
 const isDialogOpen = ref(false);
 const isEditMode = ref(false);
 const isSubmitting = ref(false);
@@ -56,10 +63,10 @@ const selectedCategory = ref<Category | null>(null);
 
 // Form state
 const form = reactive({
-  name: '',
-  displayName: '',
+  name: "",
+  displayName: "",
   sizes: [] as string[],
-  currentSize: '',
+  currentSize: "",
   defaultWeight: 0.5,
   defaultDimensions: {
     length: 40,
@@ -69,11 +76,11 @@ const form = reactive({
 });
 
 const formErrors = reactive({
-  name: '',
-  displayName: '',
-  sizes: '',
-  defaultWeight: '',
-  defaultDimensions: '',
+  name: "",
+  displayName: "",
+  sizes: "",
+  defaultWeight: "",
+  defaultDimensions: "",
 });
 
 // Computed
@@ -94,20 +101,19 @@ const fetchCategories = async () => {
     loading.value = true;
     error.value = null;
 
-    const response = await fetch('http://localhost:3030/api/categories');
-    const data = await response.json();
+    const data = await apiGet("categories");
 
     if (data.success) {
       categories.value = data.data;
     } else {
-      throw new Error(data.message || 'Неуспешно зареждане на категориите');
+      throw new Error(data.message || "Неуспешно зареждане на категориите");
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Възникна грешка';
+    error.value = err instanceof Error ? err.message : "Възникна грешка";
     toast({
-      title: 'Грешка',
+      title: "Грешка",
       description: error.value,
-      variant: 'destructive',
+      variant: "destructive",
     });
   } finally {
     loading.value = false;
@@ -127,9 +133,13 @@ const openEditDialog = (category: Category) => {
   form.name = category.name;
   form.displayName = category.displayName;
   form.sizes = [...category.sizes];
-  form.currentSize = '';
+  form.currentSize = "";
   form.defaultWeight = category.defaultWeight || 0.5;
-  form.defaultDimensions = category.defaultDimensions || { length: 40, width: 30, height: 20 };
+  form.defaultDimensions = category.defaultDimensions || {
+    length: 40,
+    width: 30,
+    height: 20,
+  };
   resetFormErrors();
   isDialogOpen.value = true;
 };
@@ -140,21 +150,21 @@ const closeDialog = () => {
 };
 
 const resetForm = () => {
-  form.name = '';
-  form.displayName = '';
+  form.name = "";
+  form.displayName = "";
   form.sizes = [];
-  form.currentSize = '';
+  form.currentSize = "";
   form.defaultWeight = 0.5;
   form.defaultDimensions = { length: 40, width: 30, height: 20 };
   resetFormErrors();
 };
 
 const resetFormErrors = () => {
-  formErrors.name = '';
-  formErrors.displayName = '';
-  formErrors.sizes = '';
-  formErrors.defaultWeight = '';
-  formErrors.defaultDimensions = '';
+  formErrors.name = "";
+  formErrors.displayName = "";
+  formErrors.sizes = "";
+  formErrors.defaultWeight = "";
+  formErrors.defaultDimensions = "";
 };
 
 const validateForm = (): boolean => {
@@ -162,33 +172,38 @@ const validateForm = (): boolean => {
   let isValid = true;
 
   if (!form.name.trim()) {
-    formErrors.name = 'Името е задължително';
+    formErrors.name = "Името е задължително";
     isValid = false;
   } else if (form.name.length < 2) {
-    formErrors.name = 'Името трябва да бъде поне 2 символа';
+    formErrors.name = "Името трябва да бъде поне 2 символа";
     isValid = false;
   }
 
   if (!form.displayName.trim()) {
-    formErrors.displayName = 'Показваното име е задължително';
+    formErrors.displayName = "Показваното име е задължително";
     isValid = false;
   } else if (form.displayName.length < 2) {
-    formErrors.displayName = 'Показваното име трябва да бъде поне 2 символа';
+    formErrors.displayName = "Показваното име трябва да бъде поне 2 символа";
     isValid = false;
   }
 
   if (form.sizes.length === 0) {
-    formErrors.sizes = 'Добавете поне един размер';
+    formErrors.sizes = "Добавете поне един размер";
     isValid = false;
   }
 
   if (form.defaultWeight <= 0) {
-    formErrors.defaultWeight = 'Теглото трябва да бъде по-голямо от 0';
+    formErrors.defaultWeight = "Теглото трябва да бъде по-голямо от 0";
     isValid = false;
   }
 
-  if (form.defaultDimensions.length <= 0 || form.defaultDimensions.width <= 0 || form.defaultDimensions.height <= 0) {
-    formErrors.defaultDimensions = 'Всички размери трябва да бъдат по-големи от 0';
+  if (
+    form.defaultDimensions.length <= 0 ||
+    form.defaultDimensions.width <= 0 ||
+    form.defaultDimensions.height <= 0
+  ) {
+    formErrors.defaultDimensions =
+      "Всички размери трябва да бъдат по-големи от 0";
     isValid = false;
   }
 
@@ -201,16 +216,16 @@ const addSize = () => {
 
   if (form.sizes.includes(size)) {
     toast({
-      title: 'Грешка',
-      description: 'Този размер вече е добавен',
-      variant: 'destructive',
+      title: "Грешка",
+      description: "Този размер вече е добавен",
+      variant: "destructive",
     });
     return;
   }
 
   form.sizes.push(size);
-  form.currentSize = '';
-  formErrors.sizes = '';
+  form.currentSize = "";
+  formErrors.sizes = "";
 };
 
 const removeSize = (index: number) => {
@@ -218,7 +233,7 @@ const removeSize = (index: number) => {
 };
 
 const handleSizeInput = (e: KeyboardEvent) => {
-  if (e.key === 'Enter') {
+  if (e.key === "Enter") {
     e.preventDefault();
     addSize();
   }
@@ -238,44 +253,31 @@ const handleSubmit = async () => {
       defaultDimensions: form.defaultDimensions,
     };
 
-    let response;
+    let data;
     if (isEditMode.value && selectedCategory.value) {
-      response = await fetch(
-        `http://localhost:3030/api/categories/${selectedCategory.value._id}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }
-      );
+      data = await apiPut(`categories/${selectedCategory.value._id}`, payload);
     } else {
-      response = await fetch('http://localhost:3030/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      data = await apiPost("categories", payload);
     }
-
-    const data = await response.json();
 
     if (data.success) {
       toast({
-        title: 'Успех',
+        title: "Успех",
         description: isEditMode.value
-          ? 'Категорията беше актуализирана успешно'
-          : 'Категорията беше създадена успешно',
+          ? "Категорията беше актуализирана успешно"
+          : "Категорията беше създадена успешно",
       });
       closeDialog();
       fetchCategories();
     } else {
-      throw new Error(data.message || 'Неуспешна операция');
+      throw new Error(data.message || "Неуспешна операция");
     }
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Възникна грешка';
+    const errorMessage = err instanceof Error ? err.message : "Възникна грешка";
     toast({
-      title: 'Грешка',
+      title: "Грешка",
       description: errorMessage,
-      variant: 'destructive',
+      variant: "destructive",
     });
   } finally {
     isSubmitting.value = false;
@@ -284,21 +286,14 @@ const handleSubmit = async () => {
 
 const toggleCategoryStatus = async (category: Category) => {
   try {
-    const response = await fetch(
-      `http://localhost:3030/api/categories/${category._id}`,
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !category.isActive }),
-      }
-    );
-
-    const data = await response.json();
+    const data = await apiPut(`categories/${category._id}`, {
+      isActive: !category.isActive,
+    });
 
     if (data.success) {
       toast({
-        title: 'Успех',
-        description: `Категорията е ${!category.isActive ? 'активирана' : 'деактивирана'}`,
+        title: "Успех",
+        description: `Категорията е ${!category.isActive ? "активирана" : "деактивирана"}`,
       });
       fetchCategories();
     } else {
@@ -306,9 +301,9 @@ const toggleCategoryStatus = async (category: Category) => {
     }
   } catch (err) {
     toast({
-      title: 'Грешка',
-      description: err instanceof Error ? err.message : 'Възникна грешка',
-      variant: 'destructive',
+      title: "Грешка",
+      description: err instanceof Error ? err.message : "Възникна грешка",
+      variant: "destructive",
     });
   }
 };
@@ -322,19 +317,12 @@ const deleteCategory = async (category: Category) => {
     return;
 
   try {
-    const response = await fetch(
-      `http://localhost:3030/api/categories/${category._id}`,
-      {
-        method: 'DELETE',
-      }
-    );
-
-    const data = await response.json();
+    const data = await apiDelete(`categories/${category._id}`);
 
     if (data.success) {
       toast({
-        title: 'Успех',
-        description: 'Категорията беше изтрита успешно',
+        title: "Успех",
+        description: "Категорията беше изтрита успешно",
       });
       fetchCategories();
     } else {
@@ -342,9 +330,9 @@ const deleteCategory = async (category: Category) => {
     }
   } catch (err) {
     toast({
-      title: 'Грешка',
-      description: err instanceof Error ? err.message : 'Възникна грешка',
-      variant: 'destructive',
+      title: "Грешка",
+      description: err instanceof Error ? err.message : "Възникна грешка",
+      variant: "destructive",
     });
   }
 };
@@ -357,7 +345,9 @@ onMounted(() => {
 <template>
   <div class="space-y-8 pt-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    >
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Категории</h1>
         <p class="text-muted-foreground mt-1.5">
@@ -415,7 +405,9 @@ onMounted(() => {
     <Card>
       <CardHeader>
         <CardTitle>Списък с Категории</CardTitle>
-        <CardDescription>Преглеждайте и управлявайте всички категории</CardDescription>
+        <CardDescription
+          >Преглеждайте и управлявайте всички категории</CardDescription
+        >
       </CardHeader>
       <CardContent>
         <div v-if="loading" class="flex items-center justify-center py-12">
@@ -434,14 +426,17 @@ onMounted(() => {
           </Button>
         </div>
 
-        <div v-else-if="filteredCategories.length === 0" class="text-center py-12">
+        <div
+          v-else-if="filteredCategories.length === 0"
+          class="text-center py-12"
+        >
           <Tags class="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p class="font-semibold">Няма намерени категории</p>
           <p class="text-sm text-muted-foreground mt-1">
             {{
               searchQuery
-                ? 'Опитайте с различни критерии за търсене'
-                : 'Започнете като добавите нова категория'
+                ? "Опитайте с различни критерии за търсене"
+                : "Започнете като добавите нова категория"
             }}
           </p>
         </div>
@@ -459,7 +454,10 @@ onMounted(() => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="category in filteredCategories" :key="category._id">
+              <TableRow
+                v-for="category in filteredCategories"
+                :key="category._id"
+              >
                 <TableCell class="font-medium">{{ category.name }}</TableCell>
                 <TableCell>{{ category.displayName }}</TableCell>
                 <TableCell>
@@ -486,7 +484,7 @@ onMounted(() => {
                       @update:checked="toggleCategoryStatus(category)"
                     />
                     <span class="text-sm">
-                      {{ category.isActive ? 'Активна' : 'Неактивна' }}
+                      {{ category.isActive ? "Активна" : "Неактивна" }}
                     </span>
                   </div>
                 </TableCell>
@@ -520,13 +518,13 @@ onMounted(() => {
       <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {{ isEditMode ? 'Редактирай Категория' : 'Добави Нова Категория' }}
+            {{ isEditMode ? "Редактирай Категория" : "Добави Нова Категория" }}
           </DialogTitle>
           <DialogDescription>
             {{
               isEditMode
-                ? 'Актуализирайте информацията за категорията'
-                : 'Въведете данните за новата категория'
+                ? "Актуализирайте информацията за категорията"
+                : "Въведете данните за новата категория"
             }}
           </DialogDescription>
         </DialogHeader>
@@ -638,7 +636,10 @@ onMounted(() => {
                 placeholder="напр. 0.360"
                 :class="{ 'border-destructive': formErrors.defaultWeight }"
               />
-              <p v-if="formErrors.defaultWeight" class="text-xs text-destructive">
+              <p
+                v-if="formErrors.defaultWeight"
+                class="text-xs text-destructive"
+              >
                 {{ formErrors.defaultWeight }}
               </p>
               <p class="text-xs text-muted-foreground">
@@ -649,7 +650,8 @@ onMounted(() => {
             <!-- Dimensions -->
             <div class="space-y-2">
               <Label>
-                Размери на опаковката (cm) <span class="text-destructive">*</span>
+                Размери на опаковката (cm)
+                <span class="text-destructive">*</span>
               </Label>
               <div class="grid grid-cols-3 gap-2">
                 <div>
@@ -658,7 +660,9 @@ onMounted(() => {
                     type="number"
                     min="1"
                     placeholder="Дължина"
-                    :class="{ 'border-destructive': formErrors.defaultDimensions }"
+                    :class="{
+                      'border-destructive': formErrors.defaultDimensions,
+                    }"
                   />
                   <p class="text-xs text-muted-foreground mt-1">Дължина</p>
                 </div>
@@ -668,7 +672,9 @@ onMounted(() => {
                     type="number"
                     min="1"
                     placeholder="Ширина"
-                    :class="{ 'border-destructive': formErrors.defaultDimensions }"
+                    :class="{
+                      'border-destructive': formErrors.defaultDimensions,
+                    }"
                   />
                   <p class="text-xs text-muted-foreground mt-1">Ширина</p>
                 </div>
@@ -678,12 +684,17 @@ onMounted(() => {
                     type="number"
                     min="1"
                     placeholder="Височина"
-                    :class="{ 'border-destructive': formErrors.defaultDimensions }"
+                    :class="{
+                      'border-destructive': formErrors.defaultDimensions,
+                    }"
                   />
                   <p class="text-xs text-muted-foreground mt-1">Височина</p>
                 </div>
               </div>
-              <p v-if="formErrors.defaultDimensions" class="text-xs text-destructive">
+              <p
+                v-if="formErrors.defaultDimensions"
+                class="text-xs text-destructive"
+              >
                 {{ formErrors.defaultDimensions }}
               </p>
               <p class="text-xs text-muted-foreground">
@@ -694,16 +705,19 @@ onMounted(() => {
         </div>
 
         <DialogFooter>
-          <Button @click="closeDialog" variant="outline" :disabled="isSubmitting">
+          <Button
+            @click="closeDialog"
+            variant="outline"
+            :disabled="isSubmitting"
+          >
             Отказ
           </Button>
           <Button @click="handleSubmit" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
-            {{ isEditMode ? 'Актуализирай' : 'Създай' }}
+            {{ isEditMode ? "Актуализирай" : "Създай" }}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   </div>
 </template>
-

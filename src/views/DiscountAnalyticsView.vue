@@ -1,13 +1,21 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted } from "vue";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Loader2, AlertCircle, TrendingUp, Tag, Percent, Users } from 'lucide-vue-next';
+} from "@/components/ui/card";
+import {
+  Loader2,
+  AlertCircle,
+  TrendingUp,
+  Tag,
+  Percent,
+  Users,
+} from "lucide-vue-next";
+import { apiGet } from "@/utils/api";
 
 type AnalyticsData = {
   totalDiscounts: number;
@@ -29,32 +37,21 @@ type AnalyticsData = {
 
 const analytics = ref<AnalyticsData | null>(null);
 const isLoading = ref(false);
-const errorMessage = ref('');
+const errorMessage = ref("");
 
 const fetchAnalytics = async () => {
   isLoading.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
 
   try {
-    const response = await fetch('http://localhost:3030/api/discounts/analytics', {
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch analytics');
-    }
-
-    const result = await response.json();
+    const result = await apiGet("discounts/analytics");
 
     if (result.success) {
       analytics.value = result.data;
     }
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to load analytics';
+      error instanceof Error ? error.message : "Failed to load analytics";
   } finally {
     isLoading.value = false;
   }
@@ -62,18 +59,18 @@ const fetchAnalytics = async () => {
 
 const formatCurrency = (value: number) => {
   if (value === null || value === undefined || isNaN(value)) {
-    return '0.00 лв';
+    return "0.00 лв";
   }
   return `${value.toFixed(2)} лв`;
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('bg-BG', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(dateString).toLocaleDateString("bg-BG", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -118,7 +115,9 @@ onMounted(() => {
       <!-- Stats Overview -->
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader
+            class="flex flex-row items-center justify-between space-y-0 pb-2"
+          >
             <CardTitle class="text-sm font-medium">Общо отстъпки</CardTitle>
             <Tag class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -131,43 +130,50 @@ onMounted(() => {
         </Card>
 
         <Card>
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader
+            class="flex flex-row items-center justify-between space-y-0 pb-2"
+          >
             <CardTitle class="text-sm font-medium">Общо използвания</CardTitle>
             <Users class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div class="text-2xl font-bold">{{ analytics.totalUsage }}</div>
-            <p class="text-xs text-muted-foreground">
-              Всички отстъпки
-            </p>
+            <p class="text-xs text-muted-foreground">Всички отстъпки</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader
+            class="flex flex-row items-center justify-between space-y-0 pb-2"
+          >
             <CardTitle class="text-sm font-medium">Общ приход</CardTitle>
             <TrendingUp class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div class="text-2xl font-bold">{{ formatCurrency(analytics.totalRevenue) }}</div>
-            <p class="text-xs text-muted-foreground">
-              От поръчки с отстъпки
-            </p>
+            <div class="text-2xl font-bold">
+              {{ formatCurrency(analytics.totalRevenue) }}
+            </div>
+            <p class="text-xs text-muted-foreground">От поръчки с отстъпки</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader
+            class="flex flex-row items-center justify-between space-y-0 pb-2"
+          >
             <CardTitle class="text-sm font-medium">Средна отстъпка</CardTitle>
             <Percent class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div class="text-2xl font-bold">
-              {{ analytics.totalUsage > 0 ? ((analytics.totalRevenue / analytics.totalUsage)).toFixed(2) : '0' }} лв
+              {{
+                analytics.totalUsage > 0
+                  ? (analytics.totalRevenue / analytics.totalUsage).toFixed(2)
+                  : "0"
+              }}
+              лв
             </div>
-            <p class="text-xs text-muted-foreground">
-              На използване
-            </p>
+            <p class="text-xs text-muted-foreground">На използване</p>
           </CardContent>
         </Card>
       </div>
@@ -186,7 +192,9 @@ onMounted(() => {
               class="flex items-center justify-between p-4 rounded-lg bg-muted/50"
             >
               <div class="flex items-center gap-4">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold">
+                <div
+                  class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold"
+                >
                   {{ index + 1 }}
                 </div>
                 <div>
@@ -197,11 +205,16 @@ onMounted(() => {
                 </div>
               </div>
               <div class="text-right">
-                <div class="font-semibold">{{ formatCurrency(discount.revenue) }}</div>
+                <div class="font-semibold">
+                  {{ formatCurrency(discount.revenue) }}
+                </div>
                 <div class="text-sm text-muted-foreground">Приход</div>
               </div>
             </div>
-            <div v-if="analytics.topDiscounts.length === 0" class="text-center py-8 text-muted-foreground">
+            <div
+              v-if="analytics.topDiscounts.length === 0"
+              class="text-center py-8 text-muted-foreground"
+            >
               Няма данни за отстъпки
             </div>
           </div>
@@ -224,7 +237,11 @@ onMounted(() => {
               <div>
                 <div class="font-medium">{{ activity.discountName }}</div>
                 <div class="text-sm text-muted-foreground">
-                  {{ activity.couponCode ? `Код: ${activity.couponCode}` : 'Автоматична отстъпка' }}
+                  {{
+                    activity.couponCode
+                      ? `Код: ${activity.couponCode}`
+                      : "Автоматична отстъпка"
+                  }}
                   • {{ formatDate(activity.usedAt) }}
                 </div>
               </div>
@@ -232,7 +249,10 @@ onMounted(() => {
                 -{{ formatCurrency(activity.amount) }}
               </div>
             </div>
-            <div v-if="analytics.recentActivity.length === 0" class="text-center py-8 text-muted-foreground">
+            <div
+              v-if="analytics.recentActivity.length === 0"
+              class="text-center py-8 text-muted-foreground"
+            >
               Няма последна активност
             </div>
           </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed } from "vue";
 import {
   Table,
   TableBody,
@@ -7,11 +7,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -19,63 +19,92 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Loader2, Package, Plus, Minus, Edit2, AlertCircle, Search } from 'lucide-vue-next';
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Loader2,
+  Package,
+  Plus,
+  Minus,
+  Edit2,
+  AlertCircle,
+  Search,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-vue-next";
+import VariantStockGrid from "@/components/VariantStockGrid.vue";
+import { useToast } from "@/components/ui/toast/use-toast";
+import { apiGet, apiPut, apiPatch } from "@/utils/api";
 
 type ProductImage = {
   url: string;
   publicId: string;
 };
 
+type Variant = {
+  size: string;
+  color: string;
+  stock: number;
+  reserved?: number;
+  lowStockThreshold?: number;
+  price?: number;
+};
+
 type Product = {
   _id: string;
   name: string;
-  category: string;
+  category?: string | { name: string } | null;
   price: number;
   stock: number;
+  variants?: Variant[];
+  sizes?: string[];
+  colors?: string[];
   isActive: boolean;
   image?: ProductImage;
+  images?: ProductImage[];
 };
 
 const products = ref<Product[]>([]);
 const isLoading = ref(false);
-const errorMessage = ref('');
-const searchQuery = ref('');
-const fallbackImageUrl = 'https://via.placeholder.com/80?text=No+Image';
+const errorMessage = ref("");
+const searchQuery = ref("");
+const fallbackImageUrl = "https://via.placeholder.com/80?text=No+Image";
+const expandedProducts = ref<Set<string>>(new Set());
+const { toast } = useToast();
 
 // Dialog state
 const isDialogOpen = ref(false);
 const selectedProduct = ref<Product | null>(null);
-const stockOperation = ref<'set' | 'add' | 'subtract'>('add');
-const stockAmount = ref('');
+const stockOperation = ref<"set" | "add" | "subtract">("add");
+const stockAmount = ref("");
 const isUpdating = ref(false);
-const updateError = ref('');
+const updateError = ref("");
 
 const fetchProducts = async () => {
   isLoading.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
 
   try {
-    const response = await fetch('http://localhost:3030/api/products?limit=100', {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch products');
-    }
-
-    const result = await response.json();
+    const result = await apiGet("products?limit=100");
 
     if (result.success && Array.isArray(result.data)) {
       products.value = result.data;
     }
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to load products';
+      error instanceof Error ? error.message : "Failed to load products";
   } finally {
     isLoading.value = false;
   }
+};
+
+const getCategoryName = (
+  category: string | { name: string } | undefined | null
+): string => {
+  if (!category) return "";
+  if (typeof category === "string") return category;
+  if (typeof category === "object" && category.name) return category.name;
+  return "";
 };
 
 const filteredProducts = computed(() => {
@@ -84,34 +113,131 @@ const filteredProducts = computed(() => {
   }
 
   const query = searchQuery.value.toLowerCase();
-  return products.value.filter(
-    (p) =>
+  return products.value.filter((p) => {
+    const categoryName = getCategoryName(p.category);
+    return (
       p.name.toLowerCase().includes(query) ||
-      p.category.toLowerCase().includes(query)
-  );
+      (categoryName && categoryName.toLowerCase().includes(query))
+    );
+  });
 });
 
 const lowStockProducts = computed(() => {
-  return products.value.filter((p) => p.stock <= 10);
+  return products.value.filter((p) => {
+    if (p.variants && p.variants.length > 0) {
+      return p.variants.some(
+        (v) => v.stock - (v.reserved || 0) <= (v.lowStockThreshold || 5)
+      );
+    }
+    return p.stock <= 10;
+  });
 });
 
 const outOfStockProducts = computed(() => {
-  return products.value.filter((p) => p.stock === 0);
+  return products.value.filter((p) => {
+    if (p.variants && p.variants.length > 0) {
+      return p.variants.every((v) => v.stock - (v.reserved || 0) === 0);
+    }
+    return p.stock === 0;
+  });
 });
 
-const openStockDialog = (product: Product, operation: 'set' | 'add' | 'subtract') => {
+const toggleProductExpansion = (productId: string) => {
+  if (expandedProducts.value.has(productId)) {
+    expandedProducts.value.delete(productId);
+  } else {
+    expandedProducts.value.add(productId);
+  }
+};
+
+const isProductExpanded = (productId: string) => {
+  return expandedProducts.value.has(productId);
+};
+
+const getTotalStock = (product: Product): number => {
+  if (product.variants && product.variants.length > 0) {
+    return product.variants.reduce((sum, v) => sum + v.stock, 0);
+  }
+  return product.stock;
+};
+
+// Store pending variant updates
+const pendingVariantUpdates = ref<Record<string, Variant[]>>({});
+
+// Store variant updates (don't update product immediately to avoid re-render issues)
+const handleVariantUpdate = (product: Product, updatedVariants: Variant[]) => {
+  pendingVariantUpdates.value[product._id] = updatedVariants;
+};
+
+// Save variant changes to backend
+const saveVariantChanges = async (
+  product: Product,
+  updatedVariants?: Variant[]
+) => {
+  // Use provided variants or get from pending updates
+  const variantsToSave =
+    updatedVariants ||
+    pendingVariantUpdates.value[product._id] ||
+    product.variants ||
+    [];
+
+  if (!variantsToSave || variantsToSave.length === 0) {
+    console.warn("No variants to save for product:", product._id);
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    const result = await apiPut(`variant-stock/${product._id}/variants/bulk`, {
+      variants: variantsToSave,
+    });
+
+    if (result.success) {
+      // Refresh products to get updated data from server
+      await fetchProducts();
+      // Clear pending updates
+      delete pendingVariantUpdates.value[product._id];
+      errorMessage.value = "";
+
+      toast({
+        title: "Success",
+        description: `Вариантите на ${product.name} бяха запазени успешно`,
+      });
+    } else {
+      throw new Error(result.message || "Failed to save variant changes");
+    }
+  } catch (error) {
+    console.error("Error saving variant changes:", error);
+    const errorMsg =
+      error instanceof Error ? error.message : "Failed to save variant changes";
+    errorMessage.value = errorMsg;
+
+    toast({
+      title: "Error",
+      description: errorMsg,
+      variant: "destructive",
+    });
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const openStockDialog = (
+  product: Product,
+  operation: "set" | "add" | "subtract"
+) => {
   selectedProduct.value = product;
   stockOperation.value = operation;
-  stockAmount.value = '';
-  updateError.value = '';
+  stockAmount.value = "";
+  updateError.value = "";
   isDialogOpen.value = true;
 };
 
 const closeDialog = () => {
   isDialogOpen.value = false;
   selectedProduct.value = null;
-  stockAmount.value = '';
-  updateError.value = '';
+  stockAmount.value = "";
+  updateError.value = "";
 };
 
 const updateStock = async () => {
@@ -119,34 +245,21 @@ const updateStock = async () => {
 
   const amount = parseInt(stockAmount.value);
   if (isNaN(amount) || amount < 0) {
-    updateError.value = 'Моля, въведете валидно количество';
+    updateError.value = "Моля, въведете валидно количество";
     return;
   }
 
   isUpdating.value = true;
-  updateError.value = '';
+  updateError.value = "";
 
   try {
-    const response = await fetch(
-      `http://localhost:3030/api/products/${selectedProduct.value._id}/stock`,
+    const result = await apiPatch(
+      `products/${selectedProduct.value._id}/stock`,
       {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          stock: amount,
-          operation: stockOperation.value,
-        }),
+        stock: amount,
+        operation: stockOperation.value,
       }
     );
-
-    if (!response.ok) {
-      throw new Error('Failed to update stock');
-    }
-
-    const result = await response.json();
 
     if (result.success && result.data) {
       // Update the product in the list
@@ -157,32 +270,39 @@ const updateStock = async () => {
 
       closeDialog();
     } else {
-      throw new Error(result.message || 'Failed to update stock');
+      throw new Error(result.message || "Failed to update stock");
     }
   } catch (error) {
     updateError.value =
-      error instanceof Error ? error.message : 'Failed to update stock';
+      error instanceof Error ? error.message : "Failed to update stock";
   } finally {
     isUpdating.value = false;
   }
 };
 
 const getStockStatus = (stock: number) => {
-  if (stock === 0) return { label: 'Изчерпан', variant: 'destructive' as const };
-  if (stock <= 10) return { label: 'Малка Наличност', variant: 'secondary' as const };
-  return { label: 'На Склад', variant: 'default' as const };
+  if (stock === 0)
+    return { label: "Изчерпан", variant: "destructive" as const };
+  if (stock <= 10)
+    return { label: "Малка Наличност", variant: "secondary" as const };
+  return { label: "На Склад", variant: "default" as const };
 };
 
-const formatCategory = (category: string) => {
-  return category
-    .split('-')
+const formatCategory = (
+  category: string | { name: string } | undefined | null
+) => {
+  const categoryName = getCategoryName(category);
+  if (!categoryName) return "Без категория";
+
+  return categoryName
+    .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .join(" ");
 };
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
   minimumFractionDigits: 2,
 });
 
@@ -197,7 +317,8 @@ fetchProducts();
     <div>
       <h1 class="text-4xl font-bold tracking-tight">Управление на Склада</h1>
       <p class="text-muted-foreground mt-1.5">
-        Наблюдавайте и управлявайте нивата на инвентара през всички канали за продажби
+        Наблюдавайте и управлявайте нивата на инвентара през всички канали за
+        продажби
       </p>
     </div>
 
@@ -207,10 +328,14 @@ fetchProducts();
         <CardContent class="pt-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-muted-foreground">Общо Продукти</p>
+              <p class="text-sm font-medium text-muted-foreground">
+                Общо Продукти
+              </p>
               <p class="text-3xl font-bold">{{ products.length }}</p>
             </div>
-            <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <div
+              class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center"
+            >
               <Package class="h-6 w-6 text-primary" />
             </div>
           </div>
@@ -221,10 +346,16 @@ fetchProducts();
         <CardContent class="pt-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-muted-foreground">Сигнали за Малка Наличност</p>
-              <p class="text-3xl font-bold text-orange-600">{{ lowStockProducts.length }}</p>
+              <p class="text-sm font-medium text-muted-foreground">
+                Сигнали за Малка Наличност
+              </p>
+              <p class="text-3xl font-bold text-orange-600">
+                {{ lowStockProducts.length }}
+              </p>
             </div>
-            <div class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+            <div
+              class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center"
+            >
               <AlertCircle class="h-6 w-6 text-orange-600" />
             </div>
           </div>
@@ -236,9 +367,13 @@ fetchProducts();
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-muted-foreground">Изчерпани</p>
-              <p class="text-3xl font-bold text-destructive">{{ outOfStockProducts.length }}</p>
+              <p class="text-3xl font-bold text-destructive">
+                {{ outOfStockProducts.length }}
+              </p>
             </div>
-            <div class="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+            <div
+              class="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center"
+            >
               <AlertCircle class="h-6 w-6 text-destructive" />
             </div>
           </div>
@@ -290,11 +425,12 @@ fetchProducts();
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead class="w-[40px]"></TableHead>
               <TableHead class="w-[60px]">Снимка</TableHead>
               <TableHead>Продукт</TableHead>
               <TableHead>Категория</TableHead>
               <TableHead>Цена</TableHead>
-              <TableHead>Текуща Наличност</TableHead>
+              <TableHead>Обща Наличност</TableHead>
               <TableHead>Статус</TableHead>
               <TableHead class="text-right">Действия</TableHead>
             </TableRow>
@@ -304,79 +440,147 @@ fetchProducts();
               <TableCell colspan="7" class="text-center py-12">
                 <div class="flex flex-col items-center gap-2">
                   <Package class="h-12 w-12 text-muted-foreground/50" />
-                  <p class="text-muted-foreground font-medium">Няма намерени продукти</p>
+                  <p class="text-muted-foreground font-medium">
+                    Няма намерени продукти
+                  </p>
                 </div>
               </TableCell>
             </TableRow>
-            <TableRow v-for="product in filteredProducts" :key="product._id">
-              <TableCell>
+            <template v-for="product in filteredProducts" :key="product._id">
+              <TableRow>
+                <TableCell>
+                  <Button
+                    v-if="product.variants && product.variants.length > 0"
+                    variant="ghost"
+                    size="sm"
+                    @click="toggleProductExpansion(product._id)"
+                    class="p-0 h-8 w-8"
+                  >
+                    <ChevronRight
+                      v-if="!isProductExpanded(product._id)"
+                      class="h-4 w-4"
+                    />
+                    <ChevronDown v-else class="h-4 w-4" />
+                  </Button>
+                </TableCell>
+                <TableCell>
                   <img
-                  :src="product.images?.[0]?.url ?? fallbackImageUrl"
-                  :alt="product.name"
-                  class="w-12 h-12 rounded-md object-contain bg-muted"
-                />
-              </TableCell>
-              <TableCell>
-                <div class="font-medium">{{ product.name }}</div>
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary">{{ formatCategory(product.category) }}</Badge>
-              </TableCell>
-              <TableCell>{{ formatPrice(product.price) }}</TableCell>
-              <TableCell>
-                <span class="text-lg font-semibold">{{ product.stock }}</span>
-                <span class="text-muted-foreground text-sm ml-1">броя</span>
-              </TableCell>
-              <TableCell>
-                <Badge :variant="getStockStatus(product.stock).variant">
-                  {{ getStockStatus(product.stock).label }}
-                </Badge>
-              </TableCell>
-              <TableCell class="text-right">
-                <div class="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    @click="openStockDialog(product, 'add')"
-                    title="Add stock"
+                    :src="
+                      (product.images?.[0]?.url || product.image?.url) ??
+                      fallbackImageUrl
+                    "
+                    :alt="product.name"
+                    class="w-12 h-12 rounded-md object-contain bg-muted"
+                  />
+                </TableCell>
+                <TableCell>
+                  <div class="font-medium">{{ product.name }}</div>
+                  <div
+                    v-if="product.variants && product.variants.length > 0"
+                    class="text-xs text-muted-foreground"
                   >
-                    <Plus class="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    @click="openStockDialog(product, 'subtract')"
-                    title="Remove stock"
+                    {{ product.variants.length }} варианта
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{{
+                    formatCategory(product.category)
+                  }}</Badge>
+                </TableCell>
+                <TableCell>{{ formatPrice(product.price) }}</TableCell>
+                <TableCell>
+                  <span class="text-lg font-semibold">{{
+                    getTotalStock(product)
+                  }}</span>
+                  <span class="text-muted-foreground text-sm ml-1">броя</span>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    :variant="getStockStatus(getTotalStock(product)).variant"
                   >
-                    <Minus class="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    @click="openStockDialog(product, 'set')"
-                    title="Set stock"
-                  >
-                    <Edit2 class="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
+                    {{ getStockStatus(getTotalStock(product)).label }}
+                  </Badge>
+                </TableCell>
+                <TableCell class="text-right">
+                  <div class="flex justify-end gap-2">
+                    <Button
+                      v-if="!product.variants || product.variants.length === 0"
+                      variant="outline"
+                      size="sm"
+                      @click="openStockDialog(product, 'add')"
+                      title="Add stock"
+                    >
+                      <Plus class="h-4 w-4" />
+                    </Button>
+                    <Button
+                      v-if="!product.variants || product.variants.length === 0"
+                      variant="outline"
+                      size="sm"
+                      @click="openStockDialog(product, 'subtract')"
+                      title="Remove stock"
+                    >
+                      <Minus class="h-4 w-4" />
+                    </Button>
+                    <Button
+                      v-if="!product.variants || product.variants.length === 0"
+                      variant="outline"
+                      size="sm"
+                      @click="openStockDialog(product, 'set')"
+                      title="Set stock"
+                    >
+                      <Edit2 class="h-4 w-4" />
+                    </Button>
+                    <Badge v-else variant="outline" class="text-xs">
+                      Използвайте варианти
+                    </Badge>
+                  </div>
+                </TableCell>
+              </TableRow>
+
+              <!-- Expanded Variant Details -->
+              <TableRow
+                v-if="
+                  isProductExpanded(product._id) &&
+                  product.variants &&
+                  product.variants.length > 0
+                "
+                class="bg-muted/30"
+              >
+                <TableCell colspan="8" class="p-4">
+                  <VariantStockGrid
+                    :key="`variant-grid-${product._id}`"
+                    :variants="product.variants || []"
+                    :sizes="product.sizes || []"
+                    :colors="product.colors || []"
+                    :product-id="product._id"
+                    :base-price="product.price"
+                    @update="
+                      (variants) => handleVariantUpdate(product, variants)
+                    "
+                    @save="(variants) => saveVariantChanges(product, variants)"
+                  />
+                </TableCell>
+              </TableRow>
+            </template>
           </TableBody>
         </Table>
       </CardContent>
     </Card>
 
     <!-- Stock Update Dialog -->
-    <Dialog :open="isDialogOpen" @update:open="(open) => !open && closeDialog()">
+    <Dialog
+      :open="isDialogOpen"
+      @update:open="(open) => !open && closeDialog()"
+    >
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
             {{
-              stockOperation === 'add'
-                ? 'Добави Наличност'
-                : stockOperation === 'subtract'
-                ? 'Премахни Наличност'
-                : 'Зададе Наличност'
+              stockOperation === "add"
+                ? "Добави Наличност"
+                : stockOperation === "subtract"
+                  ? "Премахни Наличност"
+                  : "Зададе Наличност"
             }}
           </DialogTitle>
           <DialogDescription>
@@ -387,17 +591,19 @@ fetchProducts();
         <div class="space-y-4 py-4">
           <div class="space-y-2">
             <Label>Текуща Наличност</Label>
-            <div class="text-2xl font-bold">{{ selectedProduct?.stock }} броя</div>
+            <div class="text-2xl font-bold">
+              {{ selectedProduct?.stock }} броя
+            </div>
           </div>
 
           <div class="space-y-2">
             <Label for="stock-amount">
               {{
-                stockOperation === 'add'
-                  ? 'Количество за Добавяне'
-                  : stockOperation === 'subtract'
-                  ? 'Количество за Премахване'
-                  : 'Ново Количество'
+                stockOperation === "add"
+                  ? "Количество за Добавяне"
+                  : stockOperation === "subtract"
+                    ? "Количество за Премахване"
+                    : "Ново Количество"
               }}
             </Label>
             <Input
@@ -409,16 +615,22 @@ fetchProducts();
               class="h-11"
               :class="{ 'border-destructive': updateError }"
             />
-            <p v-if="updateError" class="text-xs text-destructive">{{ updateError }}</p>
+            <p v-if="updateError" class="text-xs text-destructive">
+              {{ updateError }}
+            </p>
           </div>
 
           <div v-if="stockOperation !== 'set' && stockAmount" class="space-y-2">
             <Label>Нова Наличност След Актуализация</Label>
             <div class="text-xl font-semibold text-primary">
               {{
-                stockOperation === 'add'
-                  ? (selectedProduct?.stock || 0) + parseInt(stockAmount || '0')
-                  : Math.max(0, (selectedProduct?.stock || 0) - parseInt(stockAmount || '0'))
+                stockOperation === "add"
+                  ? (selectedProduct?.stock || 0) + parseInt(stockAmount || "0")
+                  : Math.max(
+                      0,
+                      (selectedProduct?.stock || 0) -
+                        parseInt(stockAmount || "0")
+                    )
               }}
               броя
             </div>
@@ -431,11 +643,10 @@ fetchProducts();
           </Button>
           <Button @click="updateStock" :disabled="isUpdating || !stockAmount">
             <Loader2 v-if="isUpdating" class="mr-2 h-4 w-4 animate-spin" />
-            {{ isUpdating ? 'Актуализация...' : 'Актуализирай' }}
+            {{ isUpdating ? "Актуализация..." : "Актуализирай" }}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   </div>
 </template>
-

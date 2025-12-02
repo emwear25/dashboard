@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Edit,
@@ -22,7 +22,8 @@ import {
   Calendar,
   Tag,
   Box,
-} from 'lucide-vue-next';
+} from "lucide-vue-next";
+import { apiGet, apiDelete } from "@/utils/api";
 
 type ProductImage = {
   url: string;
@@ -38,6 +39,7 @@ type Product = {
   stock: number;
   isActive: boolean;
   image?: ProductImage;
+  images?: ProductImage[];
   sizes?: string[];
   colors?: string[];
   isEmbroidered?: boolean;
@@ -51,57 +53,49 @@ const route = useRoute();
 
 const product = ref<Product | null>(null);
 const isLoading = ref(false);
-const errorMessage = ref('');
-const fallbackImageUrl = 'https://via.placeholder.com/400?text=No+Image';
+const errorMessage = ref("");
+const fallbackImageUrl = "https://via.placeholder.com/400?text=No+Image";
 
 const fetchProduct = async () => {
   isLoading.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
 
   try {
     const productId = route.params.id;
-    const response = await fetch(`http://localhost:3030/api/products/${productId}`, {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch product details');
-    }
-
-    const result = await response.json();
+    const result = await apiGet(`products/${productId}`);
 
     if (result.success && result.data) {
       product.value = result.data;
     } else {
-      throw new Error('Product not found');
+      throw new Error("Product not found");
     }
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to load product details';
+      error instanceof Error ? error.message : "Failed to load product details";
   } finally {
     isLoading.value = false;
   }
 };
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
   minimumFractionDigits: 2,
 });
 
 const formatPrice = (value: number) => currencyFormatter.format(value);
 
 const formatDate = (dateString?: string) => {
-  if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  if (!dateString) return "N/A";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 };
 
 const goBack = () => {
-  router.push('/products');
+  router.push("/products");
 };
 
 const editProduct = () => {
@@ -113,23 +107,16 @@ const editProduct = () => {
 const deleteProduct = async () => {
   if (!product.value) return;
 
-  if (!confirm('Are you sure you want to delete this product?')) {
+  if (!confirm("Are you sure you want to delete this product?")) {
     return;
   }
 
   try {
-    const response = await fetch(`http://localhost:3030/api/products/${product.value._id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
+    await apiDelete(`products/${product.value._id}`);
 
-    if (!response.ok) {
-      throw new Error('Failed to delete product');
-    }
-
-    router.push('/products');
+    router.push("/products");
   } catch (error) {
-    alert(error instanceof Error ? error.message : 'Failed to delete product');
+    alert(error instanceof Error ? error.message : "Failed to delete product");
   }
 };
 
@@ -162,7 +149,9 @@ onMounted(() => {
     <div v-if="isLoading" class="flex items-center justify-center py-20">
       <div class="text-center">
         <Loader2 class="h-10 w-10 animate-spin mx-auto mb-4 text-primary" />
-        <p class="text-lg text-muted-foreground">Зареждане на детайли за продукта...</p>
+        <p class="text-lg text-muted-foreground">
+          Зареждане на детайли за продукта...
+        </p>
       </div>
     </div>
 
@@ -186,9 +175,14 @@ onMounted(() => {
         <!-- Product Image -->
         <div class="relative">
           <div class="sticky top-8">
-            <div class="relative aspect-square rounded-xl overflow-hidden bg-muted border">
+            <div
+              class="relative aspect-square rounded-xl overflow-hidden bg-muted border"
+            >
               <img
-                :src="product.images?.[0]?.url ?? fallbackImageUrl"
+                :src="
+                  (product.images?.[0]?.url || product.image?.url) ??
+                  fallbackImageUrl
+                "
                 :alt="product.name"
                 class="w-full h-full object-contain"
               />
@@ -206,19 +200,28 @@ onMounted(() => {
               </h1>
             </div>
             <div class="flex flex-wrap items-center gap-2 mb-4">
-              <Badge :variant="product.isActive ? 'default' : 'destructive'" class="text-sm px-3 py-1">
-                {{ product.isActive ? 'Активен' : 'Неактивен' }}
+              <Badge
+                :variant="product.isActive ? 'default' : 'destructive'"
+                class="text-sm px-3 py-1"
+              >
+                {{ product.isActive ? "Активен" : "Неактивен" }}
               </Badge>
               <Badge variant="secondary" class="text-sm px-3 py-1">
                 <Tag class="h-3 w-3 mr-1" />
                 {{ product.category }}
               </Badge>
-              <Badge v-if="product.isEmbroidered" variant="outline" class="text-sm px-3 py-1">
+              <Badge
+                v-if="product.isEmbroidered"
+                variant="outline"
+                class="text-sm px-3 py-1"
+              >
                 С Бродерия
               </Badge>
             </div>
             <div class="flex items-baseline gap-2">
-              <span class="text-5xl font-bold tracking-tight">{{ formatPrice(product.price) }}</span>
+              <span class="text-5xl font-bold tracking-tight">{{
+                formatPrice(product.price)
+              }}</span>
             </div>
           </div>
 
@@ -235,7 +238,11 @@ onMounted(() => {
           </Card>
 
           <!-- Stock Info Card -->
-          <Card :class="product.stock <= 10 ? 'border-orange-200 bg-orange-50/50' : ''">
+          <Card
+            :class="
+              product.stock <= 10 ? 'border-orange-200 bg-orange-50/50' : ''
+            "
+          >
             <CardHeader class="pb-3">
               <CardTitle class="text-lg flex items-center gap-2">
                 <Package class="h-5 w-5" />
@@ -305,7 +312,10 @@ onMounted(() => {
       </div>
 
       <!-- Embroidery Options Section -->
-      <Card v-if="product.isEmbroidered && product.embroideryOptions" class="bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+      <Card
+        v-if="product.isEmbroidered && product.embroideryOptions"
+        class="bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200"
+      >
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
             <Box class="h-5 w-5" />
@@ -316,7 +326,10 @@ onMounted(() => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <pre class="bg-white/80 p-4 rounded-lg overflow-auto text-sm border">{{ JSON.stringify(product.embroideryOptions, null, 2) }}</pre>
+          <pre
+            class="bg-white/80 p-4 rounded-lg overflow-auto text-sm border"
+            >{{ JSON.stringify(product.embroideryOptions, null, 2) }}</pre
+          >
         </CardContent>
       </Card>
 
@@ -334,31 +347,64 @@ onMounted(() => {
         <CardContent>
           <dl class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="space-y-1">
-              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ID на Продукта</dt>
-              <dd class="text-sm font-mono bg-muted px-2 py-1 rounded inline-block">{{ product._id }}</dd>
+              <dt
+                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
+                ID на Продукта
+              </dt>
+              <dd
+                class="text-sm font-mono bg-muted px-2 py-1 rounded inline-block"
+              >
+                {{ product._id }}
+              </dd>
             </div>
             <div class="space-y-1">
-              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Категория</dt>
+              <dt
+                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
+                Категория
+              </dt>
               <dd class="text-sm font-medium">{{ product.category }}</dd>
             </div>
             <div class="space-y-1">
-              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Статус</dt>
+              <dt
+                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
+                Статус
+              </dt>
               <dd class="text-sm font-medium">
-                <Badge :variant="product.isActive ? 'default' : 'destructive'" class="text-xs">
-                  {{ product.isActive ? 'Активен' : 'Неактивен' }}
+                <Badge
+                  :variant="product.isActive ? 'default' : 'destructive'"
+                  class="text-xs"
+                >
+                  {{ product.isActive ? "Активен" : "Неактивен" }}
                 </Badge>
               </dd>
             </div>
             <div class="space-y-1">
-              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Цена</dt>
-              <dd class="text-sm font-bold">{{ formatPrice(product.price) }}</dd>
+              <dt
+                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
+                Цена
+              </dt>
+              <dd class="text-sm font-bold">
+                {{ formatPrice(product.price) }}
+              </dd>
             </div>
             <div class="space-y-1">
-              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Създаден На</dt>
+              <dt
+                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
+                Създаден На
+              </dt>
               <dd class="text-sm">{{ formatDate(product.createdAt) }}</dd>
             </div>
             <div class="space-y-1">
-              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Последна Актуализация</dt>
+              <dt
+                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
+                Последна Актуализация
+              </dt>
               <dd class="text-sm">{{ formatDate(product.updatedAt) }}</dd>
             </div>
           </dl>
@@ -367,4 +413,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-

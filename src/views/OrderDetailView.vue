@@ -1,213 +1,215 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { useToast } from '@/components/ui/toast'
-import { Loader2, Package, Truck, MapPin, Phone, Mail, User, CheckCircle, Copy } from 'lucide-vue-next'
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/toast";
+import {
+  Loader2,
+  Package,
+  Truck,
+  MapPin,
+  Phone,
+  Mail,
+  User,
+  CheckCircle,
+  Copy,
+} from "lucide-vue-next";
+import { apiGet, apiPost } from "@/utils/api";
 
-const { toast } = useToast()
+const { toast } = useToast();
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const order = ref<any>(null)
-const isLoading = ref(true)
-const isCreatingShipment = ref(false)
-const error = ref('')
+const order = ref<any>(null);
+const isLoading = ref(true);
+const isCreatingShipment = ref(false);
+const error = ref("");
 
 const fetchOrder = async () => {
-  isLoading.value = true
-  error.value = ''
-  
+  isLoading.value = true;
+  error.value = "";
+
   try {
-    const orderId = route.params.id
-    console.log('[OrderDetail] Fetching order:', orderId)
-    
+    const orderId = route.params.id;
+    console.log("[OrderDetail] Fetching order:", orderId);
+
     // Try to get single order by ID first
-    const response = await fetch(`http://localhost:3030/api/orders/admin/all`)
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch orders')
+    const data = await apiGet("orders/admin/all");
+
+    if (!data.success) {
+      throw new Error("Failed to fetch orders");
     }
-    
-    const data = await response.json()
-    console.log('[OrderDetail] Response:', data)
-    
+    console.log("[OrderDetail] Response:", data);
+
     if (data.success && data.data) {
       // Find order by ID
-      const foundOrder = data.data.find((o: any) => o._id === orderId || o.orderNumber === orderId)
-      
+      const foundOrder = data.data.find(
+        (o: any) => o._id === orderId || o.orderNumber === orderId
+      );
+
       if (foundOrder) {
-        order.value = foundOrder
-        console.log('[OrderDetail] Order found:', foundOrder.orderNumber)
+        order.value = foundOrder;
+        console.log("[OrderDetail] Order found:", foundOrder.orderNumber);
       } else {
-        error.value = 'Order not found'
-        console.log('[OrderDetail] Order not found in', data.data.length, 'orders')
+        error.value = "Order not found";
+        console.log(
+          "[OrderDetail] Order not found in",
+          data.data.length,
+          "orders"
+        );
       }
     } else {
-      error.value = 'No orders returned'
+      error.value = "No orders returned";
     }
   } catch (err) {
-    console.error('[OrderDetail] Failed to load order:', err)
-    error.value = 'Failed to load order details'
+    console.error("[OrderDetail] Failed to load order:", err);
+    error.value = "Failed to load order details";
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const createEcontShipment = async () => {
-  if (!order.value) return
-  
-  isCreatingShipment.value = true
-  
+  if (!order.value) return;
+
+  isCreatingShipment.value = true;
+
   try {
-    const response = await fetch(`http://localhost:3030/api/orders/${order.value._id}/create-econt-shipment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to create shipment')
-    }
-    
-    const data = await response.json()
-    
+    const data = await apiPost(
+      `orders/${order.value._id}/create-econt-shipment`,
+      {}
+    );
+
     if (data.success) {
       // Refresh order data
-      await fetchOrder()
-      
+      await fetchOrder();
+
       // Show success toast
       toast({
-        title: '✅ Econt пратка създадена!',
+        title: "✅ Econt пратка създадена!",
         description: `Номер за проследяване: ${data.data.shipmentNumber}`,
-        variant: 'default',
-        duration: 5000
-      })
-      
+        variant: "default",
+        duration: 5000,
+      });
+
       // Copy tracking number to clipboard
       if (navigator.clipboard) {
         try {
-          await navigator.clipboard.writeText(data.data.shipmentNumber)
+          await navigator.clipboard.writeText(data.data.shipmentNumber);
           setTimeout(() => {
             toast({
-              title: '📋 Копирано!',
-              description: 'Номерът за проследяване е копиран',
-              duration: 2000
-            })
-          }, 500)
+              title: "📋 Копирано!",
+              description: "Номерът за проследяване е копиран",
+              duration: 2000,
+            });
+          }, 500);
         } catch (e) {
-          console.log('Failed to copy to clipboard')
+          console.log("Failed to copy to clipboard");
         }
       }
     } else {
-      throw new Error(data.message || 'Failed to create shipment')
+      throw new Error(data.message || "Failed to create shipment");
     }
   } catch (err: any) {
-    console.error('Failed to create shipment:', err)
-    
+    console.error("Failed to create shipment:", err);
+
     toast({
-      title: '❌ Грешка',
-      description: err.message || 'Не успяхме да създадем Econt пратка',
-      variant: 'destructive',
-      duration: 5000
-    })
+      title: "❌ Грешка",
+      description: err.message || "Не успяхме да създадем Econt пратка",
+      variant: "destructive",
+      duration: 5000,
+    });
   } finally {
-    isCreatingShipment.value = false
+    isCreatingShipment.value = false;
   }
-}
+};
 
 const createSpeedyShipment = async () => {
-  if (!order.value) return
-  
-  isCreatingShipment.value = true
-  
+  if (!order.value) return;
+
+  isCreatingShipment.value = true;
+
   try {
-    const response = await fetch(`http://localhost:3030/api/orders/${order.value._id}/create-speedy-shipment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to create shipment')
-    }
-    
-    const data = await response.json()
-    
+    const data = await apiPost(
+      `orders/${order.value._id}/create-speedy-shipment`,
+      {}
+    );
+
     if (data.success) {
       // Refresh order data
-      await fetchOrder()
-      
+      await fetchOrder();
+
       // Show success toast
       toast({
-        title: '✅ Speedy пратка създадена!',
+        title: "✅ Speedy пратка създадена!",
         description: `Номер за проследяване: ${data.data.shipmentNumber}`,
-        variant: 'default',
-        duration: 5000
-      })
-      
+        variant: "default",
+        duration: 5000,
+      });
+
       // Copy tracking number to clipboard
       if (navigator.clipboard) {
         try {
-          await navigator.clipboard.writeText(data.data.shipmentNumber)
+          await navigator.clipboard.writeText(data.data.shipmentNumber);
           setTimeout(() => {
             toast({
-              title: '📋 Копирано!',
-              description: 'Номерът за проследяване е копиран',
-              duration: 2000
-            })
-          }, 500)
+              title: "📋 Копирано!",
+              description: "Номерът за проследяване е копиран",
+              duration: 2000,
+            });
+          }, 500);
         } catch (e) {
-          console.log('Failed to copy to clipboard')
+          console.log("Failed to copy to clipboard");
         }
       }
     } else {
-      throw new Error(data.message || 'Failed to create shipment')
+      throw new Error(data.message || "Failed to create shipment");
     }
   } catch (err: any) {
-    console.error('Failed to create shipment:', err)
-    
+    console.error("Failed to create shipment:", err);
+
     toast({
-      title: '❌ Грешка',
-      description: err.message || 'Не успяхме да създадем Speedy пратка',
-      variant: 'destructive',
-      duration: 5000
-    })
+      title: "❌ Грешка",
+      description: err.message || "Не успяхме да създадем Speedy пратка",
+      variant: "destructive",
+      duration: 5000,
+    });
   } finally {
-    isCreatingShipment.value = false
+    isCreatingShipment.value = false;
   }
-}
+};
 
 const getStatusBadgeVariant = (status: string) => {
-  const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    pending: 'secondary',
-    confirmed: 'default',
-    processing: 'default',
-    shipped: 'default',
-    delivered: 'outline',
-    cancelled: 'destructive'
-  }
-  return variants[status] || 'default'
-}
+  const variants: Record<
+    string,
+    "default" | "secondary" | "destructive" | "outline"
+  > = {
+    pending: "secondary",
+    confirmed: "default",
+    processing: "default",
+    shipped: "default",
+    delivered: "outline",
+    cancelled: "destructive",
+  };
+  return variants[status] || "default";
+};
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('bg-BG', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+  return new Date(dateString).toLocaleString("bg-BG", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 onMounted(() => {
-  fetchOrder()
-})
+  fetchOrder();
+});
 </script>
 
 <template>
@@ -228,15 +230,15 @@ onMounted(() => {
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-bold">Поръчка #{{ order.orderNumber }}</h1>
-          <p class="text-muted-foreground mt-1">{{ formatDate(order.createdAt) }}</p>
+          <p class="text-muted-foreground mt-1">
+            {{ formatDate(order.createdAt) }}
+          </p>
         </div>
         <div class="flex items-center gap-3">
           <Badge :variant="getStatusBadgeVariant(order.orderStatus)">
             {{ order.orderStatus }}
           </Badge>
-          <Button variant="outline" @click="router.back()">
-            ← Назад
-          </Button>
+          <Button variant="outline" @click="router.back()"> ← Назад </Button>
         </div>
       </div>
 
@@ -294,7 +296,10 @@ onMounted(() => {
                 <div class="flex items-start gap-2">
                   <User class="h-4 w-4 mt-1 text-muted-foreground" />
                   <div>
-                    <p class="font-medium">{{ order.shippingAddress.firstName }} {{ order.shippingAddress.lastName }}</p>
+                    <p class="font-medium">
+                      {{ order.shippingAddress.firstName }}
+                      {{ order.shippingAddress.lastName }}
+                    </p>
                   </div>
                 </div>
                 <div class="flex items-start gap-2">
@@ -309,11 +314,17 @@ onMounted(() => {
                   <MapPin class="h-4 w-4 mt-1 text-muted-foreground" />
                   <div>
                     <p>{{ order.shippingAddress.street }}</p>
-                    <p>{{ order.shippingAddress.city }}, {{ order.shippingAddress.postalCode }}</p>
+                    <p>
+                      {{ order.shippingAddress.city }},
+                      {{ order.shippingAddress.postalCode }}
+                    </p>
                     <p>{{ order.shippingAddress.country }}</p>
                   </div>
                 </div>
-                <div v-if="order.shippingAddress.notes" class="flex items-start gap-2 mt-4 pt-4 border-t">
+                <div
+                  v-if="order.shippingAddress.notes"
+                  class="flex items-start gap-2 mt-4 pt-4 border-t"
+                >
                   <p class="text-sm text-muted-foreground">
                     <strong>Бележки:</strong> {{ order.shippingAddress.notes }}
                   </p>
@@ -323,7 +334,13 @@ onMounted(() => {
           </Card>
 
           <!-- Econt Shipment -->
-          <Card v-if="(order.deliveryProvider === 'econt' || !order.deliveryProvider) && order.deliveryMethod && order.deliveryMethod !== 'courier_address'">
+          <Card
+            v-if="
+              (order.deliveryProvider === 'econt' || !order.deliveryProvider) &&
+              order.deliveryMethod &&
+              order.deliveryMethod !== 'courier_address'
+            "
+          >
             <CardHeader>
               <CardTitle class="flex items-center gap-2">
                 <Truck class="h-5 w-5" />
@@ -334,7 +351,9 @@ onMounted(() => {
               <div class="space-y-4">
                 <div v-if="order.econtShipmentNumber">
                   <p class="text-sm text-muted-foreground">Товарителница:</p>
-                  <p class="text-lg font-mono font-bold">{{ order.econtShipmentNumber }}</p>
+                  <p class="text-lg font-mono font-bold">
+                    {{ order.econtShipmentNumber }}
+                  </p>
                   <a
                     :href="`https://www.econt.com/track?shipmentNumber=${order.econtShipmentNumber}`"
                     target="_blank"
@@ -343,11 +362,15 @@ onMounted(() => {
                     🔍 Проследи пратката
                   </a>
                 </div>
-                
+
                 <div v-if="order.econtOfficeName">
-                  <p class="text-sm text-muted-foreground">Офис за получаване:</p>
+                  <p class="text-sm text-muted-foreground">
+                    Офис за получаване:
+                  </p>
                   <p class="font-medium">{{ order.econtOfficeName }}</p>
-                  <p class="text-sm text-muted-foreground">Код: {{ order.econtOfficeCode }}</p>
+                  <p class="text-sm text-muted-foreground">
+                    Код: {{ order.econtOfficeCode }}
+                  </p>
                 </div>
 
                 <div v-if="!order.econtShipmentNumber" class="pt-4 border-t">
@@ -356,9 +379,16 @@ onMounted(() => {
                     :disabled="isCreatingShipment"
                     class="w-full"
                   >
-                    <Loader2 v-if="isCreatingShipment" class="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2
+                      v-if="isCreatingShipment"
+                      class="mr-2 h-4 w-4 animate-spin"
+                    />
                     <Truck v-else class="mr-2 h-4 w-4" />
-                    {{ isCreatingShipment ? 'Създаване...' : 'Създай Econt пратка' }}
+                    {{
+                      isCreatingShipment
+                        ? "Създаване..."
+                        : "Създай Econt пратка"
+                    }}
                   </Button>
                   <p class="text-xs text-muted-foreground mt-2 text-center">
                     Това ще генерира товарителница и номер за проследяване
@@ -369,7 +399,13 @@ onMounted(() => {
           </Card>
 
           <!-- Speedy Shipment -->
-          <Card v-if="order.deliveryProvider === 'speedy' && order.deliveryMethod && order.deliveryMethod !== 'courier_address'">
+          <Card
+            v-if="
+              order.deliveryProvider === 'speedy' &&
+              order.deliveryMethod &&
+              order.deliveryMethod !== 'courier_address'
+            "
+          >
             <CardHeader>
               <CardTitle class="flex items-center gap-2">
                 <Truck class="h-5 w-5" />
@@ -380,7 +416,9 @@ onMounted(() => {
               <div class="space-y-4">
                 <div v-if="order.speedyShipmentNumber">
                   <p class="text-sm text-muted-foreground">Товарителница:</p>
-                  <p class="text-lg font-mono font-bold">{{ order.speedyShipmentNumber }}</p>
+                  <p class="text-lg font-mono font-bold">
+                    {{ order.speedyShipmentNumber }}
+                  </p>
                   <a
                     :href="`https://www.speedy.bg/track?parcelNumber=${order.speedyShipmentNumber}`"
                     target="_blank"
@@ -389,11 +427,15 @@ onMounted(() => {
                     🔍 Проследи пратката
                   </a>
                 </div>
-                
+
                 <div v-if="order.speedyOfficeName">
-                  <p class="text-sm text-muted-foreground">Офис за получаване:</p>
+                  <p class="text-sm text-muted-foreground">
+                    Офис за получаване:
+                  </p>
                   <p class="font-medium">{{ order.speedyOfficeName }}</p>
-                  <p class="text-sm text-muted-foreground">ID: {{ order.speedyOfficeId }}</p>
+                  <p class="text-sm text-muted-foreground">
+                    ID: {{ order.speedyOfficeId }}
+                  </p>
                 </div>
 
                 <div v-if="!order.speedyShipmentNumber" class="pt-4 border-t">
@@ -402,9 +444,16 @@ onMounted(() => {
                     :disabled="isCreatingShipment"
                     class="w-full"
                   >
-                    <Loader2 v-if="isCreatingShipment" class="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2
+                      v-if="isCreatingShipment"
+                      class="mr-2 h-4 w-4 animate-spin"
+                    />
                     <Truck v-else class="mr-2 h-4 w-4" />
-                    {{ isCreatingShipment ? 'Създаване...' : 'Създай Speedy пратка' }}
+                    {{
+                      isCreatingShipment
+                        ? "Създаване..."
+                        : "Създай Speedy пратка"
+                    }}
                   </Button>
                   <p class="text-xs text-muted-foreground mt-2 text-center">
                     Това ще генерира товарителница и номер за проследяване
@@ -436,7 +485,9 @@ onMounted(() => {
                   <span class="text-muted-foreground">ДДС:</span>
                   <span>{{ order.tax.toFixed(2) }} лв.</span>
                 </div>
-                <div class="flex justify-between font-bold text-lg pt-3 border-t">
+                <div
+                  class="flex justify-between font-bold text-lg pt-3 border-t"
+                >
                   <span>Общо:</span>
                   <span>{{ order.total.toFixed(2) }} лв.</span>
                 </div>
@@ -453,11 +504,19 @@ onMounted(() => {
               <div class="space-y-2">
                 <div class="flex justify-between text-sm">
                   <span class="text-muted-foreground">Метод:</span>
-                  <span class="font-medium">{{ order.paymentMethod === 'cash_on_delivery' ? 'Наложен платеж' : order.paymentMethod }}</span>
+                  <span class="font-medium">{{
+                    order.paymentMethod === "cash_on_delivery"
+                      ? "Наложен платеж"
+                      : order.paymentMethod
+                  }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span class="text-muted-foreground">Статус:</span>
-                  <Badge :variant="order.paymentStatus === 'paid' ? 'default' : 'secondary'">
+                  <Badge
+                    :variant="
+                      order.paymentStatus === 'paid' ? 'default' : 'secondary'
+                    "
+                  >
                     {{ order.paymentStatus }}
                   </Badge>
                 </div>
@@ -472,9 +531,15 @@ onMounted(() => {
             </CardHeader>
             <CardContent>
               <div class="space-y-2 text-sm">
-                <p v-if="order.deliveryMethod === 'courier_address'">🚚 Куриер до адрес</p>
-                <p v-else-if="order.deliveryMethod === 'econt_office'">🏢 Офис на Еконт</p>
-                <p v-else-if="order.deliveryMethod === 'econt_automat'">📦 Eконтомат</p>
+                <p v-if="order.deliveryMethod === 'courier_address'">
+                  🚚 Куриер до адрес
+                </p>
+                <p v-else-if="order.deliveryMethod === 'econt_office'">
+                  🏢 Офис на Еконт
+                </p>
+                <p v-else-if="order.deliveryMethod === 'econt_automat'">
+                  📦 Eконтомат
+                </p>
                 <p v-else>{{ order.deliveryMethod }}</p>
               </div>
             </CardContent>
@@ -490,4 +555,3 @@ onMounted(() => {
   padding: 1.5rem;
 }
 </style>
-

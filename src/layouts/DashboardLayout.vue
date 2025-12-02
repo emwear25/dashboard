@@ -26,6 +26,7 @@ import {
   Percent,
   Tag,
   TrendingUp,
+  MessageSquare,
 } from "lucide-vue-next";
 
 interface NavigationItem {
@@ -79,6 +80,11 @@ const navigationItems: NavigationItem[] = [
     name: "Външни Поръчки",
     path: "/external-orders",
     icon: ShoppingCart,
+  },
+  {
+    name: "Контактни Съобщения",
+    path: "/contact-messages",
+    icon: MessageSquare,
   },
 ];
 

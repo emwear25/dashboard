@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import {
   Table,
   TableBody,
@@ -8,17 +8,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Search, Loader2, AlertCircle, Tag, Download, Copy, Plus } from 'lucide-vue-next';
+  Search,
+  Loader2,
+  AlertCircle,
+  Tag,
+  Download,
+  Copy,
+  Plus,
+} from "lucide-vue-next";
+import { apiGet } from "@/utils/api";
 
 type Coupon = {
   _id: string;
@@ -30,37 +34,26 @@ type Coupon = {
 };
 
 const router = useRouter();
-const searchQuery = ref('');
+const searchQuery = ref("");
 const coupons = ref<Coupon[]>([]);
 const isLoading = ref(false);
-const errorMessage = ref('');
+const errorMessage = ref("");
 const currentPage = ref(1);
 const itemsPerPage = 15;
 
 const fetchCoupons = async () => {
   isLoading.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
 
   try {
-    const response = await fetch('http://localhost:3030/api/coupons', {
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch coupons');
-    }
-
-    const result = await response.json();
+    const result = await apiGet("coupons");
 
     if (result.success && Array.isArray(result.data)) {
       coupons.value = result.data;
     }
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to load coupons';
+      error instanceof Error ? error.message : "Failed to load coupons";
   } finally {
     isLoading.value = false;
   }
@@ -92,40 +85,43 @@ const copyCouponCode = async (code: string) => {
     await navigator.clipboard.writeText(code);
     alert(`Код "${code}" копиран!`);
   } catch (error) {
-    alert('Неуспешно копиране');
+    alert("Неуспешно копиране");
   }
 };
 
 const exportCoupons = async () => {
   try {
-    const response = await fetch('http://localhost:3030/api/coupons/export', {
-      credentials: 'include',
+    // For file downloads, we need to use fetch directly
+    const apiBase =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:3030";
+    const response = await fetch(`${apiBase}/api/coupons/export`, {
+      credentials: "include",
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to export coupons');
+      throw new Error("Failed to export coupons");
     }
 
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `coupons-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `coupons-${new Date().toISOString().split("T")[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   } catch (error) {
-    alert(error instanceof Error ? error.message : 'Failed to export coupons');
+    alert(error instanceof Error ? error.message : "Failed to export coupons");
   }
 };
 
 const formatDate = (dateString?: string) => {
-  if (!dateString) return 'Няма';
-  return new Date(dateString).toLocaleDateString('bg-BG');
+  if (!dateString) return "Няма";
+  return new Date(dateString).toLocaleDateString("bg-BG");
 };
 
 const isExpired = (dateString?: string) => {
@@ -153,7 +149,9 @@ onMounted(() => {
 <template>
   <div class="space-y-8 pb-8 pt-6">
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    >
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Купони</h1>
         <p class="text-muted-foreground mt-1.5">
@@ -175,16 +173,25 @@ onMounted(() => {
     <!-- Stats Cards -->
     <div class="grid gap-4 md:grid-cols-3">
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Активни купони</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">{{ coupons.filter(c => c.isActive && !isExpired(c.expiresAt)).length }}</div>
+          <div class="text-2xl font-bold">
+            {{
+              coupons.filter((c) => c.isActive && !isExpired(c.expiresAt))
+                .length
+            }}
+          </div>
         </CardContent>
       </Card>
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Общо купони</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -193,12 +200,16 @@ onMounted(() => {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          class="flex flex-row items-center justify-between space-y-0 pb-2"
+        >
           <CardTitle class="text-sm font-medium">Общо използвания</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">{{ coupons.reduce((sum, c) => sum + c.usageCount, 0) }}</div>
+          <div class="text-2xl font-bold">
+            {{ coupons.reduce((sum, c) => sum + c.usageCount, 0) }}
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -259,7 +270,9 @@ onMounted(() => {
                 <TableCell colspan="6" class="text-center py-12">
                   <div class="flex flex-col items-center gap-2">
                     <Tag class="h-12 w-12 text-muted-foreground/50" />
-                    <p class="text-muted-foreground font-medium">Няма намерени купони</p>
+                    <p class="text-muted-foreground font-medium">
+                      Няма намерени купони
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -272,19 +285,33 @@ onMounted(() => {
                   <div class="font-mono font-semibold">{{ coupon.code }}</div>
                 </TableCell>
                 <TableCell>
-                  <span class="font-semibold">{{ coupon.discountPercentage }}%</span>
+                  <span class="font-semibold"
+                    >{{ coupon.discountPercentage }}%</span
+                  >
                 </TableCell>
                 <TableCell>
                   {{ coupon.usageCount || 0 }}
                 </TableCell>
                 <TableCell>
-                  <span :class="{ 'text-destructive': isExpired(coupon.expiresAt) }">
+                  <span
+                    :class="{ 'text-destructive': isExpired(coupon.expiresAt) }"
+                  >
                     {{ formatDate(coupon.expiresAt) }}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Badge :variant="coupon.isActive && !isExpired(coupon.expiresAt) ? 'default' : 'destructive'">
-                    {{ coupon.isActive && !isExpired(coupon.expiresAt) ? 'Активен' : 'Неактивен' }}
+                  <Badge
+                    :variant="
+                      coupon.isActive && !isExpired(coupon.expiresAt)
+                        ? 'default'
+                        : 'destructive'
+                    "
+                  >
+                    {{
+                      coupon.isActive && !isExpired(coupon.expiresAt)
+                        ? "Активен"
+                        : "Неактивен"
+                    }}
                   </Badge>
                 </TableCell>
                 <TableCell class="text-right">
@@ -305,11 +332,21 @@ onMounted(() => {
     </Card>
 
     <!-- Pagination -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+    <div
+      class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2"
+    >
       <p class="text-sm text-muted-foreground">
-        Показване на <span class="font-medium text-foreground">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> до
-        <span class="font-medium text-foreground">{{ Math.min(currentPage * itemsPerPage, totalItems) }}</span> от
-        <span class="font-medium text-foreground">{{ totalItems }}</span> резултата
+        Показване на
+        <span class="font-medium text-foreground">{{
+          (currentPage - 1) * itemsPerPage + 1
+        }}</span>
+        до
+        <span class="font-medium text-foreground">{{
+          Math.min(currentPage * itemsPerPage, totalItems)
+        }}</span>
+        от
+        <span class="font-medium text-foreground">{{ totalItems }}</span>
+        резултата
       </p>
       <div class="flex gap-2">
         <Button
