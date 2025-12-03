@@ -4,13 +4,7 @@ import { useRouter, useRoute } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -60,10 +54,7 @@ const fetchProducts = async () => {
       products.value = result.data;
       const categoryStrings: string[] = result.data
         .map((p: Product) => p.category)
-        .filter(
-          (cat: unknown): cat is string =>
-            typeof cat === "string" && cat.length > 0
-        );
+        .filter((cat: unknown): cat is string => typeof cat === "string" && cat.length > 0);
       const uniqueCategories = [...new Set(categoryStrings)];
       categories.value = uniqueCategories;
     }
@@ -88,11 +79,8 @@ const fetchDiscount = async () => {
         value: discount.value,
         scope: discount.scope,
         applicableProducts: (discount.conditions?.productIds || []) as string[],
-        applicableCategories: (discount.conditions?.categories ||
-          []) as string[],
-        endDate: discount.endDate
-          ? new Date(discount.endDate).toISOString().slice(0, 16)
-          : "",
+        applicableCategories: (discount.conditions?.categories || []) as string[],
+        endDate: discount.endDate ? new Date(discount.endDate).toISOString().slice(0, 16) : "",
         isActive: discount.isActive,
       };
     }
@@ -139,16 +127,10 @@ const handleSubmit = async () => {
   errorMessage.value = "";
 
   try {
-    if (
-      form.value.scope === "product" &&
-      form.value.applicableProducts.length === 0
-    ) {
+    if (form.value.scope === "product" && form.value.applicableProducts.length === 0) {
       throw new Error("Моля изберете поне един продукт");
     }
-    if (
-      form.value.scope === "category" &&
-      form.value.applicableCategories.length === 0
-    ) {
+    if (form.value.scope === "category" && form.value.applicableCategories.length === 0) {
       throw new Error("Моля изберете поне една категория");
     }
 
@@ -164,17 +146,11 @@ const handleSubmit = async () => {
       data.endDate = form.value.endDate;
     }
 
-    if (
-      form.value.scope === "product" &&
-      form.value.applicableProducts.length > 0
-    ) {
+    if (form.value.scope === "product" && form.value.applicableProducts.length > 0) {
       data.applicableProducts = form.value.applicableProducts;
     }
 
-    if (
-      form.value.scope === "category" &&
-      form.value.applicableCategories.length > 0
-    ) {
+    if (form.value.scope === "category" && form.value.applicableCategories.length > 0) {
       data.applicableCategories = form.value.applicableCategories;
     }
 
@@ -187,8 +163,7 @@ const handleSubmit = async () => {
 
     if (!result.success) {
       throw new Error(
-        result.message ||
-          `Failed to ${isEditMode.value ? "update" : "create"} discount`
+        result.message || `Failed to ${isEditMode.value ? "update" : "create"} discount`
       );
     }
 
@@ -223,11 +198,7 @@ onMounted(() => {
           {{ isEditMode ? "Редактирай отстъпка" : "Създай отстъпка" }}
         </h1>
         <p class="text-muted-foreground mt-1.5">
-          {{
-            isEditMode
-              ? "Промени настройките на отстъпката"
-              : "Бърза и лесна отстъпка"
-          }}
+          {{ isEditMode ? "Промени настройките на отстъпката" : "Бърза и лесна отстъпка" }}
         </p>
       </div>
     </div>
@@ -241,40 +212,27 @@ onMounted(() => {
         <CardContent class="space-y-4">
           <!-- Name -->
           <div class="space-y-2">
-            <Label for="name"
-              >Име на отстъпката <span class="text-destructive">*</span></Label
-            >
-            <Input
-              id="name"
-              v-model="form.name"
-              placeholder="напр. Лятна разпродажба"
-              required
-            />
+            <Label for="name">Име на отстъпката <span class="text-destructive">*</span></Label>
+            <Input id="name" v-model="form.name" placeholder="напр. Лятна разпродажба" required />
           </div>
 
           <!-- Type and Value -->
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
-              <Label for="type"
-                >Тип <span class="text-destructive">*</span></Label
-              >
+              <Label for="type">Тип <span class="text-destructive">*</span></Label>
               <Select v-model="form.type" required>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percentage">Процент (%)</SelectItem>
-                  <SelectItem value="fixed_amount"
-                    >Фиксирана сума (лв)</SelectItem
-                  >
+                  <SelectItem value="fixed_amount">Фиксирана сума (лв)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div class="space-y-2">
-              <Label for="value">
-                Стойност <span class="text-destructive">*</span>
-              </Label>
+              <Label for="value"> Стойност <span class="text-destructive">*</span> </Label>
               <Input
                 id="value"
                 v-model.number="form.value"
@@ -289,9 +247,7 @@ onMounted(() => {
 
           <!-- Scope -->
           <div class="space-y-2">
-            <Label for="scope"
-              >Приложи за <span class="text-destructive">*</span></Label
-            >
+            <Label for="scope">Приложи за <span class="text-destructive">*</span></Label>
             <Select v-model="form.scope" required>
               <SelectTrigger>
                 <SelectValue />
@@ -305,14 +261,10 @@ onMounted(() => {
 
           <!-- Product Selection -->
           <div v-if="form.scope === 'product'" class="space-y-3">
-            <Label
-              >Избери продукти <span class="text-destructive">*</span></Label
-            >
+            <Label>Избери продукти <span class="text-destructive">*</span></Label>
 
             <div v-if="loadingProducts" class="text-center py-4">
-              <Loader2
-                class="h-6 w-6 animate-spin mx-auto text-muted-foreground"
-              />
+              <Loader2 class="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
             </div>
 
             <div
@@ -332,9 +284,7 @@ onMounted(() => {
                 />
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium">{{ product.name }}</p>
-                  <p class="text-xs text-muted-foreground">
-                    {{ product.price }} лв
-                  </p>
+                  <p class="text-xs text-muted-foreground">{{ product.price }} лв</p>
                 </div>
               </label>
             </div>
@@ -346,9 +296,7 @@ onMounted(() => {
 
           <!-- Category Selection -->
           <div v-if="form.scope === 'category'" class="space-y-3">
-            <Label
-              >Избери категории <span class="text-destructive">*</span></Label
-            >
+            <Label>Избери категории <span class="text-destructive">*</span></Label>
 
             <div class="grid grid-cols-2 gap-2 border rounded-lg p-4">
               <label
@@ -362,9 +310,7 @@ onMounted(() => {
                   @change="toggleCategory(category)"
                   class="h-4 w-4"
                 />
-                <span class="text-sm font-medium capitalize">{{
-                  category
-                }}</span>
+                <span class="text-sm font-medium capitalize">{{ category }}</span>
               </label>
             </div>
 
@@ -377,9 +323,7 @@ onMounted(() => {
           <div class="space-y-2">
             <Label for="endDate">Валидна до (опционално)</Label>
             <Input id="endDate" v-model="form.endDate" type="datetime-local" />
-            <p class="text-xs text-muted-foreground">
-              Оставете празно за неограничена валидност
-            </p>
+            <p class="text-xs text-muted-foreground">Оставете празно за неограничена валидност</p>
           </div>
         </CardContent>
       </Card>
@@ -406,13 +350,7 @@ onMounted(() => {
                 : "Създай отстъпка"
           }}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          @click="router.push('/discounts')"
-        >
-          Отказ
-        </Button>
+        <Button type="button" variant="outline" @click="router.push('/discounts')"> Отказ </Button>
       </div>
     </form>
   </div>

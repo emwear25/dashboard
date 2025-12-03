@@ -4,13 +4,7 @@ import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, Plus } from "lucide-vue-next";
 import { apiPost } from "@/utils/api";
 
@@ -40,10 +34,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  if (
-    form.value.discountPercentage <= 0 ||
-    form.value.discountPercentage > 100
-  ) {
+  if (form.value.discountPercentage <= 0 || form.value.discountPercentage > 100) {
     errorMessage.value = "Отстъпката трябва да е между 1% и 100%";
     return;
   }
@@ -69,8 +60,7 @@ const handleSubmit = async () => {
 
     router.push("/coupons");
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Failed to create coupon";
+    errorMessage.value = error instanceof Error ? error.message : "Failed to create coupon";
   } finally {
     isSubmitting.value = false;
   }
@@ -90,9 +80,7 @@ onMounted(() => {
       </Button>
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Създай купон</h1>
-        <p class="text-muted-foreground mt-1.5">
-          Генерирай код за отстъпка на цялата количка
-        </p>
+        <p class="text-muted-foreground mt-1.5">Генерирай код за отстъпка на цялата количка</p>
       </div>
     </div>
 
@@ -106,9 +94,7 @@ onMounted(() => {
         <CardContent class="space-y-4">
           <!-- Coupon Code -->
           <div class="space-y-2">
-            <Label for="code"
-              >Код на купон <span class="text-destructive">*</span></Label
-            >
+            <Label for="code">Код на купон <span class="text-destructive">*</span></Label>
             <div class="flex gap-2">
               <Input
                 id="code"
@@ -118,11 +104,7 @@ onMounted(() => {
                 required
                 maxlength="20"
               />
-              <Button
-                type="button"
-                variant="outline"
-                @click="generateRandomCode"
-              >
+              <Button type="button" variant="outline" @click="generateRandomCode">
                 <Plus class="h-4 w-4 mr-2" />
                 Генерирай
               </Button>
@@ -131,9 +113,7 @@ onMounted(() => {
 
           <!-- Discount Percentage -->
           <div class="space-y-2">
-            <Label for="percentage"
-              >Отстъпка (%) <span class="text-destructive">*</span></Label
-            >
+            <Label for="percentage">Отстъпка (%) <span class="text-destructive">*</span></Label>
             <Input
               id="percentage"
               v-model.number="form.discountPercentage"
@@ -143,22 +123,14 @@ onMounted(() => {
               placeholder="напр. 20"
               required
             />
-            <p class="text-sm text-muted-foreground">
-              Процент отстъпка върху цялата количка
-            </p>
+            <p class="text-sm text-muted-foreground">Процент отстъпка върху цялата количка</p>
           </div>
 
           <!-- Expiration Date -->
           <div class="space-y-2">
             <Label for="expiresAt">Валиден до (опционално)</Label>
-            <Input
-              id="expiresAt"
-              v-model="form.expiresAt"
-              type="datetime-local"
-            />
-            <p class="text-sm text-muted-foreground">
-              Оставете празно за неограничена валидност
-            </p>
+            <Input id="expiresAt" v-model="form.expiresAt" type="datetime-local" />
+            <p class="text-sm text-muted-foreground">Оставете празно за неограничена валидност</p>
           </div>
         </CardContent>
       </Card>
@@ -177,13 +149,7 @@ onMounted(() => {
           <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
           {{ isSubmitting ? "Създаване..." : "Създай купон" }}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          @click="router.push('/coupons')"
-        >
-          Отказ
-        </Button>
+        <Button type="button" variant="outline" @click="router.push('/coupons')"> Отказ </Button>
       </div>
     </form>
   </div>

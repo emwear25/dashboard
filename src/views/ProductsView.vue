@@ -12,13 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -27,16 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  Loader2,
-  AlertCircle,
-  Package,
-  Eye,
-} from "lucide-vue-next";
+import { Search, Plus, Edit, Trash2, Loader2, AlertCircle, Package, Eye } from "lucide-vue-next";
 
 type ProductImage = {
   url: string;
@@ -46,10 +31,7 @@ type ProductImage = {
 type Product = {
   _id: string;
   name: string;
-  category:
-    | string
-    | { _id: string; name: string; slug: string; displayName: string }
-    | null;
+  category: string | { _id: string; name: string; slug: string; displayName: string } | null;
   price: number;
   stock: number;
   isActive: boolean;
@@ -92,8 +74,7 @@ const fetchProducts = async () => {
       products.value = result.data;
     }
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Failed to load products";
+    errorMessage.value = error instanceof Error ? error.message : "Failed to load products";
   } finally {
     isLoading.value = false;
   }
@@ -156,22 +137,15 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 
 const formatPrice = (value: number) => currencyFormatter.format(value);
 
-const productStatusLabel = (product: Product) =>
-  product.isActive ? "Активен" : "Неактивен";
+const productStatusLabel = (product: Product) => (product.isActive ? "Активен" : "Неактивен");
 
 const getCategoryName = (
-  category:
-    | string
-    | { name: string; displayName?: string; slug: string }
-    | null
-    | undefined
+  category: string | { name: string; displayName?: string; slug: string } | null | undefined
 ): string => {
   if (!category) return "Без категория";
   if (typeof category === "string") return category;
   if (typeof category === "object") {
-    return (
-      category.displayName || category.name || category.slug || "Без категория"
-    );
+    return category.displayName || category.name || category.slug || "Без категория";
   }
   return "Без категория";
 };
@@ -233,20 +207,12 @@ fetchProducts();
 <template>
   <div class="space-y-8 pb-8 pt-6">
     <!-- Header Section -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-    >
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Продукти</h1>
-        <p class="text-muted-foreground mt-1.5">
-          Управлявайте вашия инвентар и списъци с продукти
-        </p>
+        <p class="text-muted-foreground mt-1.5">Управлявайте вашия инвентар и списъци с продукти</p>
       </div>
-      <Button
-        @click="navigateToAddProduct"
-        size="default"
-        class="sm:self-start"
-      >
+      <Button @click="navigateToAddProduct" size="default" class="sm:self-start">
         <Plus class="mr-2 h-4 w-4" />
         Добави Продукт
       </Button>
@@ -315,9 +281,7 @@ fetchProducts();
         <div v-if="isLoading" class="flex items-center justify-center py-20">
           <div class="text-center">
             <Loader2 class="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p class="text-lg text-muted-foreground">
-              Зареждане на продукти...
-            </p>
+            <p class="text-lg text-muted-foreground">Зареждане на продукти...</p>
           </div>
         </div>
         <div v-else>
@@ -337,9 +301,7 @@ fetchProducts();
                 <TableCell colspan="6" class="text-center py-12">
                   <div class="flex flex-col items-center gap-2">
                     <Package class="h-12 w-12 text-muted-foreground/50" />
-                    <p class="text-muted-foreground font-medium">
-                      Няма намерени продукти
-                    </p>
+                    <p class="text-muted-foreground font-medium">Няма намерени продукти</p>
                     <p class="text-sm text-muted-foreground">
                       Опитайте да промените търсенето или филтрите
                     </p>
@@ -350,10 +312,7 @@ fetchProducts();
                 <TableCell>
                   <div class="flex items-center space-x-3">
                     <img
-                      :src="
-                        (product.images?.[0]?.url || product.image?.url) ??
-                        fallbackImageUrl
-                      "
+                      :src="(product.images?.[0]?.url || product.image?.url) ?? fallbackImageUrl"
                       :alt="product.name"
                       class="w-10 h-10 rounded-md object-contain bg-muted"
                     />
@@ -366,16 +325,12 @@ fetchProducts();
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{{
-                    getCategoryName(product.category)
-                  }}</Badge>
+                  <Badge variant="secondary">{{ getCategoryName(product.category) }}</Badge>
                 </TableCell>
                 <TableCell>{{ formatPrice(product.price) }}</TableCell>
                 <TableCell>{{ product.stock }}</TableCell>
                 <TableCell>
-                  <Badge
-                    :variant="product.isActive ? 'default' : 'destructive'"
-                  >
+                  <Badge :variant="product.isActive ? 'default' : 'destructive'">
                     {{ productStatusLabel(product) }}
                   </Badge>
                 </TableCell>
@@ -415,14 +370,10 @@ fetchProducts();
     </Card>
 
     <!-- Pagination -->
-    <div
-      class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2"
-    >
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
       <p class="text-sm text-muted-foreground">
         Показване на
-        <span class="font-medium text-foreground">{{
-          (currentPage - 1) * itemsPerPage + 1
-        }}</span>
+        <span class="font-medium text-foreground">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
         до
         <span class="font-medium text-foreground">{{
           Math.min(currentPage * itemsPerPage, totalItems)

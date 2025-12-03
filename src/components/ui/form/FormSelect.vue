@@ -8,9 +8,7 @@ const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 <template>
   <Select
     :id="formItemId"
-    :aria-describedby="
-      !error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`
-    "
+    :aria-describedby="!error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`"
     :aria-invalid="!!error"
     v-bind="$attrs"
   />

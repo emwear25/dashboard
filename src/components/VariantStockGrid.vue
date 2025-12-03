@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick, watchEffect } from 'vue';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Package, TrendingDown, Save, Plus, Minus } from 'lucide-vue-next';
+import { ref, computed, watch, onMounted, nextTick, watchEffect } from "vue";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Package, TrendingDown, Save, Plus, Minus } from "lucide-vue-next";
 
 interface Variant {
   size: string;
@@ -12,7 +12,7 @@ interface Variant {
   stock: number;
   reserved?: number;
   lowStockThreshold?: number;
-  price?: number;  // Optional variant-specific price
+  price?: number; // Optional variant-specific price
 }
 
 interface Props {
@@ -21,16 +21,16 @@ interface Props {
   colors: string[];
   productId?: string;
   readonly?: boolean;
-  basePrice?: number;  // Base product price for fallback
+  basePrice?: number; // Base product price for fallback
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  readonly: false
+  readonly: false,
 });
 
 const emit = defineEmits<{
-  (e: 'update', variants: Variant[]): void;
-  (e: 'save', variants: Variant[]): void;
+  (e: "update", variants: Variant[]): void;
+  (e: "save", variants: Variant[]): void;
 }>();
 
 // Create matrices for editing
@@ -53,13 +53,13 @@ const initializeMatrix = () => {
   const price: Record<string, number | null> = {};
   const priceInput: Record<string, string> = {};
   const stockInput: Record<string, string> = {};
-  
+
   // Initialize all size/color combinations
-  props.sizes.forEach(size => {
-    props.colors.forEach(color => {
+  props.sizes.forEach((size) => {
+    props.colors.forEach((color) => {
       const key = `${size}-${color}`;
-      const existingVariant = props.variants?.find(v => v.size === size && v.color === color);
-      
+      const existingVariant = props.variants?.find((v) => v.size === size && v.color === color);
+
       // Preserve user's current stock input if they're typing, otherwise use variant stock
       if (isUserTypingStock.value[key] && stockInputValues.value[key] !== undefined) {
         const typedValue = parseInt(stockInputValues.value[key]) || 0;
@@ -69,23 +69,23 @@ const initializeMatrix = () => {
         stock[key] = existingVariant?.stock ?? 0;
         stockInput[key] = String(existingVariant?.stock ?? 0);
       }
-      
+
       const variantPrice = existingVariant?.price;
-      price[key] = variantPrice ?? null;  // null means use base price
-      
+      price[key] = variantPrice ?? null; // null means use base price
+
       // Preserve user's current input if they're typing, otherwise use variant price
       if (isUserTyping.value[key] && priceInputValues.value[key] !== undefined) {
         priceInput[key] = priceInputValues.value[key];
       } else {
-        priceInput[key] = variantPrice ? variantPrice.toString() : '';
+        priceInput[key] = variantPrice ? variantPrice.toString() : "";
       }
     });
   });
-  
+
   // Only update if we actually have data to set
   if (Object.keys(stock).length > 0) {
-  stockMatrix.value = stock;
-  priceMatrix.value = price;
+    stockMatrix.value = stock;
+    priceMatrix.value = price;
     priceInputValues.value = priceInput;
     stockInputValues.value = stockInput;
   }
@@ -98,13 +98,19 @@ const isUserTypingStock = ref<Record<string, boolean>>({});
 
 // Initialize on mount and when props change
 const initializeWhenReady = () => {
-  if (props.sizes && props.sizes.length > 0 && props.colors && props.colors.length > 0 && !isInternalUpdate) {
+  if (
+    props.sizes &&
+    props.sizes.length > 0 &&
+    props.colors &&
+    props.colors.length > 0 &&
+    !isInternalUpdate
+  ) {
     // Check if user is currently typing in any price or stock field
     const isTypingPrice = Object.values(isUserTyping.value).some(Boolean);
     const isTypingStock = Object.values(isUserTypingStock.value).some(Boolean);
     if (!isTypingPrice && !isTypingStock) {
-    initializeMatrix();
-  }
+      initializeMatrix();
+    }
   }
 };
 
@@ -119,10 +125,13 @@ onMounted(() => {
 });
 
 // Watch all relevant props changes (variants, sizes, colors)
-watch(() => [props.variants, props.sizes, props.colors], () => {
-  initializeWhenReady();
-}, { deep: true, immediate: true });
-
+watch(
+  () => [props.variants, props.sizes, props.colors],
+  () => {
+    initializeWhenReady();
+  },
+  { deep: true, immediate: true }
+);
 
 // Get stock for specific size/color
 const getStock = (size: string, color: string): number => {
@@ -134,7 +143,7 @@ const getStock = (size: string, color: string): number => {
 const getStockInput = (size: string, color: string): string => {
   const key = `${size}-${color}`;
   // Return input value if exists, otherwise fall back to stock matrix value
-  if (stockInputValues.value[key] !== undefined && stockInputValues.value[key] !== '') {
+  if (stockInputValues.value[key] !== undefined && stockInputValues.value[key] !== "") {
     return stockInputValues.value[key];
   }
   return String(getStock(size, color));
@@ -149,7 +158,7 @@ const getPrice = (size: string, color: string): number | null => {
 // Get price input value (for typing)
 const getPriceInput = (size: string, color: string): string => {
   const key = `${size}-${color}`;
-  return priceInputValues.value[key] ?? '';
+  return priceInputValues.value[key] ?? "";
 };
 
 // Get display price (variant price or base price)
@@ -160,17 +169,17 @@ const getDisplayPrice = (size: string, color: string): number => {
 
 // Get variant for specific size/color
 const getVariant = (size: string, color: string): Variant | undefined => {
-  return props.variants.find(v => v.size === size && v.color === color);
+  return props.variants.find((v) => v.size === size && v.color === color);
 };
 
 // Emit updated variants
 const emitChanges = () => {
   isInternalUpdate = true;
   const updatedVariants: Variant[] = [];
-  props.sizes.forEach(size => {
-    props.colors.forEach(color => {
+  props.sizes.forEach((size) => {
+    props.colors.forEach((color) => {
       const key = `${size}-${color}`;
-      const existingVariant = props.variants.find(v => v.size === size && v.color === color);
+      const existingVariant = props.variants.find((v) => v.size === size && v.color === color);
       updatedVariants.push({
         size,
         color,
@@ -181,7 +190,7 @@ const emitChanges = () => {
       });
     });
   });
-  emit('update', updatedVariants);
+  emit("update", updatedVariants);
   // Reset flag after a short delay to allow parent to update
   setTimeout(() => {
     isInternalUpdate = false;
@@ -198,8 +207,8 @@ const updateStockInput = (size: string, color: string, inputValue: string) => {
 // Commit stock value (called on blur or save)
 const commitStock = (size: string, color: string) => {
   const key = `${size}-${color}`;
-  const inputValue = stockInputValues.value[key] || '';
-  const numValue = inputValue === '' ? 0 : parseInt(inputValue) || 0;
+  const inputValue = stockInputValues.value[key] || "";
+  const numValue = inputValue === "" ? 0 : parseInt(inputValue) || 0;
   stockMatrix.value[key] = Math.max(0, numValue);
   stockInputValues.value[key] = String(stockMatrix.value[key]);
   isUserTypingStock.value[key] = false;
@@ -222,16 +231,16 @@ const updatePriceInput = (size: string, color: string, inputValue: string) => {
 // Commit price value (called on blur or save)
 const commitPrice = (size: string, color: string) => {
   const key = `${size}-${color}`;
-  const inputValue = priceInputValues.value[key] || '';
-  const numValue = inputValue === '' ? null : parseFloat(inputValue);
-  
+  const inputValue = priceInputValues.value[key] || "";
+  const numValue = inputValue === "" ? null : parseFloat(inputValue);
+
   if (numValue !== null && !isNaN(numValue) && numValue > 0) {
     priceMatrix.value[key] = numValue;
   } else {
     priceMatrix.value[key] = null;
-    priceInputValues.value[key] = '';
+    priceInputValues.value[key] = "";
   }
-  
+
   // Mark that user is no longer typing
   isUserTyping.value[key] = false;
 };
@@ -248,7 +257,7 @@ const isLowStock = (size: string, color: string): boolean => {
 const isOutOfStock = (size: string, color: string): boolean => {
   const variant = getVariant(size, color);
   const stock = getStock(size, color);
-  return (stock - (variant?.reserved || 0)) <= 0;
+  return stock - (variant?.reserved || 0) <= 0;
 };
 
 // Calculate totals
@@ -262,8 +271,8 @@ const totalReserved = computed(() => {
 
 const lowStockCount = computed(() => {
   let count = 0;
-  props.sizes.forEach(size => {
-    props.colors.forEach(color => {
+  props.sizes.forEach((size) => {
+    props.colors.forEach((color) => {
       if (isLowStock(size, color)) count++;
     });
   });
@@ -272,8 +281,8 @@ const lowStockCount = computed(() => {
 
 const outOfStockCount = computed(() => {
   let count = 0;
-  props.sizes.forEach(size => {
-    props.colors.forEach(color => {
+  props.sizes.forEach((size) => {
+    props.colors.forEach((color) => {
       if (isOutOfStock(size, color)) count++;
     });
   });
@@ -283,46 +292,47 @@ const outOfStockCount = computed(() => {
 // Save changes
 const saveChanges = () => {
   // Commit all pending inputs first
-  props.sizes.forEach(size => {
-    props.colors.forEach(color => {
+  props.sizes.forEach((size) => {
+    props.colors.forEach((color) => {
       commitPrice(size, color);
       commitStock(size, color);
     });
   });
-  
+
   const updatedVariants: Variant[] = [];
-  props.sizes.forEach(size => {
-    props.colors.forEach(color => {
+  props.sizes.forEach((size) => {
+    props.colors.forEach((color) => {
       const key = `${size}-${color}`;
-      const existingVariant = props.variants.find(v => v.size === size && v.color === color);
+      const existingVariant = props.variants.find((v) => v.size === size && v.color === color);
       const variantPrice = priceMatrix.value[key];
       updatedVariants.push({
         size,
         color,
         stock: stockMatrix.value[key] ?? 0,
-        price: variantPrice !== null && variantPrice !== undefined && variantPrice > 0
-          ? variantPrice
-          : undefined,
+        price:
+          variantPrice !== null && variantPrice !== undefined && variantPrice > 0
+            ? variantPrice
+            : undefined,
         reserved: existingVariant?.reserved,
         lowStockThreshold: existingVariant?.lowStockThreshold,
       });
     });
   });
-  emit('update', updatedVariants);
-  emit('save', updatedVariants);
+  emit("update", updatedVariants);
+  emit("save", updatedVariants);
 };
 
 // Bulk operations
 const bulkSetStock = ref<number | undefined>(undefined);
 const applyBulkStock = () => {
   if (bulkSetStock.value === undefined || bulkSetStock.value < 0) return;
-  
-  props.sizes.forEach(size => {
-    props.colors.forEach(color => {
+
+  props.sizes.forEach((size) => {
+    props.colors.forEach((color) => {
       updateStock(size, color, bulkSetStock.value!);
     });
   });
-  
+
   bulkSetStock.value = undefined;
 };
 
@@ -388,9 +398,7 @@ const setUserTyping = (size: string, color: string) => {
         <table class="w-full border-collapse">
           <thead>
             <tr>
-              <th class="border p-2 bg-muted/30 text-left font-semibold">
-                Размер / Цвят
-              </th>
+              <th class="border p-2 bg-muted/30 text-left font-semibold">Размер / Цвят</th>
               <th
                 v-for="color in colors"
                 :key="color"
@@ -429,7 +437,10 @@ const setUserTyping = (size: string, color: string) => {
                     </Button>
                     <input
                       :value="getStockInput(size, color)"
-                      @input="(e: any) => updateStockInput(size, color, (e.target as HTMLInputElement).value)"
+                      @input="
+                        (e: any) =>
+                          updateStockInput(size, color, (e.target as HTMLInputElement).value)
+                      "
                       @focus="setUserTypingStock(size, color)"
                       @blur="commitStock(size, color)"
                       type="text"
@@ -452,7 +463,10 @@ const setUserTyping = (size: string, color: string) => {
                   <div class="relative">
                     <input
                       :value="getPriceInput(size, color)"
-                      @input="(e: any) => updatePriceInput(size, color, (e.target as HTMLInputElement).value)"
+                      @input="
+                        (e: any) =>
+                          updatePriceInput(size, color, (e.target as HTMLInputElement).value)
+                      "
                       @focus="setUserTyping(size, color)"
                       @blur="commitPrice(size, color)"
                       type="text"
@@ -461,17 +475,24 @@ const setUserTyping = (size: string, color: string) => {
                       class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-center ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8"
                       :readonly="readonly"
                     />
-                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                    <span
+                      class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none"
+                    >
                       лв
                     </span>
-                    <div v-if="getPrice(size, color) === null && basePrice" class="text-[10px] text-center text-muted-foreground mt-0.5">
+                    <div
+                      v-if="getPrice(size, color) === null && basePrice"
+                      class="text-[10px] text-center text-muted-foreground mt-0.5"
+                    >
                       Базова цена: {{ basePrice.toFixed(2) }} лв
                     </div>
                   </div>
 
                   <!-- Reserved Badge -->
                   <div
-                    v-if="getVariant(size, color)?.reserved && getVariant(size, color)!.reserved! > 0"
+                    v-if="
+                      getVariant(size, color)?.reserved && getVariant(size, color)!.reserved! > 0
+                    "
                     class="text-xs text-center"
                   >
                     <Badge variant="secondary" class="text-[10px]">

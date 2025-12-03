@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useDark, useToggle } from '@vueuse/core'
-import { Button } from '@/components/ui/button'
-import { Moon, Sun } from 'lucide-vue-next'
+import { useDark, useToggle } from "@vueuse/core";
+import { Button } from "@/components/ui/button";
+import { Moon, Sun } from "lucide-vue-next";
 
-const isDark = useDark()
-const toggleDark = useToggle(isDark)
+const isDark = useDark();
+const toggleDark = useToggle(isDark);
 </script>
 
 <template>
@@ -13,4 +13,4 @@ const toggleDark = useToggle(isDark)
     <Moon v-else class="h-5 w-5" />
     <span class="sr-only">Toggle theme</span>
   </Button>
-</template> 
+</template>

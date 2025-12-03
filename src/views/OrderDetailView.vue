@@ -46,20 +46,14 @@ const fetchOrder = async () => {
 
     if (data.success && data.data) {
       // Find order by ID
-      const foundOrder = data.data.find(
-        (o: any) => o._id === orderId || o.orderNumber === orderId
-      );
+      const foundOrder = data.data.find((o: any) => o._id === orderId || o.orderNumber === orderId);
 
       if (foundOrder) {
         order.value = foundOrder;
         console.log("[OrderDetail] Order found:", foundOrder.orderNumber);
       } else {
         error.value = "Order not found";
-        console.log(
-          "[OrderDetail] Order not found in",
-          data.data.length,
-          "orders"
-        );
+        console.log("[OrderDetail] Order not found in", data.data.length, "orders");
       }
     } else {
       error.value = "No orders returned";
@@ -78,10 +72,7 @@ const createEcontShipment = async () => {
   isCreatingShipment.value = true;
 
   try {
-    const data = await apiPost(
-      `orders/${order.value._id}/create-econt-shipment`,
-      {}
-    );
+    const data = await apiPost(`orders/${order.value._id}/create-econt-shipment`, {});
 
     if (data.success) {
       // Refresh order data
@@ -133,10 +124,7 @@ const createSpeedyShipment = async () => {
   isCreatingShipment.value = true;
 
   try {
-    const data = await apiPost(
-      `orders/${order.value._id}/create-speedy-shipment`,
-      {}
-    );
+    const data = await apiPost(`orders/${order.value._id}/create-speedy-shipment`, {});
 
     if (data.success) {
       // Refresh order data
@@ -183,10 +171,7 @@ const createSpeedyShipment = async () => {
 };
 
 const getStatusBadgeVariant = (status: string) => {
-  const variants: Record<
-    string,
-    "default" | "secondary" | "destructive" | "outline"
-  > = {
+  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
     pending: "secondary",
     confirmed: "default",
     processing: "default",
@@ -364,13 +349,9 @@ onMounted(() => {
                 </div>
 
                 <div v-if="order.econtOfficeName">
-                  <p class="text-sm text-muted-foreground">
-                    Офис за получаване:
-                  </p>
+                  <p class="text-sm text-muted-foreground">Офис за получаване:</p>
                   <p class="font-medium">{{ order.econtOfficeName }}</p>
-                  <p class="text-sm text-muted-foreground">
-                    Код: {{ order.econtOfficeCode }}
-                  </p>
+                  <p class="text-sm text-muted-foreground">Код: {{ order.econtOfficeCode }}</p>
                 </div>
 
                 <div v-if="!order.econtShipmentNumber" class="pt-4 border-t">
@@ -379,16 +360,9 @@ onMounted(() => {
                     :disabled="isCreatingShipment"
                     class="w-full"
                   >
-                    <Loader2
-                      v-if="isCreatingShipment"
-                      class="mr-2 h-4 w-4 animate-spin"
-                    />
+                    <Loader2 v-if="isCreatingShipment" class="mr-2 h-4 w-4 animate-spin" />
                     <Truck v-else class="mr-2 h-4 w-4" />
-                    {{
-                      isCreatingShipment
-                        ? "Създаване..."
-                        : "Създай Econt пратка"
-                    }}
+                    {{ isCreatingShipment ? "Създаване..." : "Създай Econt пратка" }}
                   </Button>
                   <p class="text-xs text-muted-foreground mt-2 text-center">
                     Това ще генерира товарителница и номер за проследяване
@@ -429,13 +403,9 @@ onMounted(() => {
                 </div>
 
                 <div v-if="order.speedyOfficeName">
-                  <p class="text-sm text-muted-foreground">
-                    Офис за получаване:
-                  </p>
+                  <p class="text-sm text-muted-foreground">Офис за получаване:</p>
                   <p class="font-medium">{{ order.speedyOfficeName }}</p>
-                  <p class="text-sm text-muted-foreground">
-                    ID: {{ order.speedyOfficeId }}
-                  </p>
+                  <p class="text-sm text-muted-foreground">ID: {{ order.speedyOfficeId }}</p>
                 </div>
 
                 <div v-if="!order.speedyShipmentNumber" class="pt-4 border-t">
@@ -444,16 +414,9 @@ onMounted(() => {
                     :disabled="isCreatingShipment"
                     class="w-full"
                   >
-                    <Loader2
-                      v-if="isCreatingShipment"
-                      class="mr-2 h-4 w-4 animate-spin"
-                    />
+                    <Loader2 v-if="isCreatingShipment" class="mr-2 h-4 w-4 animate-spin" />
                     <Truck v-else class="mr-2 h-4 w-4" />
-                    {{
-                      isCreatingShipment
-                        ? "Създаване..."
-                        : "Създай Speedy пратка"
-                    }}
+                    {{ isCreatingShipment ? "Създаване..." : "Създай Speedy пратка" }}
                   </Button>
                   <p class="text-xs text-muted-foreground mt-2 text-center">
                     Това ще генерира товарителница и номер за проследяване
@@ -485,9 +448,7 @@ onMounted(() => {
                   <span class="text-muted-foreground">ДДС:</span>
                   <span>{{ order.tax.toFixed(2) }} лв.</span>
                 </div>
-                <div
-                  class="flex justify-between font-bold text-lg pt-3 border-t"
-                >
+                <div class="flex justify-between font-bold text-lg pt-3 border-t">
                   <span>Общо:</span>
                   <span>{{ order.total.toFixed(2) }} лв.</span>
                 </div>
@@ -512,11 +473,7 @@ onMounted(() => {
                 </div>
                 <div class="flex justify-between text-sm">
                   <span class="text-muted-foreground">Статус:</span>
-                  <Badge
-                    :variant="
-                      order.paymentStatus === 'paid' ? 'default' : 'secondary'
-                    "
-                  >
+                  <Badge :variant="order.paymentStatus === 'paid' ? 'default' : 'secondary'">
                     {{ order.paymentStatus }}
                   </Badge>
                 </div>
@@ -531,15 +488,9 @@ onMounted(() => {
             </CardHeader>
             <CardContent>
               <div class="space-y-2 text-sm">
-                <p v-if="order.deliveryMethod === 'courier_address'">
-                  🚚 Куриер до адрес
-                </p>
-                <p v-else-if="order.deliveryMethod === 'econt_office'">
-                  🏢 Офис на Еконт
-                </p>
-                <p v-else-if="order.deliveryMethod === 'econt_automat'">
-                  📦 Eконтомат
-                </p>
+                <p v-if="order.deliveryMethod === 'courier_address'">🚚 Куриер до адрес</p>
+                <p v-else-if="order.deliveryMethod === 'econt_office'">🏢 Офис на Еконт</p>
+                <p v-else-if="order.deliveryMethod === 'econt_automat'">📦 Eконтомат</p>
                 <p v-else>{{ order.deliveryMethod }}</p>
               </div>
             </CardContent>

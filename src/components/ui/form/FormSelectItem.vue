@@ -11,9 +11,5 @@ const props = defineProps<Props>();
 </script>
 
 <template>
-  <SelectItem
-    :value="props.value"
-    :disabled="props.disabled"
-    :text-value="props.textValue"
-  />
+  <SelectItem :value="props.value" :disabled="props.disabled" :text-value="props.textValue" />
 </template>

@@ -91,16 +91,13 @@ const fetchProducts = async () => {
       products.value = result.data;
     }
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Failed to load products";
+    errorMessage.value = error instanceof Error ? error.message : "Failed to load products";
   } finally {
     isLoading.value = false;
   }
 };
 
-const getCategoryName = (
-  category: string | { name: string } | undefined | null
-): string => {
+const getCategoryName = (category: string | { name: string } | undefined | null): string => {
   if (!category) return "";
   if (typeof category === "string") return category;
   if (typeof category === "object" && category.name) return category.name;
@@ -125,9 +122,7 @@ const filteredProducts = computed(() => {
 const lowStockProducts = computed(() => {
   return products.value.filter((p) => {
     if (p.variants && p.variants.length > 0) {
-      return p.variants.some(
-        (v) => v.stock - (v.reserved || 0) <= (v.lowStockThreshold || 5)
-      );
+      return p.variants.some((v) => v.stock - (v.reserved || 0) <= (v.lowStockThreshold || 5));
     }
     return p.stock <= 10;
   });
@@ -170,16 +165,10 @@ const handleVariantUpdate = (product: Product, updatedVariants: Variant[]) => {
 };
 
 // Save variant changes to backend
-const saveVariantChanges = async (
-  product: Product,
-  updatedVariants?: Variant[]
-) => {
+const saveVariantChanges = async (product: Product, updatedVariants?: Variant[]) => {
   // Use provided variants or get from pending updates
   const variantsToSave =
-    updatedVariants ||
-    pendingVariantUpdates.value[product._id] ||
-    product.variants ||
-    [];
+    updatedVariants || pendingVariantUpdates.value[product._id] || product.variants || [];
 
   if (!variantsToSave || variantsToSave.length === 0) {
     console.warn("No variants to save for product:", product._id);
@@ -208,8 +197,7 @@ const saveVariantChanges = async (
     }
   } catch (error) {
     console.error("Error saving variant changes:", error);
-    const errorMsg =
-      error instanceof Error ? error.message : "Failed to save variant changes";
+    const errorMsg = error instanceof Error ? error.message : "Failed to save variant changes";
     errorMessage.value = errorMsg;
 
     toast({
@@ -222,10 +210,7 @@ const saveVariantChanges = async (
   }
 };
 
-const openStockDialog = (
-  product: Product,
-  operation: "set" | "add" | "subtract"
-) => {
+const openStockDialog = (product: Product, operation: "set" | "add" | "subtract") => {
   selectedProduct.value = product;
   stockOperation.value = operation;
   stockAmount.value = "";
@@ -253,13 +238,10 @@ const updateStock = async () => {
   updateError.value = "";
 
   try {
-    const result = await apiPatch(
-      `products/${selectedProduct.value._id}/stock`,
-      {
-        stock: amount,
-        operation: stockOperation.value,
-      }
-    );
+    const result = await apiPatch(`products/${selectedProduct.value._id}/stock`, {
+      stock: amount,
+      operation: stockOperation.value,
+    });
 
     if (result.success && result.data) {
       // Update the product in the list
@@ -273,24 +255,19 @@ const updateStock = async () => {
       throw new Error(result.message || "Failed to update stock");
     }
   } catch (error) {
-    updateError.value =
-      error instanceof Error ? error.message : "Failed to update stock";
+    updateError.value = error instanceof Error ? error.message : "Failed to update stock";
   } finally {
     isUpdating.value = false;
   }
 };
 
 const getStockStatus = (stock: number) => {
-  if (stock === 0)
-    return { label: "Изчерпан", variant: "destructive" as const };
-  if (stock <= 10)
-    return { label: "Малка Наличност", variant: "secondary" as const };
+  if (stock === 0) return { label: "Изчерпан", variant: "destructive" as const };
+  if (stock <= 10) return { label: "Малка Наличност", variant: "secondary" as const };
   return { label: "На Склад", variant: "default" as const };
 };
 
-const formatCategory = (
-  category: string | { name: string } | undefined | null
-) => {
+const formatCategory = (category: string | { name: string } | undefined | null) => {
   const categoryName = getCategoryName(category);
   if (!categoryName) return "Без категория";
 
@@ -317,8 +294,7 @@ fetchProducts();
     <div>
       <h1 class="text-4xl font-bold tracking-tight">Управление на Склада</h1>
       <p class="text-muted-foreground mt-1.5">
-        Наблюдавайте и управлявайте нивата на инвентара през всички канали за
-        продажби
+        Наблюдавайте и управлявайте нивата на инвентара през всички канали за продажби
       </p>
     </div>
 
@@ -328,14 +304,10 @@ fetchProducts();
         <CardContent class="pt-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-muted-foreground">
-                Общо Продукти
-              </p>
+              <p class="text-sm font-medium text-muted-foreground">Общо Продукти</p>
               <p class="text-3xl font-bold">{{ products.length }}</p>
             </div>
-            <div
-              class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center"
-            >
+            <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
               <Package class="h-6 w-6 text-primary" />
             </div>
           </div>
@@ -346,16 +318,12 @@ fetchProducts();
         <CardContent class="pt-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-muted-foreground">
-                Сигнали за Малка Наличност
-              </p>
+              <p class="text-sm font-medium text-muted-foreground">Сигнали за Малка Наличност</p>
               <p class="text-3xl font-bold text-orange-600">
                 {{ lowStockProducts.length }}
               </p>
             </div>
-            <div
-              class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center"
-            >
+            <div class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
               <AlertCircle class="h-6 w-6 text-orange-600" />
             </div>
           </div>
@@ -371,9 +339,7 @@ fetchProducts();
                 {{ outOfStockProducts.length }}
               </p>
             </div>
-            <div
-              class="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center"
-            >
+            <div class="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
               <AlertCircle class="h-6 w-6 text-destructive" />
             </div>
           </div>
@@ -440,9 +406,7 @@ fetchProducts();
               <TableCell colspan="7" class="text-center py-12">
                 <div class="flex flex-col items-center gap-2">
                   <Package class="h-12 w-12 text-muted-foreground/50" />
-                  <p class="text-muted-foreground font-medium">
-                    Няма намерени продукти
-                  </p>
+                  <p class="text-muted-foreground font-medium">Няма намерени продукти</p>
                 </div>
               </TableCell>
             </TableRow>
@@ -456,19 +420,13 @@ fetchProducts();
                     @click="toggleProductExpansion(product._id)"
                     class="p-0 h-8 w-8"
                   >
-                    <ChevronRight
-                      v-if="!isProductExpanded(product._id)"
-                      class="h-4 w-4"
-                    />
+                    <ChevronRight v-if="!isProductExpanded(product._id)" class="h-4 w-4" />
                     <ChevronDown v-else class="h-4 w-4" />
                   </Button>
                 </TableCell>
                 <TableCell>
                   <img
-                    :src="
-                      (product.images?.[0]?.url || product.image?.url) ??
-                      fallbackImageUrl
-                    "
+                    :src="(product.images?.[0]?.url || product.image?.url) ?? fallbackImageUrl"
                     :alt="product.name"
                     class="w-12 h-12 rounded-md object-contain bg-muted"
                   />
@@ -483,21 +441,15 @@ fetchProducts();
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{{
-                    formatCategory(product.category)
-                  }}</Badge>
+                  <Badge variant="secondary">{{ formatCategory(product.category) }}</Badge>
                 </TableCell>
                 <TableCell>{{ formatPrice(product.price) }}</TableCell>
                 <TableCell>
-                  <span class="text-lg font-semibold">{{
-                    getTotalStock(product)
-                  }}</span>
+                  <span class="text-lg font-semibold">{{ getTotalStock(product) }}</span>
                   <span class="text-muted-foreground text-sm ml-1">броя</span>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    :variant="getStockStatus(getTotalStock(product)).variant"
-                  >
+                  <Badge :variant="getStockStatus(getTotalStock(product)).variant">
                     {{ getStockStatus(getTotalStock(product)).label }}
                   </Badge>
                 </TableCell>
@@ -530,9 +482,7 @@ fetchProducts();
                     >
                       <Edit2 class="h-4 w-4" />
                     </Button>
-                    <Badge v-else variant="outline" class="text-xs">
-                      Използвайте варианти
-                    </Badge>
+                    <Badge v-else variant="outline" class="text-xs"> Използвайте варианти </Badge>
                   </div>
                 </TableCell>
               </TableRow>
@@ -540,9 +490,7 @@ fetchProducts();
               <!-- Expanded Variant Details -->
               <TableRow
                 v-if="
-                  isProductExpanded(product._id) &&
-                  product.variants &&
-                  product.variants.length > 0
+                  isProductExpanded(product._id) && product.variants && product.variants.length > 0
                 "
                 class="bg-muted/30"
               >
@@ -554,9 +502,7 @@ fetchProducts();
                     :colors="product.colors || []"
                     :product-id="product._id"
                     :base-price="product.price"
-                    @update="
-                      (variants) => handleVariantUpdate(product, variants)
-                    "
+                    @update="(variants) => handleVariantUpdate(product, variants)"
                     @save="(variants) => saveVariantChanges(product, variants)"
                   />
                 </TableCell>
@@ -568,10 +514,7 @@ fetchProducts();
     </Card>
 
     <!-- Stock Update Dialog -->
-    <Dialog
-      :open="isDialogOpen"
-      @update:open="(open) => !open && closeDialog()"
-    >
+    <Dialog :open="isDialogOpen" @update:open="(open) => !open && closeDialog()">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
@@ -591,9 +534,7 @@ fetchProducts();
         <div class="space-y-4 py-4">
           <div class="space-y-2">
             <Label>Текуща Наличност</Label>
-            <div class="text-2xl font-bold">
-              {{ selectedProduct?.stock }} броя
-            </div>
+            <div class="text-2xl font-bold">{{ selectedProduct?.stock }} броя</div>
           </div>
 
           <div class="space-y-2">
@@ -626,11 +567,7 @@ fetchProducts();
               {{
                 stockOperation === "add"
                   ? (selectedProduct?.stock || 0) + parseInt(stockAmount || "0")
-                  : Math.max(
-                      0,
-                      (selectedProduct?.stock || 0) -
-                        parseInt(stockAmount || "0")
-                    )
+                  : Math.max(0, (selectedProduct?.stock || 0) - parseInt(stockAmount || "0"))
               }}
               броя
             </div>
@@ -638,9 +575,7 @@ fetchProducts();
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="closeDialog" :disabled="isUpdating">
-            Откажи
-          </Button>
+          <Button variant="outline" @click="closeDialog" :disabled="isUpdating"> Откажи </Button>
           <Button @click="updateStock" :disabled="isUpdating || !stockAmount">
             <Loader2 v-if="isUpdating" class="mr-2 h-4 w-4 animate-spin" />
             {{ isUpdating ? "Актуализация..." : "Актуализирай" }}

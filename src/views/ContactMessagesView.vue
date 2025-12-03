@@ -33,9 +33,7 @@
         <option value="true">Прочетени</option>
       </select>
 
-      <button @click="loadMessages" class="contact-messages-view__refresh-btn">
-        Обнови
-      </button>
+      <button @click="loadMessages" class="contact-messages-view__refresh-btn">Обнови</button>
     </div>
 
     <div v-if="loading" class="contact-messages-view__loading">Зареждане...</div>
@@ -75,11 +73,7 @@
               </a>
             </td>
             <td class="contact-messages-table__phone">
-              <a
-                v-if="message.phone"
-                :href="`tel:${message.phone}`"
-                class="phone-link"
-              >
+              <a v-if="message.phone" :href="`tel:${message.phone}`" class="phone-link">
                 {{ message.phone }}
               </a>
               <span v-else class="text-muted">-</span>
@@ -96,22 +90,17 @@
               <span
                 :class="[
                   'status-badge',
-                  message.isRead
-                    ? 'status-badge--read'
-                    : 'status-badge--unread',
+                  message.isRead ? 'status-badge--read' : 'status-badge--unread',
                 ]"
               >
-                {{ message.isRead ? 'Прочетено' : 'Непрочетено' }}
+                {{ message.isRead ? "Прочетено" : "Непрочетено" }}
               </span>
               <span v-if="message.repliedAt" class="status-badge status-badge--replied">
                 Отговорено
               </span>
             </td>
             <td class="contact-messages-table__actions">
-              <button
-                @click="openMessageModal(message)"
-                class="action-btn action-btn--view"
-              >
+              <button @click="openMessageModal(message)" class="action-btn action-btn--view">
                 Преглед
               </button>
               <button
@@ -128,10 +117,7 @@
               >
                 Отбележи като непрочетено
               </button>
-              <button
-                @click="deleteMessage(message._id)"
-                class="action-btn action-btn--delete"
-              >
+              <button @click="deleteMessage(message._id)" class="action-btn action-btn--delete">
                 Изтрий
               </button>
             </td>
@@ -166,11 +152,7 @@
     </div>
 
     <!-- Message Detail Modal -->
-    <div
-      v-if="selectedMessage"
-      class="modal-overlay"
-      @click="closeMessageModal"
-    >
+    <div v-if="selectedMessage" class="modal-overlay" @click="closeMessageModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h2 class="modal-title">Детайли на Съобщението</h2>
@@ -206,10 +188,7 @@
               <label>Съобщение:</label>
               <div class="message-detail__message">{{ selectedMessage.message }}</div>
             </div>
-            <div
-              class="message-detail__field"
-              v-if="selectedMessage.adminNotes"
-            >
+            <div class="message-detail__field" v-if="selectedMessage.adminNotes">
               <label>Администраторски бележки:</label>
               <div class="message-detail__notes">
                 {{ selectedMessage.adminNotes }}
@@ -260,7 +239,7 @@
       ]"
     >
       <div class="font-semibold">
-        <p>{{ message.type === 'success' ? 'Успешно!' : 'Грешка' }}</p>
+        <p>{{ message.type === "success" ? "Успешно!" : "Грешка" }}</p>
         <p class="text-sm font-normal">{{ message.text }}</p>
       </div>
     </div>
@@ -268,8 +247,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { apiGet, apiPatch, apiDelete } from '@/utils/api';
+import { ref, onMounted } from "vue";
+import { apiGet, apiPatch, apiDelete } from "@/utils/api";
 
 interface ContactMessage {
   _id: string;
@@ -301,9 +280,9 @@ const stats = ref<Stats>({
   recent: 0,
 });
 const loading = ref(false);
-const error = ref('');
-const searchQuery = ref('');
-const readFilter = ref('');
+const error = ref("");
+const searchQuery = ref("");
+const readFilter = ref("");
 const selectedMessage = ref<ContactMessage | null>(null);
 const pagination = ref({
   page: 1,
@@ -312,9 +291,9 @@ const pagination = ref({
   pages: 0,
 });
 
-const message = ref<{ type: 'success' | 'error'; text: string } | null>(null);
+const message = ref<{ type: "success" | "error"; text: string } | null>(null);
 
-const showMessage = (type: 'success' | 'error', text: string) => {
+const showMessage = (type: "success" | "error", text: string) => {
   message.value = { type, text };
   setTimeout(() => {
     message.value = null;
@@ -335,7 +314,7 @@ const debouncedLoadMessages = () => {
 
 const loadMessages = async () => {
   loading.value = true;
-  error.value = '';
+  error.value = "";
 
   try {
     const params: Record<string, string> = {
@@ -358,11 +337,11 @@ const loadMessages = async () => {
       messages.value = response.data;
       pagination.value = response.pagination;
     } else {
-      error.value = 'Неуспешно зареждане на съобщения';
+      error.value = "Неуспешно зареждане на съобщения";
     }
   } catch (err: any) {
-    error.value = err.message || 'Грешка при зареждане на съобщения';
-    console.error('Load messages error:', err);
+    error.value = err.message || "Грешка при зареждане на съобщения";
+    console.error("Load messages error:", err);
   } finally {
     loading.value = false;
   }
@@ -370,12 +349,12 @@ const loadMessages = async () => {
 
 const loadStats = async () => {
   try {
-    const response = await apiGet('/contact/admin/stats');
+    const response = await apiGet("/contact/admin/stats");
     if (response.success) {
       stats.value = response.data;
     }
   } catch (err) {
-    console.error('Load stats error:', err);
+    console.error("Load stats error:", err);
   }
 };
 
@@ -383,7 +362,7 @@ const markAsRead = async (id: string, reload = false) => {
   try {
     const response = await apiPatch(`/contact/admin/${id}/read`);
     if (response.success) {
-      showMessage('success', 'Съобщението е отбелязано като прочетено');
+      showMessage("success", "Съобщението е отбелязано като прочетено");
       if (reload) {
         loadMessages();
         loadStats();
@@ -397,7 +376,7 @@ const markAsRead = async (id: string, reload = false) => {
       }
     }
   } catch (err: any) {
-    showMessage('error', err.message || 'Грешка при отбелязване като прочетено');
+    showMessage("error", err.message || "Грешка при отбелязване като прочетено");
   }
 };
 
@@ -405,7 +384,7 @@ const markAsUnread = async (id: string, reload = false) => {
   try {
     const response = await apiPatch(`/contact/admin/${id}/unread`);
     if (response.success) {
-      showMessage('success', 'Съобщението е отбелязано като непрочетено');
+      showMessage("success", "Съобщението е отбелязано като непрочетено");
       if (reload) {
         loadMessages();
         loadStats();
@@ -419,7 +398,7 @@ const markAsUnread = async (id: string, reload = false) => {
       }
     }
   } catch (err: any) {
-    showMessage('error', err.message || 'Грешка при отбелязване като непрочетено');
+    showMessage("error", err.message || "Грешка при отбелязване като непрочетено");
   }
 };
 
@@ -427,7 +406,7 @@ const markAsReplied = async (id: string) => {
   try {
     const response = await apiPatch(`/contact/admin/${id}/replied`);
     if (response.success) {
-      showMessage('success', 'Съобщението е отбелязано като отговорено');
+      showMessage("success", "Съобщението е отбелязано като отговорено");
       loadMessages();
       loadStats();
       if (selectedMessage.value?._id === id) {
@@ -435,19 +414,19 @@ const markAsReplied = async (id: string) => {
       }
     }
   } catch (err: any) {
-    showMessage('error', err.message || 'Грешка при отбелязване като отговорено');
+    showMessage("error", err.message || "Грешка при отбелязване като отговорено");
   }
 };
 
 const deleteMessage = async (id: string, closeModal = false) => {
-  if (!confirm('Сигурни ли сте, че искате да изтриете това съобщение?')) {
+  if (!confirm("Сигурни ли сте, че искате да изтриете това съобщение?")) {
     return;
   }
 
   try {
     const response = await apiDelete(`/contact/admin/${id}`);
     if (response.success) {
-      showMessage('success', 'Съобщението е изтрито');
+      showMessage("success", "Съобщението е изтрито");
       if (closeModal) {
         closeMessageModal();
       }
@@ -455,7 +434,7 @@ const deleteMessage = async (id: string, closeModal = false) => {
       loadStats();
     }
   } catch (err: any) {
-    showMessage('error', err.message || 'Грешка при изтриване на съобщение');
+    showMessage("error", err.message || "Грешка при изтриване на съобщение");
   }
 };
 
@@ -470,7 +449,7 @@ const openMessageModal = async (message: ContactMessage) => {
       }
     }
   } catch (err: any) {
-    showMessage('error', err.message || 'Грешка при зареждане на детайли');
+    showMessage("error", err.message || "Грешка при зареждане на детайли");
   }
 };
 
@@ -485,18 +464,18 @@ const changePage = (page: number) => {
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('bg-BG', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleDateString("bg-BG", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
 const truncateMessage = (message: string, maxLength: number) => {
   if (message.length <= maxLength) return message;
-  return message.substring(0, maxLength) + '...';
+  return message.substring(0, maxLength) + "...";
 };
 
 onMounted(() => {
@@ -896,4 +875,3 @@ onMounted(() => {
   }
 }
 </style>
-

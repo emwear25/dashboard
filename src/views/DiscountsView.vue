@@ -11,13 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -34,16 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  Loader2,
-  AlertCircle,
-  Tag,
-  Percent,
-} from "lucide-vue-next";
+import { Search, Plus, Edit, Trash2, Loader2, AlertCircle, Tag, Percent } from "lucide-vue-next";
 import { apiGet, apiPut, apiDelete } from "@/utils/api";
 
 type Discount = {
@@ -88,8 +73,7 @@ const fetchDiscounts = async () => {
       discounts.value = result.data;
     }
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Failed to load discounts";
+    errorMessage.value = error instanceof Error ? error.message : "Failed to load discounts";
   } finally {
     isLoading.value = false;
   }
@@ -98,13 +82,10 @@ const fetchDiscounts = async () => {
 const discountsByFilters = computed(() => {
   return discounts.value.filter((discount) => {
     const matchesSearch =
-      !searchQuery.value ||
-      discount.name.toLowerCase().includes(searchQuery.value.toLowerCase());
+      !searchQuery.value || discount.name.toLowerCase().includes(searchQuery.value.toLowerCase());
 
     const matchesType =
-      !selectedType.value ||
-      selectedType.value === "all" ||
-      discount.type === selectedType.value;
+      !selectedType.value || selectedType.value === "all" || discount.type === selectedType.value;
 
     const matchesStatus =
       !selectedStatus.value ||
@@ -182,9 +163,7 @@ const deleteDiscount = async () => {
   try {
     await apiDelete(`discounts/${discountToDelete.value}`);
 
-    discounts.value = discounts.value.filter(
-      (d) => d._id !== discountToDelete.value
-    );
+    discounts.value = discounts.value.filter((d) => d._id !== discountToDelete.value);
     showDeleteDialog.value = false;
     discountToDelete.value = null;
   } catch (error) {
@@ -220,14 +199,10 @@ onMounted(() => {
 <template>
   <div class="space-y-8 pb-8 pt-6">
     <!-- Header Section -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-    >
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Отстъпки</h1>
-        <p class="text-muted-foreground mt-1.5">
-          Управлявайте отстъпки и промоционални кампании
-        </p>
+        <p class="text-muted-foreground mt-1.5">Управлявайте отстъпки и промоционални кампании</p>
       </div>
       <div class="flex gap-2">
         <Button @click="router.push('/discounts/create')" size="default">
@@ -248,9 +223,7 @@ onMounted(() => {
     <!-- Stats Cards -->
     <div class="grid gap-4 md:grid-cols-3">
       <Card>
-        <CardHeader
-          class="flex flex-row items-center justify-between space-y-0 pb-2"
-        >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">Активни отстъпки</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -261,9 +234,7 @@ onMounted(() => {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader
-          class="flex flex-row items-center justify-between space-y-0 pb-2"
-        >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">Общо отстъпки</CardTitle>
           <Percent class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -272,9 +243,7 @@ onMounted(() => {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader
-          class="flex flex-row items-center justify-between space-y-0 pb-2"
-        >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">Общо използвания</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -346,9 +315,7 @@ onMounted(() => {
         <div v-if="isLoading" class="flex items-center justify-center py-20">
           <div class="text-center">
             <Loader2 class="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p class="text-lg text-muted-foreground">
-              Зареждане на отстъпки...
-            </p>
+            <p class="text-lg text-muted-foreground">Зареждане на отстъпки...</p>
           </div>
         </div>
         <div v-else>
@@ -369,9 +336,7 @@ onMounted(() => {
                 <TableCell colspan="7" class="text-center py-12">
                   <div class="flex flex-col items-center gap-2">
                     <Tag class="h-12 w-12 text-muted-foreground/50" />
-                    <p class="text-muted-foreground font-medium">
-                      Няма намерени отстъпки
-                    </p>
+                    <p class="text-muted-foreground font-medium">Няма намерени отстъпки</p>
                     <p class="text-sm text-muted-foreground">
                       Опитайте да промените търсенето или филтрите
                     </p>
@@ -393,26 +358,18 @@ onMounted(() => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{{
-                    formatDiscountType(discount.type)
-                  }}</Badge>
+                  <Badge variant="secondary">{{ formatDiscountType(discount.type) }}</Badge>
                 </TableCell>
-                <TableCell class="font-semibold">{{
-                  formatDiscountValue(discount)
-                }}</TableCell>
+                <TableCell class="font-semibold">{{ formatDiscountValue(discount) }}</TableCell>
                 <TableCell>{{ formatScope(discount.scope) }}</TableCell>
                 <TableCell>
                   <div class="text-sm">
                     {{ discount.usageCount
-                    }}{{
-                      discount.usageLimit ? ` / ${discount.usageLimit}` : ""
-                    }}
+                    }}{{ discount.usageLimit ? ` / ${discount.usageLimit}` : "" }}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    :variant="discount.isActive ? 'default' : 'destructive'"
-                  >
+                  <Badge :variant="discount.isActive ? 'default' : 'destructive'">
                     {{ discount.isActive ? "Активна" : "Неактивна" }}
                   </Badge>
                 </TableCell>
@@ -426,11 +383,7 @@ onMounted(() => {
                     >
                       <Edit class="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      @click="confirmDelete(discount._id)"
-                    >
+                    <Button variant="ghost" size="icon" @click="confirmDelete(discount._id)">
                       <Trash2 class="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -443,14 +396,10 @@ onMounted(() => {
     </Card>
 
     <!-- Pagination -->
-    <div
-      class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2"
-    >
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
       <p class="text-sm text-muted-foreground">
         Показване на
-        <span class="font-medium text-foreground">{{
-          (currentPage - 1) * itemsPerPage + 1
-        }}</span>
+        <span class="font-medium text-foreground">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
         до
         <span class="font-medium text-foreground">{{
           Math.min(currentPage * itemsPerPage, totalItems)
@@ -485,17 +434,13 @@ onMounted(() => {
         <DialogHeader>
           <DialogTitle>Изтриване на отстъпка</DialogTitle>
           <DialogDescription>
-            Сигурни ли сте, че искате да изтриете тази отстъпка? Това действие
-            не може да бъде отменено.
+            Сигурни ли сте, че искате да изтриете тази отстъпка? Това действие не може да бъде
+            отменено.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" @click="showDeleteDialog = false">
-            Отказ
-          </Button>
-          <Button variant="destructive" @click="deleteDiscount">
-            Изтрий
-          </Button>
+          <Button variant="outline" @click="showDeleteDialog = false"> Отказ </Button>
+          <Button variant="destructive" @click="deleteDiscount"> Изтрий </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

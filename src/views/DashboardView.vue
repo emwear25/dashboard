@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,9 +43,7 @@ const updates = [
 
 <template>
   <div class="space-y-8">
-    <div
-      class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-    >
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <h2 class="text-3xl font-semibold tracking-tight">Emwear Overview</h2>
         <p class="text-muted-foreground">
@@ -83,9 +75,7 @@ const updates = [
     <Card>
       <CardHeader>
         <CardTitle>Team Snapshot</CardTitle>
-        <CardDescription>
-          Use tabs to quickly scaffold dashboard sections.
-        </CardDescription>
+        <CardDescription> Use tabs to quickly scaffold dashboard sections. </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs default-value="activity" class="w-full">
@@ -97,9 +87,8 @@ const updates = [
           <TabsContent value="activity" class="mt-6 space-y-4">
             <div class="rounded-lg border border-border p-4">
               <p class="text-sm text-muted-foreground">
-                Plug your analytics providers or charts into this empty state.
-                Everything is ready for Tailwind + ShadCN theming out of the
-                box.
+                Plug your analytics providers or charts into this empty state. Everything is ready
+                for Tailwind + ShadCN theming out of the box.
               </p>
             </div>
           </TabsContent>
@@ -111,20 +100,15 @@ const updates = [
             >
               <div>
                 <p class="font-medium">{{ update.title }}</p>
-                <p class="text-sm text-muted-foreground">
-                  Status: {{ update.status }}
-                </p>
+                <p class="text-sm text-muted-foreground">Status: {{ update.status }}</p>
               </div>
               <Badge variant="secondary">{{ update.tag }}</Badge>
             </div>
           </TabsContent>
           <TabsContent value="resources" class="mt-6 space-y-4">
-            <div
-              class="rounded-lg border border-dashed border-border p-6 text-center"
-            >
+            <div class="rounded-lg border border-dashed border-border p-6 text-center">
               <p class="text-sm text-muted-foreground">
-                Drop in links to your style guide, product specs, or component
-                docs.
+                Drop in links to your style guide, product specs, or component docs.
               </p>
             </div>
           </TabsContent>

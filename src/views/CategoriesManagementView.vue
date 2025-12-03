@@ -2,13 +2,7 @@
 import { ref, reactive, computed, onMounted } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -202,8 +196,7 @@ const validateForm = (): boolean => {
     form.defaultDimensions.width <= 0 ||
     form.defaultDimensions.height <= 0
   ) {
-    formErrors.defaultDimensions =
-      "Всички размери трябва да бъдат по-големи от 0";
+    formErrors.defaultDimensions = "Всички размери трябва да бъдат по-големи от 0";
     isValid = false;
   }
 
@@ -309,11 +302,7 @@ const toggleCategoryStatus = async (category: Category) => {
 };
 
 const deleteCategory = async (category: Category) => {
-  if (
-    !confirm(
-      `Сигурни ли сте, че искате да изтриете категорията "${category.displayName}"?`
-    )
-  )
+  if (!confirm(`Сигурни ли сте, че искате да изтриете категорията "${category.displayName}"?`))
     return;
 
   try {
@@ -345,9 +334,7 @@ onMounted(() => {
 <template>
   <div class="space-y-8 pt-6">
     <!-- Header -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-    >
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Категории</h1>
         <p class="text-muted-foreground mt-1.5">
@@ -405,31 +392,21 @@ onMounted(() => {
     <Card>
       <CardHeader>
         <CardTitle>Списък с Категории</CardTitle>
-        <CardDescription
-          >Преглеждайте и управлявайте всички категории</CardDescription
-        >
+        <CardDescription>Преглеждайте и управлявайте всички категории</CardDescription>
       </CardHeader>
       <CardContent>
         <div v-if="loading" class="flex items-center justify-center py-12">
           <Loader2 class="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
 
-        <div
-          v-else-if="error"
-          class="flex flex-col items-center justify-center py-12 text-center"
-        >
+        <div v-else-if="error" class="flex flex-col items-center justify-center py-12 text-center">
           <Tags class="h-12 w-12 text-muted-foreground mb-3" />
           <p class="font-semibold">Неуспешно зареждане на категориите</p>
           <p class="text-sm text-muted-foreground mt-1">{{ error }}</p>
-          <Button @click="fetchCategories" variant="outline" class="mt-4">
-            Опитай Отново
-          </Button>
+          <Button @click="fetchCategories" variant="outline" class="mt-4"> Опитай Отново </Button>
         </div>
 
-        <div
-          v-else-if="filteredCategories.length === 0"
-          class="text-center py-12"
-        >
+        <div v-else-if="filteredCategories.length === 0" class="text-center py-12">
           <Tags class="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p class="font-semibold">Няма намерени категории</p>
           <p class="text-sm text-muted-foreground mt-1">
@@ -454,16 +431,11 @@ onMounted(() => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow
-                v-for="category in filteredCategories"
-                :key="category._id"
-              >
+              <TableRow v-for="category in filteredCategories" :key="category._id">
                 <TableCell class="font-medium">{{ category.name }}</TableCell>
                 <TableCell>{{ category.displayName }}</TableCell>
                 <TableCell>
-                  <code class="text-xs bg-muted px-2 py-1 rounded">{{
-                    category.slug
-                  }}</code>
+                  <code class="text-xs bg-muted px-2 py-1 rounded">{{ category.slug }}</code>
                 </TableCell>
                 <TableCell>
                   <div class="flex flex-wrap gap-1">
@@ -490,18 +462,10 @@ onMounted(() => {
                 </TableCell>
                 <TableCell class="text-right">
                   <div class="flex items-center justify-end gap-2">
-                    <Button
-                      @click="openEditDialog(category)"
-                      variant="ghost"
-                      size="icon"
-                    >
+                    <Button @click="openEditDialog(category)" variant="ghost" size="icon">
                       <Edit2 class="h-4 w-4" />
                     </Button>
-                    <Button
-                      @click="deleteCategory(category)"
-                      variant="ghost"
-                      size="icon"
-                    >
+                    <Button @click="deleteCategory(category)" variant="ghost" size="icon">
                       <Trash2 class="h-4 w-4" />
                     </Button>
                   </div>
@@ -532,9 +496,7 @@ onMounted(() => {
         <div class="space-y-4 py-4">
           <!-- Name -->
           <div class="space-y-2">
-            <Label for="name">
-              Име <span class="text-destructive">*</span>
-            </Label>
+            <Label for="name"> Име <span class="text-destructive">*</span> </Label>
             <Input
               id="name"
               v-model="form.name"
@@ -552,9 +514,7 @@ onMounted(() => {
 
           <!-- Display Name -->
           <div class="space-y-2">
-            <Label for="displayName">
-              Показвано Име <span class="text-destructive">*</span>
-            </Label>
+            <Label for="displayName"> Показвано Име <span class="text-destructive">*</span> </Label>
             <Input
               id="displayName"
               v-model="form.displayName"
@@ -568,9 +528,7 @@ onMounted(() => {
 
           <!-- Sizes -->
           <div class="space-y-2">
-            <Label for="currentSize">
-              Размери <span class="text-destructive">*</span>
-            </Label>
+            <Label for="currentSize"> Размери <span class="text-destructive">*</span> </Label>
             <div class="flex gap-2">
               <Input
                 id="currentSize"
@@ -636,10 +594,7 @@ onMounted(() => {
                 placeholder="напр. 0.360"
                 :class="{ 'border-destructive': formErrors.defaultWeight }"
               />
-              <p
-                v-if="formErrors.defaultWeight"
-                class="text-xs text-destructive"
-              >
+              <p v-if="formErrors.defaultWeight" class="text-xs text-destructive">
                 {{ formErrors.defaultWeight }}
               </p>
               <p class="text-xs text-muted-foreground">
@@ -691,10 +646,7 @@ onMounted(() => {
                   <p class="text-xs text-muted-foreground mt-1">Височина</p>
                 </div>
               </div>
-              <p
-                v-if="formErrors.defaultDimensions"
-                class="text-xs text-destructive"
-              >
+              <p v-if="formErrors.defaultDimensions" class="text-xs text-destructive">
                 {{ formErrors.defaultDimensions }}
               </p>
               <p class="text-xs text-muted-foreground">
@@ -705,13 +657,7 @@ onMounted(() => {
         </div>
 
         <DialogFooter>
-          <Button
-            @click="closeDialog"
-            variant="outline"
-            :disabled="isSubmitting"
-          >
-            Отказ
-          </Button>
+          <Button @click="closeDialog" variant="outline" :disabled="isSubmitting"> Отказ </Button>
           <Button @click="handleSubmit" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
             {{ isEditMode ? "Актуализирай" : "Създай" }}

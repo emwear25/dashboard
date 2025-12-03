@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -70,8 +64,7 @@ const fetchProduct = async () => {
       throw new Error("Product not found");
     }
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Failed to load product details";
+    errorMessage.value = error instanceof Error ? error.message : "Failed to load product details";
   } finally {
     isLoading.value = false;
   }
@@ -149,9 +142,7 @@ onMounted(() => {
     <div v-if="isLoading" class="flex items-center justify-center py-20">
       <div class="text-center">
         <Loader2 class="h-10 w-10 animate-spin mx-auto mb-4 text-primary" />
-        <p class="text-lg text-muted-foreground">
-          Зареждане на детайли за продукта...
-        </p>
+        <p class="text-lg text-muted-foreground">Зареждане на детайли за продукта...</p>
       </div>
     </div>
 
@@ -175,14 +166,9 @@ onMounted(() => {
         <!-- Product Image -->
         <div class="relative">
           <div class="sticky top-8">
-            <div
-              class="relative aspect-square rounded-xl overflow-hidden bg-muted border"
-            >
+            <div class="relative aspect-square rounded-xl overflow-hidden bg-muted border">
               <img
-                :src="
-                  (product.images?.[0]?.url || product.image?.url) ??
-                  fallbackImageUrl
-                "
+                :src="(product.images?.[0]?.url || product.image?.url) ?? fallbackImageUrl"
                 :alt="product.name"
                 class="w-full h-full object-contain"
               />
@@ -210,11 +196,7 @@ onMounted(() => {
                 <Tag class="h-3 w-3 mr-1" />
                 {{ product.category }}
               </Badge>
-              <Badge
-                v-if="product.isEmbroidered"
-                variant="outline"
-                class="text-sm px-3 py-1"
-              >
+              <Badge v-if="product.isEmbroidered" variant="outline" class="text-sm px-3 py-1">
                 С Бродерия
               </Badge>
             </div>
@@ -238,11 +220,7 @@ onMounted(() => {
           </Card>
 
           <!-- Stock Info Card -->
-          <Card
-            :class="
-              product.stock <= 10 ? 'border-orange-200 bg-orange-50/50' : ''
-            "
-          >
+          <Card :class="product.stock <= 10 ? 'border-orange-200 bg-orange-50/50' : ''">
             <CardHeader class="pb-3">
               <CardTitle class="text-lg flex items-center gap-2">
                 <Package class="h-5 w-5" />
@@ -326,10 +304,9 @@ onMounted(() => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <pre
-            class="bg-white/80 p-4 rounded-lg overflow-auto text-sm border"
-            >{{ JSON.stringify(product.embroideryOptions, null, 2) }}</pre
-          >
+          <pre class="bg-white/80 p-4 rounded-lg overflow-auto text-sm border">{{
+            JSON.stringify(product.embroideryOptions, null, 2)
+          }}</pre>
         </CardContent>
       </Card>
 
@@ -340,51 +317,36 @@ onMounted(() => {
             <Calendar class="h-5 w-5" />
             Метаданни на Продукта
           </CardTitle>
-          <CardDescription>
-            Техническа информация и времеви маркери
-          </CardDescription>
+          <CardDescription> Техническа информация и времеви маркери </CardDescription>
         </CardHeader>
         <CardContent>
           <dl class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="space-y-1">
-              <dt
-                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-              >
+              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 ID на Продукта
               </dt>
-              <dd
-                class="text-sm font-mono bg-muted px-2 py-1 rounded inline-block"
-              >
+              <dd class="text-sm font-mono bg-muted px-2 py-1 rounded inline-block">
                 {{ product._id }}
               </dd>
             </div>
             <div class="space-y-1">
-              <dt
-                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-              >
+              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Категория
               </dt>
               <dd class="text-sm font-medium">{{ product.category }}</dd>
             </div>
             <div class="space-y-1">
-              <dt
-                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-              >
+              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Статус
               </dt>
               <dd class="text-sm font-medium">
-                <Badge
-                  :variant="product.isActive ? 'default' : 'destructive'"
-                  class="text-xs"
-                >
+                <Badge :variant="product.isActive ? 'default' : 'destructive'" class="text-xs">
                   {{ product.isActive ? "Активен" : "Неактивен" }}
                 </Badge>
               </dd>
             </div>
             <div class="space-y-1">
-              <dt
-                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-              >
+              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Цена
               </dt>
               <dd class="text-sm font-bold">
@@ -392,17 +354,13 @@ onMounted(() => {
               </dd>
             </div>
             <div class="space-y-1">
-              <dt
-                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-              >
+              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Създаден На
               </dt>
               <dd class="text-sm">{{ formatDate(product.createdAt) }}</dd>
             </div>
             <div class="space-y-1">
-              <dt
-                class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-              >
+              <dt class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Последна Актуализация
               </dt>
               <dd class="text-sm">{{ formatDate(product.updatedAt) }}</dd>

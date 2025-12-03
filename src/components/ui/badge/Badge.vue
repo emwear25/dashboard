@@ -9,13 +9,7 @@ defineOptions({
 
 const props = withDefaults(
   defineProps<{
-    variant?:
-      | "default"
-      | "secondary"
-      | "destructive"
-      | "outline"
-      | "success"
-      | "warning";
+    variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning";
     class?: string;
   }>(),
   {

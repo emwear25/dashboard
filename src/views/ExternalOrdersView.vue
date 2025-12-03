@@ -2,13 +2,7 @@
 import { ref, reactive, computed, onMounted } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -121,9 +115,7 @@ const orders = ref<ExternalOrder[]>([]);
 
 const selectedCategory = ref("");
 const orderItems = ref<OrderItem[]>([]);
-const selectedVariants = ref<Record<string, { size?: string; color?: string }>>(
-  {}
-);
+const selectedVariants = ref<Record<string, { size?: string; color?: string }>>({});
 const productSearch = ref("");
 const editingShipping = ref<string | null>(null);
 const editShippingNumber = ref("");
@@ -181,10 +173,7 @@ const filteredProducts = computed(() => {
 });
 
 const totalAmount = computed(() => {
-  return orderItems.value.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  return orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
 });
 
 const sourceIcon = (source: string) => {
@@ -342,15 +331,10 @@ const addProductToOrder = (product: Product, size?: string, color?: string) => {
     }
   }
 
-  const itemKey =
-    size && color ? `${product._id}-${size}-${color}` : product._id;
+  const itemKey = size && color ? `${product._id}-${size}-${color}` : product._id;
   const existingItem = orderItems.value.find((item) => {
     if (size && color) {
-      return (
-        item.product === product._id &&
-        item.size === size &&
-        item.color === color
-      );
+      return item.product === product._id && item.size === size && item.color === color;
     }
     return item.product === product._id;
   });
@@ -358,9 +342,7 @@ const addProductToOrder = (product: Product, size?: string, color?: string) => {
   // Get max stock for this variant
   let maxStock = product.stock;
   if (product.variants && size && color) {
-    const variant = product.variants.find(
-      (v) => v.size === size && v.color === color
-    );
+    const variant = product.variants.find((v) => v.size === size && v.color === color);
     maxStock = variant ? variant.stock - (variant.reserved || 0) : 0;
   }
 
@@ -553,14 +535,10 @@ onMounted(() => {
 <template>
   <div class="space-y-8 pt-6">
     <!-- Header -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-    >
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Външни Поръчки</h1>
-        <p class="text-muted-foreground mt-1.5">
-          Управлявайте поръчки от телефон и социални мрежи
-        </p>
+        <p class="text-muted-foreground mt-1.5">Управлявайте поръчки от телефон и социални мрежи</p>
       </div>
       <Button @click="openDialog" size="default" class="sm:self-start">
         <Plus class="mr-2 h-4 w-4" />
@@ -617,19 +595,14 @@ onMounted(() => {
         <CardDescription>Преглеждайте всички външни поръчки</CardDescription>
       </CardHeader>
       <CardContent>
-        <div
-          v-if="ordersLoading"
-          class="flex items-center justify-center py-12"
-        >
+        <div v-if="ordersLoading" class="flex items-center justify-center py-12">
           <Loader2 class="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
 
         <div v-else-if="orders.length === 0" class="text-center py-12">
           <ShoppingCart class="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p class="font-semibold">Няма поръчки</p>
-          <p class="text-sm text-muted-foreground mt-1">
-            Започнете като създадете нова поръчка
-          </p>
+          <p class="text-sm text-muted-foreground mt-1">Започнете като създадете нова поръчка</p>
         </div>
 
         <div v-else class="space-y-4">
@@ -646,9 +619,7 @@ onMounted(() => {
             }"
           >
             <CardContent class="pt-6">
-              <div
-                class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4"
-              >
+              <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <!-- Order Info -->
                 <div class="space-y-3 flex-1">
                   <div class="flex items-center gap-3 flex-wrap">
@@ -658,13 +629,8 @@ onMounted(() => {
                     <Badge :variant="statusVariant(order.status)">
                       {{ statusLabel(order.status) }}
                     </Badge>
-                    <div
-                      class="flex items-center gap-1.5 text-sm text-muted-foreground"
-                    >
-                      <component
-                        :is="sourceIcon(order.source)"
-                        class="h-4 w-4"
-                      />
+                    <div class="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <component :is="sourceIcon(order.source)" class="h-4 w-4" />
                       {{ sourceLabel(order.source) }}
                     </div>
                   </div>
@@ -684,9 +650,7 @@ onMounted(() => {
                     </div>
                     <div>
                       <span class="font-medium">Доставчик:</span>
-                      {{
-                        order.shippingProvider === "ekont" ? "Еконт" : "Speedy"
-                      }}
+                      {{ order.shippingProvider === "ekont" ? "Еконт" : "Speedy" }}
                     </div>
                     <div>
                       <span class="font-medium">Номер на пратка:</span>
@@ -699,26 +663,15 @@ onMounted(() => {
                           placeholder="Въведете номер"
                           class="h-8"
                         />
-                        <Button
-                          @click="saveShippingNumber(order._id)"
-                          size="sm"
-                          class="h-8"
-                        >
+                        <Button @click="saveShippingNumber(order._id)" size="sm" class="h-8">
                           Запази
                         </Button>
-                        <Button
-                          @click="cancelEditShipping"
-                          size="sm"
-                          variant="outline"
-                          class="h-8"
-                        >
+                        <Button @click="cancelEditShipping" size="sm" variant="outline" class="h-8">
                           Отказ
                         </Button>
                       </div>
                       <div v-else class="flex items-center gap-2 mt-1">
-                        <span>{{
-                          order.shippingNumber || "Не е добавен"
-                        }}</span>
+                        <span>{{ order.shippingNumber || "Не е добавен" }}</span>
                         <Button
                           @click="startEditShipping(order)"
                           size="sm"
@@ -740,9 +693,7 @@ onMounted(() => {
                         :key="index"
                         class="text-sm flex items-center gap-2"
                       >
-                        <Badge variant="outline" class="font-normal">
-                          {{ item.quantity }}x
-                        </Badge>
+                        <Badge variant="outline" class="font-normal"> {{ item.quantity }}x </Badge>
                         <span>{{ item.productName }}</span>
                         <span class="text-muted-foreground">
                           ({{ item.priceAtOrder.toFixed(2) }} лв.)
@@ -755,9 +706,7 @@ onMounted(() => {
                 <!-- Total Amount -->
                 <div class="text-right">
                   <p class="text-sm text-muted-foreground">Обща Сума</p>
-                  <p class="text-2xl font-bold">
-                    {{ order.totalAmount.toFixed(2) }} лв.
-                  </p>
+                  <p class="text-2xl font-bold">{{ order.totalAmount.toFixed(2) }} лв.</p>
                   <p class="text-xs text-muted-foreground mt-1">
                     {{ new Date(order.createdAt).toLocaleDateString("bg-BG") }}
                   </p>
@@ -774,21 +723,15 @@ onMounted(() => {
       <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Създай Нова Поръчка</DialogTitle>
-          <DialogDescription
-            >Въведете информация за поръчката</DialogDescription
-          >
+          <DialogDescription>Въведете информация за поръчката</DialogDescription>
         </DialogHeader>
 
         <div class="space-y-6 py-4">
           <!-- Source -->
           <div class="space-y-2">
-            <Label for="source">
-              Източник <span class="text-destructive">*</span>
-            </Label>
+            <Label for="source"> Източник <span class="text-destructive">*</span> </Label>
             <Select v-model="form.source">
-              <SelectTrigger
-                :class="{ 'border-destructive': formErrors.source }"
-              >
+              <SelectTrigger :class="{ 'border-destructive': formErrors.source }">
                 <SelectValue placeholder="Изберете източник" />
               </SelectTrigger>
               <SelectContent>
@@ -816,37 +759,27 @@ onMounted(() => {
                 placeholder="Име и Фамилия"
                 :class="{ 'border-destructive': formErrors.customerName }"
               />
-              <p
-                v-if="formErrors.customerName"
-                class="text-xs text-destructive"
-              >
+              <p v-if="formErrors.customerName" class="text-xs text-destructive">
                 {{ formErrors.customerName }}
               </p>
             </div>
 
             <div class="space-y-2">
-              <Label for="customerPhone">
-                Телефон <span class="text-destructive">*</span>
-              </Label>
+              <Label for="customerPhone"> Телефон <span class="text-destructive">*</span> </Label>
               <Input
                 id="customerPhone"
                 v-model="form.customerPhone"
                 placeholder="+359..."
                 :class="{ 'border-destructive': formErrors.customerPhone }"
               />
-              <p
-                v-if="formErrors.customerPhone"
-                class="text-xs text-destructive"
-              >
+              <p v-if="formErrors.customerPhone" class="text-xs text-destructive">
                 {{ formErrors.customerPhone }}
               </p>
             </div>
           </div>
 
           <div class="space-y-2">
-            <Label for="customerAddress">
-              Адрес <span class="text-destructive">*</span>
-            </Label>
+            <Label for="customerAddress"> Адрес <span class="text-destructive">*</span> </Label>
             <Textarea
               id="customerAddress"
               v-model="form.customerAddress"
@@ -854,10 +787,7 @@ onMounted(() => {
               rows="2"
               :class="{ 'border-destructive': formErrors.customerAddress }"
             />
-            <p
-              v-if="formErrors.customerAddress"
-              class="text-xs text-destructive"
-            >
+            <p v-if="formErrors.customerAddress" class="text-xs text-destructive">
               {{ formErrors.customerAddress }}
             </p>
           </div>
@@ -869,9 +799,7 @@ onMounted(() => {
                 Доставчик <span class="text-destructive">*</span>
               </Label>
               <Select v-model="form.shippingProvider">
-                <SelectTrigger
-                  :class="{ 'border-destructive': formErrors.shippingProvider }"
-                >
+                <SelectTrigger :class="{ 'border-destructive': formErrors.shippingProvider }">
                   <SelectValue placeholder="Изберете доставчик" />
                 </SelectTrigger>
                 <SelectContent>
@@ -879,10 +807,7 @@ onMounted(() => {
                   <SelectItem value="speedy">Speedy</SelectItem>
                 </SelectContent>
               </Select>
-              <p
-                v-if="formErrors.shippingProvider"
-                class="text-xs text-destructive"
-              >
+              <p v-if="formErrors.shippingProvider" class="text-xs text-destructive">
                 {{ formErrors.shippingProvider }}
               </p>
             </div>
@@ -895,13 +820,8 @@ onMounted(() => {
                 placeholder="Въведете номер (незадължително)"
                 :class="{ 'border-destructive': formErrors.shippingNumber }"
               />
-              <p class="text-xs text-muted-foreground">
-                Може да бъде добавен по-късно
-              </p>
-              <p
-                v-if="formErrors.shippingNumber"
-                class="text-xs text-destructive"
-              >
+              <p class="text-xs text-muted-foreground">Може да бъде добавен по-късно</p>
+              <p v-if="formErrors.shippingNumber" class="text-xs text-destructive">
                 {{ formErrors.shippingNumber }}
               </p>
             </div>
@@ -927,17 +847,11 @@ onMounted(() => {
               <Select v-model="selectedCategory" :disabled="categoriesLoading">
                 <SelectTrigger>
                   <SelectValue
-                    :placeholder="
-                      categoriesLoading ? 'Зареждане...' : 'Изберете категория'
-                    "
+                    :placeholder="categoriesLoading ? 'Зареждане...' : 'Изберете категория'"
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem
-                    v-for="cat in categories"
-                    :key="cat._id"
-                    :value="cat.slug"
-                  >
+                  <SelectItem v-for="cat in categories" :key="cat._id" :value="cat.slug">
                     {{ cat.displayName }}
                   </SelectItem>
                 </SelectContent>
@@ -963,9 +877,7 @@ onMounted(() => {
               </div>
 
               <div v-if="productsLoading" class="text-center py-4">
-                <Loader2
-                  class="h-6 w-6 animate-spin mx-auto text-muted-foreground"
-                />
+                <Loader2 class="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
               </div>
               <div
                 v-else-if="filteredProducts.length === 0"
@@ -988,19 +900,14 @@ onMounted(() => {
                 >
                   <CardContent class="p-2">
                     <!-- Product Image -->
-                    <div
-                      class="aspect-square w-full bg-muted rounded-md mb-2 overflow-hidden"
-                    >
+                    <div class="aspect-square w-full bg-muted rounded-md mb-2 overflow-hidden">
                       <img
                         v-if="product.images && product.images.length > 0"
                         :src="product.images[0].url"
                         :alt="product.name"
                         class="w-full h-full object-cover"
                       />
-                      <div
-                        v-else
-                        class="w-full h-full flex items-center justify-center"
-                      >
+                      <div v-else class="w-full h-full flex items-center justify-center">
                         <Package class="h-8 w-8 text-muted-foreground/50" />
                       </div>
                     </div>
@@ -1008,9 +915,7 @@ onMounted(() => {
                     <!-- Product Info -->
                     <div class="space-y-1.5">
                       <div>
-                        <h4
-                          class="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight"
-                        >
+                        <h4 class="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight">
                           {{ product.name }}
                         </h4>
                         <p class="text-sm font-bold text-primary mt-0.5">
@@ -1040,11 +945,7 @@ onMounted(() => {
                                 <SelectValue placeholder="Избери" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem
-                                  v-for="size in product.sizes"
-                                  :key="size"
-                                  :value="size"
-                                >
+                                <SelectItem v-for="size in product.sizes" :key="size" :value="size">
                                   {{ size }}
                                 </SelectItem>
                               </SelectContent>
@@ -1053,9 +954,7 @@ onMounted(() => {
                           <div>
                             <Label class="text-[10px]">Цвят</Label>
                             <Select
-                              :model-value="
-                                selectedVariants[product._id]?.color
-                              "
+                              :model-value="selectedVariants[product._id]?.color"
                               @update:model-value="
                                 (val) => {
                                   if (!selectedVariants[product._id])
@@ -1122,10 +1021,7 @@ onMounted(() => {
                 >
                   <div class="flex-1">
                     <p class="font-medium">{{ item.productName }}</p>
-                    <p
-                      v-if="item.size && item.color"
-                      class="text-xs text-muted-foreground"
-                    >
+                    <p v-if="item.size && item.color" class="text-xs text-muted-foreground">
                       Размер: {{ item.size }}, Цвят: {{ item.color }}
                     </p>
                     <p class="text-sm text-muted-foreground">
@@ -1142,9 +1038,7 @@ onMounted(() => {
                     >
                       <Minus class="h-3 w-3" />
                     </Button>
-                    <span class="w-8 text-center font-medium">{{
-                      item.quantity
-                    }}</span>
+                    <span class="w-8 text-center font-medium">{{ item.quantity }}</span>
                     <Button
                       @click="increaseQuantity(item)"
                       variant="outline"
@@ -1153,12 +1047,7 @@ onMounted(() => {
                     >
                       <Plus class="h-3 w-3" />
                     </Button>
-                    <Button
-                      @click="removeItem(index)"
-                      variant="ghost"
-                      size="icon"
-                      class="h-8 w-8"
-                    >
+                    <Button @click="removeItem(index)" variant="ghost" size="icon" class="h-8 w-8">
                       <X class="h-3 w-3" />
                     </Button>
                   </div>
@@ -1166,9 +1055,7 @@ onMounted(() => {
               </div>
               <div class="flex justify-between items-center pt-2 border-t">
                 <span class="font-semibold">Обща Сума:</span>
-                <span class="text-xl font-bold"
-                  >{{ totalAmount.toFixed(2) }} лв.</span
-                >
+                <span class="text-xl font-bold">{{ totalAmount.toFixed(2) }} лв.</span>
               </div>
             </div>
             <p v-if="formErrors.items" class="text-xs text-destructive">
@@ -1178,13 +1065,7 @@ onMounted(() => {
         </div>
 
         <DialogFooter>
-          <Button
-            @click="closeDialog"
-            variant="outline"
-            :disabled="isSubmitting"
-          >
-            Отказ
-          </Button>
+          <Button @click="closeDialog" variant="outline" :disabled="isSubmitting"> Отказ </Button>
           <Button @click="handleSubmit" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
             Създай Поръчка

@@ -35,12 +35,7 @@ const sizeClasses = computed(() => {
       sizeClasses,
     ]"
   >
-    <img
-      v-if="image"
-      :src="image"
-      :alt="name"
-      class="w-full h-full rounded-full object-cover"
-    />
+    <img v-if="image" :src="image" :alt="name" class="w-full h-full rounded-full object-cover" />
     <span v-else>{{ initials }}</span>
   </div>
 </template>

@@ -12,9 +12,7 @@
           <div class="stat-card__label">Изчакващи</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__value">
-            {{ stats.totalRevenue?.toFixed(2) }} лв
-          </div>
+          <div class="stat-card__value">{{ stats.totalRevenue?.toFixed(2) }} лв</div>
           <div class="stat-card__label">Общ приход</div>
         </div>
       </div>
@@ -38,9 +36,7 @@
         <option value="cancelled">Отказани</option>
       </select>
 
-      <button @click="loadOrders" class="orders-view__refresh-btn">
-        Обнови
-      </button>
+      <button @click="loadOrders" class="orders-view__refresh-btn">Обнови</button>
     </div>
 
     <div v-if="loading" class="orders-view__loading">Зареждане...</div>
@@ -62,11 +58,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="order in orders"
-            :key="order._id"
-            class="orders-table__row"
-          >
+          <tr v-for="order in orders" :key="order._id" class="orders-table__row">
             <td class="orders-table__order-number">
               {{ order.orderNumber }}
             </td>
@@ -75,16 +67,10 @@
                 <div class="orders-table__customer-name">
                   {{ order.shippingAddress.firstName }}
                   {{ order.shippingAddress.lastName }}
-                  <span
-                    v-if="!order.user && order.guestEmail"
-                    class="guest-badge"
-                    >👤 Guest</span
-                  >
+                  <span v-if="!order.user && order.guestEmail" class="guest-badge">👤 Guest</span>
                 </div>
                 <div class="orders-table__customer-email">
-                  <span v-if="order.user">{{
-                    order.shippingAddress.email
-                  }}</span>
+                  <span v-if="order.user">{{ order.shippingAddress.email }}</span>
                   <span v-else class="guest-email">{{
                     order.guestEmail || order.shippingAddress.email
                   }}</span>
@@ -94,13 +80,9 @@
             <td>
               {{ formatDate(order.createdAt) }}
             </td>
-            <td class="orders-table__total">
-              {{ order.total?.toFixed(2) }} лв
-            </td>
+            <td class="orders-table__total">{{ order.total?.toFixed(2) }} лв</td>
             <td>
-              <span
-                :class="['status-badge', `status-badge--${order.orderStatus}`]"
-              >
+              <span :class="['status-badge', `status-badge--${order.orderStatus}`]">
                 {{ getStatusLabel(order.orderStatus) }}
               </span>
             </td>
@@ -130,9 +112,7 @@
         </tbody>
       </table>
 
-      <div v-if="orders.length === 0" class="orders-view__empty">
-        Няма намерени поръчки
-      </div>
+      <div v-if="orders.length === 0" class="orders-view__empty">Няма намерени поръчки</div>
 
       <div v-if="pagination.pages > 1" class="orders-view__pagination">
         <button
@@ -187,8 +167,7 @@ const pendingCount = computed(() => {
 // Methods
 const getToken = () => {
   // Try both 'token' and 'accessToken' keys
-  const token =
-    localStorage.getItem("token") || localStorage.getItem("accessToken");
+  const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
   console.log("[Dashboard Orders] Token found:", !!token);
   return token;
 };
@@ -254,14 +233,12 @@ const updateOrderStatus = async (orderId: string, event: Event) => {
       await loadStats();
     } else {
       alert("Грешка при обновяване на статуса");
-      select.value =
-        orders.value.find((o) => o._id === orderId)?.orderStatus || "";
+      select.value = orders.value.find((o) => o._id === orderId)?.orderStatus || "";
     }
   } catch (err) {
     console.error("Failed to update status:", err);
     alert("Грешка при обновяване на статуса");
-    select.value =
-      orders.value.find((o) => o._id === orderId)?.orderStatus || "";
+    select.value = orders.value.find((o) => o._id === orderId)?.orderStatus || "";
   }
 };
 

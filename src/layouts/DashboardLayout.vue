@@ -114,10 +114,7 @@ const closeSheet = () => {
       ]"
     >
       <div
-        :class="[
-          'p-4 flex items-center',
-          sidebarCollapsed ? 'justify-center' : 'justify-between',
-        ]"
+        :class="['p-4 flex items-center', sidebarCollapsed ? 'justify-center' : 'justify-between']"
       >
         <h1 class="text-xl font-bold tracking-tight">
           <span v-if="!sidebarCollapsed">{{ brandName }}</span>
@@ -127,22 +124,14 @@ const closeSheet = () => {
       </div>
 
       <nav :class="['flex-1 space-y-1', sidebarCollapsed ? 'px-2' : 'px-4']">
-        <div
-          :class="[
-            'mb-4',
-            sidebarCollapsed ? 'flex justify-center' : 'flex justify-end',
-          ]"
-        >
+        <div :class="['mb-4', sidebarCollapsed ? 'flex justify-center' : 'flex justify-end']">
           <Button
             variant="ghost"
             size="icon"
             @click="toggleSidebar"
             class="hover:bg-primary/10 hover:text-primary transition-colors"
           >
-            <PanelLeftClose
-              v-if="!sidebarCollapsed"
-              class="h-5 w-5 text-primary"
-            />
+            <PanelLeftClose v-if="!sidebarCollapsed" class="h-5 w-5 text-primary" />
             <PanelLeftOpen v-else class="h-5 w-5 text-primary" />
           </Button>
         </div>
@@ -158,19 +147,13 @@ const closeSheet = () => {
             route.path === item.path ? 'bg-accent/60 text-accent-foreground' : '',
           ]"
         >
-          <component
-            :is="item.icon"
-            :class="['h-5 w-5', sidebarCollapsed ? '' : 'mr-3']"
-          />
+          <component :is="item.icon" :class="['h-5 w-5', sidebarCollapsed ? '' : 'mr-3']" />
           <span v-if="!sidebarCollapsed">{{ item.name }}</span>
         </RouterLink>
       </nav>
 
       <div
-        :class="[
-          'border-t border-border',
-          sidebarCollapsed ? 'p-2 flex justify-center' : 'p-4',
-        ]"
+        :class="['border-t border-border', sidebarCollapsed ? 'p-2 flex justify-center' : 'p-4']"
       >
         <ThemeToggle v-if="sidebarCollapsed" />
       </div>
@@ -180,9 +163,7 @@ const closeSheet = () => {
       class="flex-1 flex flex-col transition-[margin] duration-300"
       :class="sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'"
     >
-      <div
-        class="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border"
-      >
+      <div class="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
         <div class="flex items-center justify-between px-4 py-3">
           <span class="text-lg font-semibold">{{ brandName }}</span>
           <div class="flex items-center gap-2">
@@ -205,8 +186,7 @@ const closeSheet = () => {
                       :to="item.path"
                       class="flex items-center gap-3 rounded-lg px-4 py-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                       :class="{
-                        'bg-accent/60 text-accent-foreground':
-                          route.path === item.path,
+                        'bg-accent/60 text-accent-foreground': route.path === item.path,
                       }"
                       @click="closeSheet"
                     >

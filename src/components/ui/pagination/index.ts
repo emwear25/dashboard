@@ -75,10 +75,7 @@ const PaginationPrevious = {
           onClick: () => emit("click"),
         },
         {
-          default: () => [
-            h(ChevronLeft, { class: "h-4 w-4" }),
-            "Previous",
-          ],
+          default: () => [h(ChevronLeft, { class: "h-4 w-4" }), "Previous"],
         }
       );
   },
@@ -103,10 +100,7 @@ const PaginationNext = {
           onClick: () => emit("click"),
         },
         {
-          default: () => [
-            "Next",
-            h(ChevronRight, { class: "h-4 w-4" }),
-          ],
+          default: () => ["Next", h(ChevronRight, { class: "h-4 w-4" })],
         }
       );
   },
@@ -132,4 +126,4 @@ export {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-}; 
+};

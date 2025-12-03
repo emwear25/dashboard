@@ -1,20 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  Loader2,
-  AlertCircle,
-  TrendingUp,
-  Tag,
-  Percent,
-  Users,
-} from "lucide-vue-next";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader2, AlertCircle, TrendingUp, Tag, Percent, Users } from "lucide-vue-next";
 import { apiGet } from "@/utils/api";
 
 type AnalyticsData = {
@@ -50,8 +37,7 @@ const fetchAnalytics = async () => {
       analytics.value = result.data;
     }
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Failed to load analytics";
+    errorMessage.value = error instanceof Error ? error.message : "Failed to load analytics";
   } finally {
     isLoading.value = false;
   }
@@ -115,24 +101,18 @@ onMounted(() => {
       <!-- Stats Overview -->
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader
-            class="flex flex-row items-center justify-between space-y-0 pb-2"
-          >
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">Общо отстъпки</CardTitle>
             <Tag class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div class="text-2xl font-bold">{{ analytics.totalDiscounts }}</div>
-            <p class="text-xs text-muted-foreground">
-              {{ analytics.activeDiscounts }} активни
-            </p>
+            <p class="text-xs text-muted-foreground">{{ analytics.activeDiscounts }} активни</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader
-            class="flex flex-row items-center justify-between space-y-0 pb-2"
-          >
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">Общо използвания</CardTitle>
             <Users class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -143,9 +123,7 @@ onMounted(() => {
         </Card>
 
         <Card>
-          <CardHeader
-            class="flex flex-row items-center justify-between space-y-0 pb-2"
-          >
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">Общ приход</CardTitle>
             <TrendingUp class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -158,9 +136,7 @@ onMounted(() => {
         </Card>
 
         <Card>
-          <CardHeader
-            class="flex flex-row items-center justify-between space-y-0 pb-2"
-          >
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">Средна отстъпка</CardTitle>
             <Percent class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -237,17 +213,11 @@ onMounted(() => {
               <div>
                 <div class="font-medium">{{ activity.discountName }}</div>
                 <div class="text-sm text-muted-foreground">
-                  {{
-                    activity.couponCode
-                      ? `Код: ${activity.couponCode}`
-                      : "Автоматична отстъпка"
-                  }}
+                  {{ activity.couponCode ? `Код: ${activity.couponCode}` : "Автоматична отстъпка" }}
                   • {{ formatDate(activity.usedAt) }}
                 </div>
               </div>
-              <div class="font-semibold text-green-600">
-                -{{ formatCurrency(activity.amount) }}
-              </div>
+              <div class="font-semibold text-green-600">-{{ formatCurrency(activity.amount) }}</div>
             </div>
             <div
               v-if="analytics.recentActivity.length === 0"

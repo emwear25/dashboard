@@ -7,12 +7,12 @@
 const getApiBase = (): string => {
   // Check for Vite environment variable
   if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL
+    return import.meta.env.VITE_API_BASE_URL;
   }
-  
+
   // Fallback to default for development
-  return 'http://localhost:3030'
-}
+  return "http://localhost:3030";
+};
 
 /**
  * Get the full API URL for an endpoint
@@ -20,19 +20,19 @@ const getApiBase = (): string => {
  * @returns Full URL to the API endpoint
  */
 export const getApiUrl = (endpoint: string): string => {
-  const apiBase = getApiBase()
-  
+  const apiBase = getApiBase();
+
   // Remove leading slash if present, we'll add it
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint
-  
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
+
   // If endpoint already starts with 'api/', use it as is
-  if (cleanEndpoint.startsWith('api/')) {
-    return `${apiBase}/${cleanEndpoint}`
+  if (cleanEndpoint.startsWith("api/")) {
+    return `${apiBase}/${cleanEndpoint}`;
   }
-  
+
   // Otherwise, prepend 'api/'
-  return `${apiBase}/api/${cleanEndpoint}`
-}
+  return `${apiBase}/api/${cleanEndpoint}`;
+};
 
 /**
  * Make an authenticated API request
@@ -41,19 +41,19 @@ export const apiRequest = async <T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const url = getApiUrl(endpoint)
-  
+  const url = getApiUrl(endpoint);
+
   // Ensure credentials are included for cookie-based auth
   const defaultOptions: RequestInit = {
-    credentials: 'include',
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     },
     ...options,
-  }
+  };
 
-  const response = await fetch(url, defaultOptions)
+  const response = await fetch(url, defaultOptions);
 
   if (!response.ok) {
     let errorData: any;
@@ -65,7 +65,7 @@ export const apiRequest = async <T = any>(
         statusCode: response.status,
       };
     }
-    
+
     // Create a structured error object
     const error: any = new Error(errorData.message || `Request failed: ${response.statusText}`);
     error.response = errorData;
@@ -75,20 +75,20 @@ export const apiRequest = async <T = any>(
   }
 
   // Handle empty responses
-  const contentType = response.headers.get('content-type')
-  if (contentType && contentType.includes('application/json')) {
-    return await response.json()
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return await response.json();
   }
 
-  return (await response.text()) as unknown as T
-}
+  return (await response.text()) as unknown as T;
+};
 
 /**
  * GET request helper
  */
 export const apiGet = <T = any>(endpoint: string, options?: RequestInit): Promise<T> => {
-  return apiRequest<T>(endpoint, { ...options, method: 'GET' })
-}
+  return apiRequest<T>(endpoint, { ...options, method: "GET" });
+};
 
 /**
  * POST request helper
@@ -100,10 +100,10 @@ export const apiPost = <T = any>(
 ): Promise<T> => {
   return apiRequest<T>(endpoint, {
     ...options,
-    method: 'POST',
+    method: "POST",
     body: body ? JSON.stringify(body) : undefined,
-  })
-}
+  });
+};
 
 /**
  * PUT request helper
@@ -115,10 +115,10 @@ export const apiPut = <T = any>(
 ): Promise<T> => {
   return apiRequest<T>(endpoint, {
     ...options,
-    method: 'PUT',
+    method: "PUT",
     body: body ? JSON.stringify(body) : undefined,
-  })
-}
+  });
+};
 
 /**
  * PATCH request helper
@@ -130,17 +130,17 @@ export const apiPatch = <T = any>(
 ): Promise<T> => {
   return apiRequest<T>(endpoint, {
     ...options,
-    method: 'PATCH',
+    method: "PATCH",
     body: body ? JSON.stringify(body) : undefined,
-  })
-}
+  });
+};
 
 /**
  * DELETE request helper
  */
 export const apiDelete = <T = any>(endpoint: string, options?: RequestInit): Promise<T> => {
-  return apiRequest<T>(endpoint, { ...options, method: 'DELETE' })
-}
+  return apiRequest<T>(endpoint, { ...options, method: "DELETE" });
+};
 
 /**
  * Upload file helper (FormData)
@@ -150,24 +150,24 @@ export const apiUpload = async <T = any>(
   formData: FormData,
   options?: RequestInit
 ): Promise<T> => {
-  const url = getApiUrl(endpoint)
-  
+  const url = getApiUrl(endpoint);
+
   const defaultOptions: RequestInit = {
-    credentials: 'include',
-    method: 'POST',
+    credentials: "include",
+    method: "POST",
     body: formData,
     // Don't set Content-Type header, browser will set it with boundary
     ...options,
-  }
+  };
 
   // Remove Content-Type header if present (FormData needs boundary)
   if (defaultOptions.headers) {
-    const headers = new Headers(defaultOptions.headers)
-    headers.delete('Content-Type')
-    defaultOptions.headers = headers
+    const headers = new Headers(defaultOptions.headers);
+    headers.delete("Content-Type");
+    defaultOptions.headers = headers;
   }
 
-  const response = await fetch(url, defaultOptions)
+  const response = await fetch(url, defaultOptions);
 
   if (!response.ok) {
     let errorData: any;
@@ -179,7 +179,7 @@ export const apiUpload = async <T = any>(
         statusCode: response.status,
       };
     }
-    
+
     // Create a structured error object
     const error: any = new Error(errorData.message || `Upload failed: ${response.statusText}`);
     error.response = errorData;
@@ -188,9 +188,8 @@ export const apiUpload = async <T = any>(
     throw error;
   }
 
-  return await response.json()
-}
+  return await response.json();
+};
 
 // Export the base URL getter for cases where full URL is needed
-export const getApiBaseUrl = getApiBase
-
+export const getApiBaseUrl = getApiBase;

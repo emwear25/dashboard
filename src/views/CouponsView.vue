@@ -13,15 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Search,
-  Loader2,
-  AlertCircle,
-  Tag,
-  Download,
-  Copy,
-  Plus,
-} from "lucide-vue-next";
+import { Search, Loader2, AlertCircle, Tag, Download, Copy, Plus } from "lucide-vue-next";
 import { apiGet } from "@/utils/api";
 
 type Coupon = {
@@ -52,8 +44,7 @@ const fetchCoupons = async () => {
       coupons.value = result.data;
     }
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Failed to load coupons";
+    errorMessage.value = error instanceof Error ? error.message : "Failed to load coupons";
   } finally {
     isLoading.value = false;
   }
@@ -62,8 +53,7 @@ const fetchCoupons = async () => {
 const couponsByFilters = computed(() => {
   return coupons.value.filter((coupon) => {
     const matchesSearch =
-      !searchQuery.value ||
-      coupon.code.toLowerCase().includes(searchQuery.value.toLowerCase());
+      !searchQuery.value || coupon.code.toLowerCase().includes(searchQuery.value.toLowerCase());
 
     return matchesSearch;
   });
@@ -92,8 +82,7 @@ const copyCouponCode = async (code: string) => {
 const exportCoupons = async () => {
   try {
     // For file downloads, we need to use fetch directly
-    const apiBase =
-      import.meta.env.VITE_API_BASE_URL || "http://localhost:3030";
+    const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:3030";
     const response = await fetch(`${apiBase}/api/coupons/export`, {
       credentials: "include",
       headers: {
@@ -149,14 +138,10 @@ onMounted(() => {
 <template>
   <div class="space-y-8 pb-8 pt-6">
     <!-- Header Section -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-    >
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-4xl font-bold tracking-tight">Купони</h1>
-        <p class="text-muted-foreground mt-1.5">
-          Управлявайте купони и кодове за отстъпки
-        </p>
+        <p class="text-muted-foreground mt-1.5">Управлявайте купони и кодове за отстъпки</p>
       </div>
       <div class="flex gap-2">
         <Button @click="router.push('/coupons/create')" size="default">
@@ -173,25 +158,18 @@ onMounted(() => {
     <!-- Stats Cards -->
     <div class="grid gap-4 md:grid-cols-3">
       <Card>
-        <CardHeader
-          class="flex flex-row items-center justify-between space-y-0 pb-2"
-        >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">Активни купони</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold">
-            {{
-              coupons.filter((c) => c.isActive && !isExpired(c.expiresAt))
-                .length
-            }}
+            {{ coupons.filter((c) => c.isActive && !isExpired(c.expiresAt)).length }}
           </div>
         </CardContent>
       </Card>
       <Card>
-        <CardHeader
-          class="flex flex-row items-center justify-between space-y-0 pb-2"
-        >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">Общо купони</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -200,9 +178,7 @@ onMounted(() => {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader
-          class="flex flex-row items-center justify-between space-y-0 pb-2"
-        >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">Общо използвания</CardTitle>
           <Tag class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -270,9 +246,7 @@ onMounted(() => {
                 <TableCell colspan="6" class="text-center py-12">
                   <div class="flex flex-col items-center gap-2">
                     <Tag class="h-12 w-12 text-muted-foreground/50" />
-                    <p class="text-muted-foreground font-medium">
-                      Няма намерени купони
-                    </p>
+                    <p class="text-muted-foreground font-medium">Няма намерени купони</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -285,33 +259,23 @@ onMounted(() => {
                   <div class="font-mono font-semibold">{{ coupon.code }}</div>
                 </TableCell>
                 <TableCell>
-                  <span class="font-semibold"
-                    >{{ coupon.discountPercentage }}%</span
-                  >
+                  <span class="font-semibold">{{ coupon.discountPercentage }}%</span>
                 </TableCell>
                 <TableCell>
                   {{ coupon.usageCount || 0 }}
                 </TableCell>
                 <TableCell>
-                  <span
-                    :class="{ 'text-destructive': isExpired(coupon.expiresAt) }"
-                  >
+                  <span :class="{ 'text-destructive': isExpired(coupon.expiresAt) }">
                     {{ formatDate(coupon.expiresAt) }}
                   </span>
                 </TableCell>
                 <TableCell>
                   <Badge
                     :variant="
-                      coupon.isActive && !isExpired(coupon.expiresAt)
-                        ? 'default'
-                        : 'destructive'
+                      coupon.isActive && !isExpired(coupon.expiresAt) ? 'default' : 'destructive'
                     "
                   >
-                    {{
-                      coupon.isActive && !isExpired(coupon.expiresAt)
-                        ? "Активен"
-                        : "Неактивен"
-                    }}
+                    {{ coupon.isActive && !isExpired(coupon.expiresAt) ? "Активен" : "Неактивен" }}
                   </Badge>
                 </TableCell>
                 <TableCell class="text-right">
@@ -332,14 +296,10 @@ onMounted(() => {
     </Card>
 
     <!-- Pagination -->
-    <div
-      class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2"
-    >
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
       <p class="text-sm text-muted-foreground">
         Показване на
-        <span class="font-medium text-foreground">{{
-          (currentPage - 1) * itemsPerPage + 1
-        }}</span>
+        <span class="font-medium text-foreground">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
         до
         <span class="font-medium text-foreground">{{
           Math.min(currentPage * itemsPerPage, totalItems)
