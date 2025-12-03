@@ -14,6 +14,8 @@ import DiscountAnalyticsView from "@/views/DiscountAnalyticsView.vue";
 import CreateDiscountView from "@/views/CreateDiscountView.vue";
 import CreateCouponView from "@/views/CreateCouponView.vue";
 import ContactMessagesView from "@/views/ContactMessagesView.vue";
+import ReviewsManagementView from "@/views/ReviewsManagementView.vue";
+import AdminAnalyticsView from "@/views/AdminAnalyticsView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -110,6 +112,16 @@ const router = createRouter({
           path: "contact-messages",
           name: "contact-messages",
           component: ContactMessagesView,
+        },
+        {
+          path: "reviews",
+          name: "reviews",
+          component: ReviewsManagementView,
+        },
+        {
+          path: "analytics",
+          name: "analytics",
+          component: AdminAnalyticsView,
         },
       ],
     },

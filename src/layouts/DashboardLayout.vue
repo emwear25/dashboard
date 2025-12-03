@@ -27,6 +27,8 @@ import {
   Tag,
   TrendingUp,
   MessageSquare,
+  Star,
+  BarChart3,
 } from "lucide-vue-next";
 
 interface NavigationItem {
@@ -67,9 +69,14 @@ const navigationItems: NavigationItem[] = [
     icon: Tag,
   },
   {
-    name: "Аналитика",
+    name: "Аналитика на Отстъпки",
     path: "/discount-analytics",
     icon: TrendingUp,
+  },
+  {
+    name: "Админ Аналитика",
+    path: "/analytics",
+    icon: BarChart3,
   },
   {
     name: "Поръчки",
@@ -85,6 +92,11 @@ const navigationItems: NavigationItem[] = [
     name: "Контактни Съобщения",
     path: "/contact-messages",
     icon: MessageSquare,
+  },
+  {
+    name: "Отзиви",
+    path: "/reviews",
+    icon: Star,
   },
 ];
 

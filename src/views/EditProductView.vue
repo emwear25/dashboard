@@ -61,7 +61,7 @@ const form = reactive({
   category: "",
   stock: "",
   sizes: [] as string[],
-  colors: [] as string[],
+  colors: [] as { name: string; hex: string }[],
   customEmbroidery: false,
   embroideryFonts: [] as string[],
   embroideryColors: [] as { name: string; value: string }[],
@@ -90,12 +90,13 @@ const generateVariants = () => {
 
   for (const size of form.sizes) {
     for (const color of form.colors) {
+      const colorName = typeof color === 'string' ? color : color.name;
       // Try to find existing variant to preserve stock
-      const existing = variants.value.find((v) => v.size === size && v.color === color);
+      const existing = variants.value.find((v) => v.size === size && v.color === colorName);
 
       newVariants.push({
         size,
-        color,
+        color: colorName,
         stock: existing?.stock ?? defaultStock,
         reserved: 0,
         lowStockThreshold: 5,
@@ -135,6 +136,7 @@ const imagePreviews = ref<string[]>([]);
 const existingImages = ref<ProductImage[]>([]);
 const removedImageIds = ref<string[]>([]);
 const customColor = ref("");
+const customColorHex = ref("#9CA3AF");
 const newFont = ref("");
 const newEmbroideryColorName = ref("");
 const newEmbroideryColorValue = ref("#000000");
@@ -181,21 +183,28 @@ const onCategoryChange = (newCategory: string) => {
   clearError("category");
 };
 
-const toggleColor = (color: string) => {
-  const index = form.colors.indexOf(color);
+const toggleColor = (colorName: string, colorHex: string) => {
+  const index = form.colors.findIndex((c) => (typeof c === 'string' ? c : c.name) === colorName);
   if (index > -1) {
     form.colors.splice(index, 1);
   } else {
-    form.colors.push(color);
+    form.colors.push({ name: colorName, hex: colorHex });
   }
   generateVariants();
   clearError("colors");
 };
 
 const addCustomColor = () => {
-  if (customColor.value.trim() && !form.colors.includes(customColor.value.trim())) {
-    form.colors.push(customColor.value.trim());
-    customColor.value = "";
+  if (customColor.value.trim()) {
+    const colorName = customColor.value.trim();
+    const exists = form.colors.some((c) => (typeof c === 'string' ? c : c.name) === colorName);
+    if (!exists) {
+      form.colors.push({ name: colorName, hex: customColorHex.value });
+      customColor.value = "";
+      customColorHex.value = "#9CA3AF";
+      generateVariants();
+      clearError("colors");
+    }
     clearError("colors");
   }
 };
@@ -344,10 +353,7 @@ const validateForm = () => {
     errors.value.sizes = "Поне един размер е задължителен";
   }
 
-  const isBagsCategory = form.category === "bags";
-  if (!isBagsCategory && form.colors.length === 0) {
-    errors.value.colors = "Поне един цвят е задължителен";
-  }
+  // Colors are optional for all categories
 
   // Images are optional in edit mode if existing images remain
   const remainingExistingImages = existingImages.value.filter(
@@ -407,7 +413,38 @@ const fetchProduct = async () => {
       }
 
       form.sizes = Array.isArray(product.sizes) ? [...product.sizes] : [];
-      form.colors = Array.isArray(product.colors) ? [...product.colors] : [];
+      // Handle colors - convert string format to object format if needed
+      if (Array.isArray(product.colors) && product.colors.length > 0) {
+        form.colors = product.colors.map((color: any) => {
+          if (typeof color === 'string') {
+            // Old format: convert string to object with default hex
+            const colorHexMap: Record<string, string> = {
+              black: "#000000",
+              white: "#ffffff",
+              red: "#ef4444",
+              blue: "#3b82f6",
+              green: "#10b981",
+              yellow: "#f59e0b",
+              purple: "#8b5cf6",
+              pink: "#ec4899",
+              gray: "#6b7280",
+              grey: "#6b7280",
+              navy: "#1e40af",
+            };
+            return {
+              name: color,
+              hex: colorHexMap[color.toLowerCase()] || "#9CA3AF",
+            };
+          }
+          // New format: already an object, ensure it has hex
+          return {
+            name: color.name || color,
+            hex: color.hex || "#9CA3AF",
+          };
+        });
+      } else {
+        form.colors = [];
+      }
       form.embroideryFonts = Array.isArray(product.embroideryFonts)
         ? [...product.embroideryFonts]
         : [];
@@ -829,29 +866,21 @@ onMounted(async () => {
 
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                  <Label class="text-sm font-medium"
-                    >Налични Цветове <span class="text-destructive">*</span></Label
-                  >
+                  <Label class="text-sm font-medium">Налични Цветове</Label>
                   <span class="text-xs text-muted-foreground">
                     {{ form.colors.length }} избрани
                   </span>
                 </div>
-                <div
-                  v-if="form.category === 'bags'"
-                  class="text-sm text-muted-foreground p-4 bg-muted/30 rounded-lg text-center"
-                >
-                  Цветовете са незадължителни за категория "Чанти"
-                </div>
-                <div v-else class="grid grid-cols-5 gap-2">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <Button
                     v-for="color in availableColors"
                     :key="color.name"
                     type="button"
-                    @click="toggleColor(color.name)"
-                    :variant="form.colors.includes(color.name) ? 'default' : 'outline'"
+                    @click="toggleColor(color.name, color.value)"
+                    :variant="form.colors.some(c => (typeof c === 'string' ? c : c.name) === color.name) ? 'default' : 'outline'"
                     class="gap-2 h-11 justify-start"
                     :class="{
-                      'ring-2 ring-primary ring-offset-2': form.colors.includes(color.name),
+                      'ring-2 ring-primary ring-offset-2': form.colors.some(c => (typeof c === 'string' ? c : c.name) === color.name),
                     }"
                   >
                     <div
@@ -861,28 +890,46 @@ onMounted(async () => {
                     {{ color.name }}
                   </Button>
                 </div>
-                <div class="flex gap-2 mt-2">
-                  <Input
-                    v-model="customColor"
-                    type="text"
-                    placeholder="Добави персонализиран цвят"
-                    class="flex-1 h-9"
-                    @keyup.enter="addCustomColor"
-                  />
-                  <Button type="button" @click="addCustomColor" size="sm"> Добави </Button>
+                <div class="flex flex-col gap-2 pt-2">
+                  <div class="flex items-center gap-2">
+                    <Input
+                      v-model="customColor"
+                      type="text"
+                      placeholder="Име на цвят (напр. Crew, Beige)"
+                      class="flex-1 h-10"
+                      @keyup.enter="addCustomColor"
+                    />
+                    <input
+                      v-model="customColorHex"
+                      type="color"
+                      class="h-10 w-20 cursor-pointer rounded border border-border"
+                      title="Избери цвят"
+                    />
+                    <Button type="button" @click="addCustomColor" :disabled="!customColor.trim()" variant="secondary" class="h-10">
+                      Добави
+                    </Button>
+                  </div>
+                  <p class="text-xs text-muted-foreground">
+                    Въведете име на цвят и изберете неговия цвят с цветния избор
+                  </p>
                 </div>
                 <div v-if="form.colors.length > 0" class="flex flex-wrap gap-2 mt-2">
                   <Badge
-                    v-for="color in form.colors"
-                    :key="color"
+                    v-for="(color, index) in form.colors"
+                    :key="typeof color === 'string' ? color : color.name"
                     variant="secondary"
-                    class="px-3 py-1"
+                    class="px-3 py-1 flex items-center gap-2"
                   >
-                    {{ color }}
+                    <div
+                      v-if="typeof color === 'object' && color.hex"
+                      class="w-3 h-3 rounded-full border border-border"
+                      :style="{ backgroundColor: color.hex }"
+                    ></div>
+                    <span>{{ typeof color === 'string' ? color : color.name }}</span>
                     <button
                       type="button"
-                      @click="toggleColor(color)"
-                      class="ml-2 hover:text-destructive"
+                      @click="toggleColor(typeof color === 'string' ? color : color.name, typeof color === 'object' ? color.hex : '#9CA3AF')"
+                      class="ml-1 hover:text-destructive"
                     >
                       <X class="h-3 w-3" />
                     </button>

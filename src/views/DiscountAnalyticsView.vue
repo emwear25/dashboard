@@ -8,13 +8,20 @@ type AnalyticsData = {
   totalDiscounts: number;
   activeDiscounts: number;
   totalUsage: number;
-  totalRevenue: number;
-  topDiscounts: Array<{
+  totalRevenue?: number;
+  topPerforming?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    usageCount: number;
+    revenue?: number;
+  }>;
+  topDiscounts?: Array<{
     name: string;
     usageCount: number;
     revenue: number;
   }>;
-  recentActivity: Array<{
+  recentActivity?: Array<{
     discountName: string;
     couponCode?: string;
     usedAt: string;
@@ -34,7 +41,14 @@ const fetchAnalytics = async () => {
     const result = await apiGet("discounts/analytics");
 
     if (result.success) {
-      analytics.value = result.data;
+      analytics.value = {
+        totalDiscounts: result.data?.totalDiscounts || 0,
+        activeDiscounts: result.data?.activeDiscounts || 0,
+        totalUsage: result.data?.totalUsage || 0,
+        totalRevenue: result.data?.totalRevenue || 0,
+        topPerforming: result.data?.topPerforming || [],
+        recentActivity: result.data?.recentActivity || [],
+      };
     }
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : "Failed to load analytics";
@@ -143,7 +157,7 @@ onMounted(() => {
           <CardContent>
             <div class="text-2xl font-bold">
               {{
-                analytics.totalUsage > 0
+                analytics.totalUsage > 0 && analytics.totalRevenue
                   ? (analytics.totalRevenue / analytics.totalUsage).toFixed(2)
                   : "0"
               }}
@@ -163,8 +177,14 @@ onMounted(() => {
         <CardContent>
           <div class="space-y-4">
             <div
-              v-for="(discount, index) in analytics.topDiscounts.slice(0, 5)"
-              :key="index"
+              v-if="!analytics.topPerforming || analytics.topPerforming.length === 0"
+              class="text-center py-8 text-muted-foreground"
+            >
+              Няма данни за отстъпки
+            </div>
+            <div
+              v-for="(discount, index) in (analytics.topPerforming || []).slice(0, 5)"
+              :key="discount.id || index"
               class="flex items-center justify-between p-4 rounded-lg bg-muted/50"
             >
               <div class="flex items-center gap-4">
@@ -176,22 +196,15 @@ onMounted(() => {
                 <div>
                   <div class="font-semibold">{{ discount.name }}</div>
                   <div class="text-sm text-muted-foreground">
-                    {{ discount.usageCount }} използвания
+                    {{ discount.usageCount || 0 }} използвания
                   </div>
                 </div>
               </div>
               <div class="text-right">
-                <div class="font-semibold">
-                  {{ formatCurrency(discount.revenue) }}
+                <div class="text-sm font-medium capitalize text-muted-foreground">
+                  {{ discount.type || "N/A" }}
                 </div>
-                <div class="text-sm text-muted-foreground">Приход</div>
               </div>
-            </div>
-            <div
-              v-if="analytics.topDiscounts.length === 0"
-              class="text-center py-8 text-muted-foreground"
-            >
-              Няма данни за отстъпки
             </div>
           </div>
         </CardContent>
@@ -206,7 +219,13 @@ onMounted(() => {
         <CardContent>
           <div class="space-y-3">
             <div
-              v-for="(activity, index) in analytics.recentActivity.slice(0, 10)"
+              v-if="!analytics.recentActivity || analytics.recentActivity.length === 0"
+              class="text-center py-8 text-muted-foreground"
+            >
+              Няма последна активност
+            </div>
+            <div
+              v-for="(activity, index) in (analytics.recentActivity || []).slice(0, 10)"
               :key="index"
               class="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
             >
@@ -217,13 +236,7 @@ onMounted(() => {
                   • {{ formatDate(activity.usedAt) }}
                 </div>
               </div>
-              <div class="font-semibold text-green-600">-{{ formatCurrency(activity.amount) }}</div>
-            </div>
-            <div
-              v-if="analytics.recentActivity.length === 0"
-              class="text-center py-8 text-muted-foreground"
-            >
-              Няма последна активност
+              <div class="font-semibold text-green-600">-{{ formatCurrency(activity.amount || 0) }}</div>
             </div>
           </div>
         </CardContent>
