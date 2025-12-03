@@ -497,7 +497,7 @@ const saveAdminNotes = async () => {
 
     if (response.success) {
       showMessage("success", "Бележките са запазени успешно");
-      selectedReview.value.adminNotes = adminNotes.value || null;
+      selectedReview.value.adminNotes = adminNotes.value || undefined;
       // Reload reviews to update the list
       await loadReviews();
     }

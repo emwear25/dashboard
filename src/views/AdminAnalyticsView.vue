@@ -64,6 +64,7 @@ type AnalyticsData = {
       3: number;
       4: number;
       5: number;
+      [key: number]: number;
     };
   };
   contact: {
@@ -424,7 +425,7 @@ onMounted(() => {
                   class="flex items-center justify-between text-xs"
                 >
                   <span>{{ rating }} звезди:</span>
-                  <span class="font-semibold">{{ analytics.reviews.ratingDistribution[rating] || 0 }}</span>
+                  <span class="font-semibold">{{ analytics.reviews.ratingDistribution[rating as keyof typeof analytics.reviews.ratingDistribution] || 0 }}</span>
                 </div>
               </div>
             </div>
@@ -548,4 +549,6 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+
 

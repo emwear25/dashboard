@@ -143,7 +143,7 @@ onMounted(() => {
           </CardHeader>
           <CardContent>
             <div class="text-2xl font-bold">
-              {{ formatCurrency(analytics.totalRevenue) }}
+              {{ formatCurrency(analytics.totalRevenue || 0) }}
             </div>
             <p class="text-xs text-muted-foreground">От поръчки с отстъпки</p>
           </CardContent>

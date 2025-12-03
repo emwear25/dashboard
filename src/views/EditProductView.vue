@@ -117,17 +117,23 @@ const isLoading = ref(true);
 const productId = ref<string>("");
 
 const availableColors = [
-  { name: "Black", value: "#000000" },
-  { name: "White", value: "#ffffff" },
-  { name: "Red", value: "#ef4444" },
-  { name: "Blue", value: "#3b82f6" },
-  { name: "Green", value: "#10b981" },
-  { name: "Yellow", value: "#f59e0b" },
-  { name: "Purple", value: "#8b5cf6" },
-  { name: "Pink", value: "#ec4899" },
-  { name: "Gray", value: "#6b7280" },
-  { name: "Navy", value: "#1e40af" },
+  { name: "Black", displayName: "Черен", value: "#000000" },
+  { name: "White", displayName: "Бял", value: "#ffffff" },
+  { name: "Red", displayName: "Червен", value: "#ef4444" },
+  { name: "Blue", displayName: "Син", value: "#3b82f6" },
+  { name: "Green", displayName: "Зелен", value: "#10b981" },
+  { name: "Yellow", displayName: "Жълт", value: "#f59e0b" },
+  { name: "Purple", displayName: "Лилав", value: "#8b5cf6" },
+  { name: "Pink", displayName: "Розов", value: "#ec4899" },
+  { name: "Gray", displayName: "Сив", value: "#6b7280" },
+  { name: "Navy", displayName: "Морско синьо", value: "#1e40af" },
 ];
+
+// Helper function to get display name for a color
+const getColorDisplayName = (colorName: string): string => {
+  const color = availableColors.find((c) => c.name === colorName);
+  return color?.displayName || colorName;
+};
 
 const isSubmitting = ref(false);
 const isDragging = ref(false);
@@ -887,7 +893,7 @@ onMounted(async () => {
                       class="w-4 h-4 rounded-full border border-border"
                       :style="{ background: color.value }"
                     ></div>
-                    {{ color.name }}
+                    {{ color.displayName || color.name }}
                   </Button>
                 </div>
                 <div class="flex flex-col gap-2 pt-2">
@@ -925,7 +931,7 @@ onMounted(async () => {
                       class="w-3 h-3 rounded-full border border-border"
                       :style="{ backgroundColor: color.hex }"
                     ></div>
-                    <span>{{ typeof color === 'string' ? color : color.name }}</span>
+                    <span>{{ typeof color === 'string' ? getColorDisplayName(color) : getColorDisplayName(color.name) }}</span>
                     <button
                       type="button"
                       @click="toggleColor(typeof color === 'string' ? color : color.name, typeof color === 'object' ? color.hex : '#9CA3AF')"
@@ -1014,7 +1020,7 @@ onMounted(async () => {
                         class="w-3 h-3 rounded-full inline-block mr-2 border border-border"
                         :style="{ background: color.value }"
                       ></div>
-                      {{ color.name }}
+                      {{ color.displayName || color.name }}
                       <button
                         type="button"
                         @click="removeEmbroideryColor(index)"

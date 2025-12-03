@@ -15,10 +15,15 @@ interface Variant {
   price?: number; // Optional variant-specific price
 }
 
+interface Color {
+  name: string;
+  hex?: string;
+}
+
 interface Props {
   variants: Variant[];
   sizes: string[];
-  colors: string[];
+  colors: string[] | Color[]; // Support both string and object formats
   productId?: string;
   readonly?: boolean;
   basePrice?: number; // Base product price for fallback
@@ -32,6 +37,20 @@ const emit = defineEmits<{
   (e: "update", variants: Variant[]): void;
   (e: "save", variants: Variant[]): void;
 }>();
+
+// Helper functions to handle both string and object color formats
+const getColorName = (color: string | Color): string => {
+  return typeof color === "string" ? color : color.name;
+};
+
+const getColorHex = (color: string | Color): string | undefined => {
+  return typeof color === "string" ? undefined : color.hex;
+};
+
+// Get array of color names for easier iteration
+const colorNames = computed(() => {
+  return props.colors.map(getColorName);
+});
 
 // Create matrices for editing
 const stockMatrix = ref<Record<string, number>>({});
@@ -57,8 +76,9 @@ const initializeMatrix = () => {
   // Initialize all size/color combinations
   props.sizes.forEach((size) => {
     props.colors.forEach((color) => {
-      const key = `${size}-${color}`;
-      const existingVariant = props.variants?.find((v) => v.size === size && v.color === color);
+      const colorName = getColorName(color);
+      const key = `${size}-${colorName}`;
+      const existingVariant = props.variants?.find((v) => v.size === size && v.color === colorName);
 
       // Preserve user's current stock input if they're typing, otherwise use variant stock
       if (isUserTypingStock.value[key] && stockInputValues.value[key] !== undefined) {
@@ -178,11 +198,12 @@ const emitChanges = () => {
   const updatedVariants: Variant[] = [];
   props.sizes.forEach((size) => {
     props.colors.forEach((color) => {
-      const key = `${size}-${color}`;
-      const existingVariant = props.variants.find((v) => v.size === size && v.color === color);
+      const colorName = getColorName(color);
+      const key = `${size}-${colorName}`;
+      const existingVariant = props.variants.find((v) => v.size === size && v.color === colorName);
       updatedVariants.push({
         size,
-        color,
+        color: colorName,
         stock: stockMatrix.value[key] ?? 0,
         price: priceMatrix.value[key] ?? undefined, // Use undefined if null for optional price
         reserved: existingVariant?.reserved,
@@ -273,7 +294,8 @@ const lowStockCount = computed(() => {
   let count = 0;
   props.sizes.forEach((size) => {
     props.colors.forEach((color) => {
-      if (isLowStock(size, color)) count++;
+      const colorName = getColorName(color);
+      if (isLowStock(size, colorName)) count++;
     });
   });
   return count;
@@ -283,7 +305,8 @@ const outOfStockCount = computed(() => {
   let count = 0;
   props.sizes.forEach((size) => {
     props.colors.forEach((color) => {
-      if (isOutOfStock(size, color)) count++;
+      const colorName = getColorName(color);
+      if (isOutOfStock(size, colorName)) count++;
     });
   });
   return count;
@@ -294,20 +317,22 @@ const saveChanges = () => {
   // Commit all pending inputs first
   props.sizes.forEach((size) => {
     props.colors.forEach((color) => {
-      commitPrice(size, color);
-      commitStock(size, color);
+      const colorName = getColorName(color);
+      commitPrice(size, colorName);
+      commitStock(size, colorName);
     });
   });
 
   const updatedVariants: Variant[] = [];
   props.sizes.forEach((size) => {
     props.colors.forEach((color) => {
-      const key = `${size}-${color}`;
-      const existingVariant = props.variants.find((v) => v.size === size && v.color === color);
+      const colorName = getColorName(color);
+      const key = `${size}-${colorName}`;
+      const existingVariant = props.variants.find((v) => v.size === size && v.color === colorName);
       const variantPrice = priceMatrix.value[key];
       updatedVariants.push({
         size,
-        color,
+        color: colorName,
         stock: stockMatrix.value[key] ?? 0,
         price:
           variantPrice !== null && variantPrice !== undefined && variantPrice > 0
@@ -329,7 +354,8 @@ const applyBulkStock = () => {
 
   props.sizes.forEach((size) => {
     props.colors.forEach((color) => {
-      updateStock(size, color, bulkSetStock.value!);
+      const colorName = getColorName(color);
+      updateStock(size, colorName, bulkSetStock.value!);
     });
   });
 
@@ -401,10 +427,17 @@ const setUserTyping = (size: string, color: string) => {
               <th class="border p-2 bg-muted/30 text-left font-semibold">Размер / Цвят</th>
               <th
                 v-for="color in colors"
-                :key="color"
+                :key="getColorName(color)"
                 class="border p-2 bg-muted/30 text-center font-semibold"
               >
-                {{ color }}
+                <div class="flex items-center justify-center gap-2">
+                  <div
+                    v-if="getColorHex(color)"
+                    class="w-4 h-4 rounded border border-border"
+                    :style="{ backgroundColor: getColorHex(color) }"
+                  ></div>
+                  <span>{{ getColorName(color) }}</span>
+                </div>
               </th>
             </tr>
           </thead>
@@ -415,11 +448,11 @@ const setUserTyping = (size: string, color: string) => {
               </td>
               <td
                 v-for="color in colors"
-                :key="`${size}-${color}`"
+                :key="`${size}-${getColorName(color)}`"
                 class="border p-2"
                 :class="{
-                  'bg-red-50': isOutOfStock(size, color),
-                  'bg-yellow-50': isLowStock(size, color),
+                  'bg-red-50': isOutOfStock(size, getColorName(color)),
+                  'bg-yellow-50': isLowStock(size, getColorName(color)),
                 }"
               >
                 <div class="space-y-2">
@@ -427,22 +460,22 @@ const setUserTyping = (size: string, color: string) => {
                   <div class="flex items-center gap-1">
                     <Button
                       v-if="!readonly"
-                      @click="updateStock(size, color, getStock(size, color) - 1)"
+                      @click="updateStock(size, getColorName(color), getStock(size, getColorName(color)) - 1)"
                       size="icon"
                       variant="ghost"
                       class="h-7 w-7"
-                      :disabled="getStock(size, color) <= 0"
+                      :disabled="getStock(size, getColorName(color)) <= 0"
                     >
                       <Minus class="h-3 w-3" />
                     </Button>
                     <input
-                      :value="getStockInput(size, color)"
+                      :value="getStockInput(size, getColorName(color))"
                       @input="
                         (e: any) =>
-                          updateStockInput(size, color, (e.target as HTMLInputElement).value)
+                          updateStockInput(size, getColorName(color), (e.target as HTMLInputElement).value)
                       "
-                      @focus="setUserTypingStock(size, color)"
-                      @blur="commitStock(size, color)"
+                      @focus="setUserTypingStock(size, getColorName(color))"
+                      @blur="commitStock(size, getColorName(color))"
                       type="text"
                       inputmode="numeric"
                       class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-center ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -450,7 +483,7 @@ const setUserTyping = (size: string, color: string) => {
                     />
                     <Button
                       v-if="!readonly"
-                      @click="updateStock(size, color, getStock(size, color) + 1)"
+                      @click="updateStock(size, getColorName(color), getStock(size, getColorName(color)) + 1)"
                       size="icon"
                       variant="ghost"
                       class="h-7 w-7"
@@ -462,13 +495,13 @@ const setUserTyping = (size: string, color: string) => {
                   <!-- Price Input -->
                   <div class="relative">
                     <input
-                      :value="getPriceInput(size, color)"
+                      :value="getPriceInput(size, getColorName(color))"
                       @input="
                         (e: any) =>
-                          updatePriceInput(size, color, (e.target as HTMLInputElement).value)
+                          updatePriceInput(size, getColorName(color), (e.target as HTMLInputElement).value)
                       "
-                      @focus="setUserTyping(size, color)"
-                      @blur="commitPrice(size, color)"
+                      @focus="setUserTyping(size, getColorName(color))"
+                      @blur="commitPrice(size, getColorName(color))"
                       type="text"
                       inputmode="decimal"
                       :placeholder="basePrice ? `${basePrice.toFixed(2)} лв` : 'Цена'"
@@ -481,7 +514,7 @@ const setUserTyping = (size: string, color: string) => {
                       лв
                     </span>
                     <div
-                      v-if="getPrice(size, color) === null && basePrice"
+                      v-if="getPrice(size, getColorName(color)) === null && basePrice"
                       class="text-[10px] text-center text-muted-foreground mt-0.5"
                     >
                       Базова цена: {{ basePrice.toFixed(2) }} лв
@@ -491,12 +524,12 @@ const setUserTyping = (size: string, color: string) => {
                   <!-- Reserved Badge -->
                   <div
                     v-if="
-                      getVariant(size, color)?.reserved && getVariant(size, color)!.reserved! > 0
+                      getVariant(size, getColorName(color))?.reserved && getVariant(size, getColorName(color))!.reserved! > 0
                     "
                     class="text-xs text-center"
                   >
                     <Badge variant="secondary" class="text-[10px]">
-                      Резервирани: {{ getVariant(size, color)?.reserved }}
+                      Резервирани: {{ getVariant(size, getColorName(color))?.reserved }}
                     </Badge>
                   </div>
                 </div>

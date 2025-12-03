@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,17 +96,23 @@ const categories = ref<Category[]>([]);
 const categoriesLoading = ref(true);
 
 const availableColors = [
-  { name: "Black", value: "#000000" },
-  { name: "White", value: "#ffffff" },
-  { name: "Red", value: "#ef4444" },
-  { name: "Blue", value: "#3b82f6" },
-  { name: "Green", value: "#10b981" },
-  { name: "Yellow", value: "#f59e0b" },
-  { name: "Purple", value: "#8b5cf6" },
-  { name: "Pink", value: "#ec4899" },
-  { name: "Gray", value: "#6b7280" },
-  { name: "Navy", value: "#1e40af" },
+  { name: "Black", displayName: "Черен", value: "#000000" },
+  { name: "White", displayName: "Бял", value: "#ffffff" },
+  { name: "Red", displayName: "Червен", value: "#ef4444" },
+  { name: "Blue", displayName: "Син", value: "#3b82f6" },
+  { name: "Green", displayName: "Зелен", value: "#10b981" },
+  { name: "Yellow", displayName: "Жълт", value: "#f59e0b" },
+  { name: "Purple", displayName: "Лилав", value: "#8b5cf6" },
+  { name: "Pink", displayName: "Розов", value: "#ec4899" },
+  { name: "Gray", displayName: "Сив", value: "#6b7280" },
+  { name: "Navy", displayName: "Морско синьо", value: "#1e40af" },
 ];
+
+// Helper function to get display name for a color
+const getColorDisplayName = (colorName: string): string => {
+  const color = availableColors.find((c) => c.name === colorName);
+  return color?.displayName || colorName;
+};
 
 const isSubmitting = ref(false);
 const isLoading = ref(false);
@@ -177,22 +183,39 @@ const toggleColor = (colorName: string, colorHex: string) => {
 };
 
 const addCustomColor = () => {
-  if (customColor.value.trim()) {
-    const colorName = customColor.value.trim();
-    // Check if color already exists (by name)
-    const exists = form.colors.some((c) => c.name === colorName);
-    
-    if (!exists) {
-      form.colors.push({
-        name: colorName,
-        hex: customColorHex.value,
-      });
-      customColor.value = "";
-      customColorHex.value = "#9CA3AF";
-      clearError("colors");
-      generateVariants();
-    }
+  const colorName = customColor.value.trim();
+  
+  if (!colorName) {
+    errors.value.colors = "Моля, въведете име на цвят";
+    return;
   }
+  
+  // Check if color already exists (by name, case-insensitive)
+  const exists = form.colors.some((c) => c.name.toLowerCase() === colorName.toLowerCase());
+  
+  if (exists) {
+    errors.value.colors = `Цвят "${colorName}" вече е добавен`;
+    return;
+  }
+  
+  form.colors.push({
+    name: colorName,
+    hex: customColorHex.value,
+  });
+  customColor.value = "";
+  customColorHex.value = "#9CA3AF";
+  clearError("colors");
+  generateVariants();
+  
+  // Scroll to variants section if it becomes visible
+  nextTick(() => {
+    if (variants.value.length > 0) {
+      const variantsCard = document.querySelector('[data-variants-card]');
+      if (variantsCard) {
+        variantsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  });
 };
 
 const addFont = () => {
@@ -918,7 +941,7 @@ onMounted(async () => {
                       class="w-4 h-4 rounded-full border-2 border-background shadow-sm"
                       :style="{ backgroundColor: color.value }"
                     ></div>
-                    <span class="text-sm">{{ color.name }}</span>
+                    <span class="text-sm">{{ color.displayName || color.name }}</span>
                   </Button>
                 </div>
                 <div class="flex flex-col gap-2 pt-2">
@@ -928,6 +951,7 @@ onMounted(async () => {
                       type="text"
                       placeholder="Име на цвят (напр. Crew, Beige)"
                       class="flex-1 h-10"
+                      @keyup.enter="addCustomColor"
                     />
                     <input
                       v-model="customColorHex"
@@ -948,6 +972,28 @@ onMounted(async () => {
                   <p class="text-xs text-muted-foreground">
                     Въведете име на цвят и изберете неговия цвят с цветния избор
                   </p>
+                </div>
+                <div v-if="form.colors.length > 0" class="flex flex-wrap gap-2 mt-2">
+                  <Badge
+                    v-for="(color, index) in form.colors"
+                    :key="typeof color === 'string' ? color : color.name"
+                    variant="secondary"
+                    class="px-3 py-1 flex items-center gap-2"
+                  >
+                    <div
+                      v-if="typeof color === 'object' && color.hex"
+                      class="w-3 h-3 rounded-full border border-border"
+                      :style="{ backgroundColor: color.hex }"
+                    ></div>
+                    <span>{{ typeof color === 'string' ? getColorDisplayName(color) : getColorDisplayName(color.name) }}</span>
+                    <button
+                      type="button"
+                      @click="toggleColor(typeof color === 'string' ? color : color.name, typeof color === 'object' ? color.hex : '#9CA3AF')"
+                      class="ml-1 hover:text-destructive"
+                    >
+                      <X class="h-3 w-3" />
+                    </button>
+                  </Badge>
                 </div>
                 <p v-if="errors.colors" class="text-xs text-destructive mt-1">
                   {{ errors.colors }}
@@ -974,7 +1020,7 @@ onMounted(async () => {
                 v-if="form.sizes.length > 0 && form.colors.length > 0"
                 :variants="variants"
                 :sizes="form.sizes"
-                :colors="form.colors"
+                :colors="form.colors as { name: string; hex?: string }[]"
                 :base-price="parseFloat(form.price) || 0"
                 @update="updateVariants"
               />

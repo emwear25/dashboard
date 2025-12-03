@@ -256,6 +256,9 @@ onMounted(() => {
                     <div class="text-sm text-muted-foreground space-y-1 mt-1">
                       <p v-if="item.size">Размер: {{ item.size }}</p>
                       <p v-if="item.color">Цвят: {{ item.color }}</p>
+                      <p v-if="item.customization" class="text-primary font-medium">
+                        {{ item.customization }}
+                      </p>
                       <p>Количество: {{ item.quantity }}</p>
                       <p>Цена: {{ item.price.toFixed(2) }} лв.</p>
                     </div>
