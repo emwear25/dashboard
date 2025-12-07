@@ -55,15 +55,33 @@ export const apiRequest = async <T = any>(
 
   // Get admin token if available
   const token = getAdminToken();
-  const headers: HeadersInit = {
+  
+  // Convert headers to Record<string, string> for easier manipulation
+  const headersRecord: Record<string, string> = {
     "Content-Type": "application/json",
-    ...options.headers,
   };
 
-  // Add admin token to headers if available
-  if (token && !headers["Authorization"]) {
-    headers["Authorization"] = `Bearer ${token}`;
+  // Merge existing headers
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headersRecord[key] = value;
+      });
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([key, value]) => {
+        headersRecord[key] = value;
+      });
+    } else {
+      Object.assign(headersRecord, options.headers);
+    }
   }
+
+  // Add admin token to headers if available
+  if (token && !headersRecord["Authorization"]) {
+    headersRecord["Authorization"] = `Bearer ${token}`;
+  }
+
+  const headers: HeadersInit = headersRecord;
 
   // Ensure credentials are included for cookie-based auth
   const defaultOptions: RequestInit = {

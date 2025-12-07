@@ -425,7 +425,7 @@ onMounted(() => {
                   class="flex items-center justify-between text-xs"
                 >
                   <span>{{ rating }} звезди:</span>
-                  <span class="font-semibold">{{ analytics.reviews.ratingDistribution[rating as keyof typeof analytics.reviews.ratingDistribution] || 0 }}</span>
+                  <span class="font-semibold">{{ (analytics.reviews.ratingDistribution as Record<number, number>)[rating] || 0 }}</span>
                 </div>
               </div>
             </div>

@@ -1020,7 +1020,7 @@ onMounted(async () => {
                         class="w-3 h-3 rounded-full inline-block mr-2 border border-border"
                         :style="{ background: color.value }"
                       ></div>
-                      {{ color.displayName || color.name }}
+                      {{ color.name }}
                       <button
                         type="button"
                         @click="removeEmbroideryColor(index)"
