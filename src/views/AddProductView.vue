@@ -786,13 +786,19 @@ onMounted(async () => {
                   <Textarea
                     id="description"
                     v-model="form.description"
-                    rows="5"
+                    rows="8"
                     placeholder="Опишете характеристиките, материалите и основните продажбени точки на продукта..."
-                    class="resize-none"
+                    class="resize-none font-mono text-sm"
                     :class="{ 'border-destructive': errors.description }"
                   />
                   <p v-if="errors.description" class="text-xs text-destructive mt-1">
                     {{ errors.description }}
+                  </p>
+                  <p class="text-xs text-muted-foreground">
+                    💡 Поддържа се Markdown форматиране. Използвайте
+                    <code class="px-1 py-0.5 bg-muted rounded">## Заглавие</code>,
+                    <code class="px-1 py-0.5 bg-muted rounded">- списък</code>,
+                    <code class="px-1 py-0.5 bg-muted rounded">**удебелен текст**</code>
                   </p>
                 </div>
 

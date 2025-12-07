@@ -201,9 +201,14 @@ export const apiUpload = async <T = any>(
 ): Promise<T> => {
   const url = getApiUrl(endpoint);
 
+  // Determine method: if endpoint contains an ID (like products/123), use PUT for update
+  // Otherwise use POST for create
+  const isUpdate = /\/[a-f0-9]{24}$/i.test(endpoint); // MongoDB ObjectId pattern
+  const method = isUpdate ? "PUT" : "POST";
+
   const defaultOptions: RequestInit = {
     credentials: "include",
-    method: "POST",
+    method,
     body: formData,
     // Don't set Content-Type header, browser will set it with boundary
     ...options,
