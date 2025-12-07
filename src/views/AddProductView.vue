@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,6 +91,29 @@ const generateVariants = () => {
 const updateVariants = (updatedVariants: Variant[]) => {
   variants.value = updatedVariants;
 };
+
+// Update all variants when stock field changes
+const updateAllVariantsStock = () => {
+  if (variants.value.length === 0) return;
+  
+  const newStockValue = parseInt(form.stock) || 0;
+  const updatedVariants = variants.value.map((variant) => ({
+    ...variant,
+    stock: newStockValue,
+  }));
+  
+  variants.value = updatedVariants;
+};
+
+// Watch form.stock and update all variants when it changes
+watch(
+  () => form.stock,
+  () => {
+    if (variants.value.length > 0) {
+      updateAllVariantsStock();
+    }
+  }
+);
 
 const categories = ref<Category[]>([]);
 const categoriesLoading = ref(true);

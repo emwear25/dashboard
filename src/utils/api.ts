@@ -35,6 +35,16 @@ export const getApiUrl = (endpoint: string): string => {
 };
 
 /**
+ * Get admin token from localStorage
+ */
+const getAdminToken = (): string | null => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("admin_token");
+  }
+  return null;
+};
+
+/**
  * Make an authenticated API request
  */
 export const apiRequest = async <T = any>(
@@ -43,19 +53,40 @@ export const apiRequest = async <T = any>(
 ): Promise<T> => {
   const url = getApiUrl(endpoint);
 
+  // Get admin token if available
+  const token = getAdminToken();
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
+  // Add admin token to headers if available
+  if (token && !headers["Authorization"]) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   // Ensure credentials are included for cookie-based auth
   const defaultOptions: RequestInit = {
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
     ...options,
   };
 
   const response = await fetch(url, defaultOptions);
 
   if (!response.ok) {
+    // Handle 401 Unauthorized - token expired or invalid
+    if (response.status === 401) {
+      // Clear token and redirect to login
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("admin_token");
+        // Only redirect if we're not already on login page
+        if (!window.location.pathname.includes("/login")) {
+          window.location.href = "/login";
+        }
+      }
+    }
+
     let errorData: any;
     try {
       errorData = await response.json();

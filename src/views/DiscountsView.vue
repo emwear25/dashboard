@@ -187,9 +187,6 @@ const navigateToCoupons = () => {
   router.push("/coupons");
 };
 
-const navigateToAnalytics = () => {
-  router.push("/discount-analytics");
-};
 
 onMounted(() => {
   fetchDiscounts();
@@ -212,10 +209,6 @@ onMounted(() => {
         <Button @click="navigateToCoupons" variant="outline" size="default">
           <Tag class="mr-2 h-4 w-4" />
           Купони
-        </Button>
-        <Button @click="navigateToAnalytics" variant="outline" size="default">
-          <Percent class="mr-2 h-4 w-4" />
-          Аналитика
         </Button>
       </div>
     </div>

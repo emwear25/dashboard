@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -10,6 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/ThemeToggle.vue";
+import { useAuthStore } from "@/stores/authStore";
+import { useRouter } from "vue-router";
 import type { LucideIcon } from "lucide-vue-next";
 import {
   LayoutDashboard,
@@ -25,10 +27,10 @@ import {
   ShoppingBag,
   Percent,
   Tag,
-  TrendingUp,
   MessageSquare,
   Star,
-  BarChart3,
+  Mail,
+  LogOut,
 } from "lucide-vue-next";
 
 interface NavigationItem {
@@ -69,16 +71,6 @@ const navigationItems: NavigationItem[] = [
     icon: Tag,
   },
   {
-    name: "Аналитика на Отстъпки",
-    path: "/discount-analytics",
-    icon: TrendingUp,
-  },
-  {
-    name: "Админ Аналитика",
-    path: "/analytics",
-    icon: BarChart3,
-  },
-  {
     name: "Поръчки",
     path: "/orders",
     icon: ShoppingBag,
@@ -98,15 +90,23 @@ const navigationItems: NavigationItem[] = [
     path: "/reviews",
     icon: Star,
   },
+  {
+    name: "Абонати",
+    path: "/subscribers",
+    icon: Mail,
+  },
 ];
 
 const brandName = "Emwear";
-const userName = "Emwear Екип";
-const userEmail = "team@emwear.app";
+const authStore = useAuthStore();
+const router = useRouter();
+const route = useRoute();
+
+const userName = computed(() => authStore.user?.email || "Admin");
+const userEmail = computed(() => authStore.user?.email || "");
 
 const isOpen = ref(false);
 const sidebarCollapsed = ref(false);
-const route = useRoute();
 
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value;
@@ -114,6 +114,11 @@ const toggleSidebar = () => {
 
 const closeSheet = () => {
   isOpen.value = false;
+};
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push("/login");
 };
 </script>
 
@@ -236,6 +241,10 @@ const closeSheet = () => {
             <DropdownMenuItem class="gap-2">
               <Settings class="h-4 w-4" />
               <span>Настройки</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem class="gap-2 text-destructive" @click="handleLogout">
+              <LogOut class="h-4 w-4" />
+              <span>Изход</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

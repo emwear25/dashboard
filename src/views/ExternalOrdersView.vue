@@ -34,6 +34,7 @@ import {
   Minus,
   X,
   Search,
+  Truck,
 } from "lucide-vue-next";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { apiGet, apiPost, apiPatch } from "@/utils/api";
@@ -84,6 +85,7 @@ interface ExternalOrder {
   customer: {
     name: string;
     phone: string;
+    email?: string;
     address: string;
   };
   items: Array<{
@@ -119,12 +121,14 @@ const selectedVariants = ref<Record<string, { size?: string; color?: string }>>(
 const productSearch = ref("");
 const editingShipping = ref<string | null>(null);
 const editShippingNumber = ref("");
+const creatingShipment = ref<string | null>(null);
 
 // Form state
 const form = reactive({
   source: "",
   customerName: "",
   customerPhone: "",
+  customerEmail: "",
   customerAddress: "",
   shippingProvider: "",
   shippingNumber: "",
@@ -299,6 +303,7 @@ const resetForm = () => {
   form.source = "";
   form.customerName = "";
   form.customerPhone = "";
+  form.customerEmail = "";
   form.customerAddress = "";
   form.shippingProvider = "";
   form.shippingNumber = "";
@@ -443,6 +448,7 @@ const handleSubmit = async () => {
       customer: {
         name: form.customerName.trim(),
         phone: form.customerPhone.trim(),
+        email: form.customerEmail.trim() || undefined,
         address: form.customerAddress.trim(),
       },
       items: orderItems.value.map((item) => ({
@@ -522,6 +528,55 @@ const saveShippingNumber = async (orderId: string) => {
       description: "Неуспешно запазване на номера",
       variant: "destructive",
     });
+  }
+};
+
+const createEcontShipment = async (orderId: string) => {
+  creatingShipment.value = orderId;
+
+  try {
+    const data = await apiPost(`external-orders/${orderId}/create-econt-shipment`, {});
+
+    if (data.success) {
+      // Refresh orders to reflect the change
+      await fetchOrders();
+
+      toast({
+        title: "✅ Econt пратка създадена!",
+        description: `Номер за проследяване: ${data.data.shipmentNumber}`,
+        variant: "default",
+        duration: 5000,
+      });
+
+      // Copy tracking number to clipboard
+      if (navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(data.data.shipmentNumber);
+          setTimeout(() => {
+            toast({
+              title: "📋 Копирано!",
+              description: "Номерът за проследяване е копиран",
+              duration: 2000,
+            });
+          }, 500);
+        } catch (e) {
+          console.log("Failed to copy to clipboard");
+        }
+      }
+    } else {
+      throw new Error(data.message || "Failed to create shipment");
+    }
+  } catch (err: any) {
+    console.error("Failed to create shipment:", err);
+
+    toast({
+      title: "❌ Грешка",
+      description: err.message || "Не успяхме да създадем Econt пратка",
+      variant: "destructive",
+      duration: 5000,
+    });
+  } finally {
+    creatingShipment.value = null;
   }
 };
 
@@ -670,8 +725,8 @@ onMounted(() => {
                           Отказ
                         </Button>
                       </div>
-                      <div v-else class="flex items-center gap-2 mt-1">
-                        <span>{{ order.shippingNumber || "Не е добавен" }}</span>
+                      <div v-else-if="order.shippingNumber" class="flex items-center gap-2 mt-1">
+                        <span>{{ order.shippingNumber }}</span>
                         <Button
                           @click="startEditShipping(order)"
                           size="sm"
@@ -681,7 +736,37 @@ onMounted(() => {
                           Редактирай
                         </Button>
                       </div>
+                      <div v-else class="mt-1">
+                        <span class="text-muted-foreground">Не е добавен</span>
+                      </div>
                     </div>
+                  </div>
+
+                  <!-- Create Econt Shipment Button -->
+                  <div
+                    v-if="order.shippingProvider === 'ekont' && !order.shippingNumber"
+                    class="pt-3 border-t"
+                  >
+                    <Button
+                      @click="createEcontShipment(order._id)"
+                      :disabled="creatingShipment === order._id"
+                      size="sm"
+                      class="w-full"
+                    >
+                      <Loader2
+                        v-if="creatingShipment === order._id"
+                        class="mr-2 h-4 w-4 animate-spin"
+                      />
+                      <Truck v-else class="mr-2 h-4 w-4" />
+                      {{
+                        creatingShipment === order._id
+                          ? "Създаване..."
+                          : "Създай Econt пратка"
+                      }}
+                    </Button>
+                    <p class="text-xs text-muted-foreground mt-2 text-center">
+                      Това ще генерира товарителница и номер за проследяване
+                    </p>
                   </div>
 
                   <!-- Order Items -->
@@ -776,6 +861,19 @@ onMounted(() => {
                 {{ formErrors.customerPhone }}
               </p>
             </div>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="customerEmail"> Email </Label>
+            <Input
+              id="customerEmail"
+              v-model="form.customerEmail"
+              type="email"
+              placeholder="email@example.com (незадължително)"
+            />
+            <p class="text-xs text-muted-foreground">
+              За получаване на уведомления за статуса на поръчката
+            </p>
           </div>
 
           <div class="space-y-2">

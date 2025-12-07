@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
+import LoginView from "@/views/LoginView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import ProductsView from "@/views/ProductsView.vue";
 import AddProductView from "@/views/AddProductView.vue";
@@ -10,16 +11,22 @@ import ExternalOrdersView from "@/views/ExternalOrdersView.vue";
 import OrdersView from "@/views/OrdersView.vue";
 import DiscountsView from "@/views/DiscountsView.vue";
 import CouponsView from "@/views/CouponsView.vue";
-import DiscountAnalyticsView from "@/views/DiscountAnalyticsView.vue";
 import CreateDiscountView from "@/views/CreateDiscountView.vue";
 import CreateCouponView from "@/views/CreateCouponView.vue";
 import ContactMessagesView from "@/views/ContactMessagesView.vue";
 import ReviewsManagementView from "@/views/ReviewsManagementView.vue";
-import AdminAnalyticsView from "@/views/AdminAnalyticsView.vue";
+import SubscribersView from "@/views/SubscribersView.vue";
+import { useAuthStore } from "@/stores/authStore";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: "/login",
+      name: "login",
+      component: LoginView,
+      meta: { requiresAuth: false },
+    },
     {
       path: "/",
       redirect: "/dashboard",
@@ -27,6 +34,7 @@ const router = createRouter({
     {
       path: "/",
       component: DashboardLayout,
+      meta: { requiresAuth: true },
       children: [
         {
           path: "dashboard",
@@ -104,11 +112,6 @@ const router = createRouter({
           component: CreateCouponView,
         },
         {
-          path: "discount-analytics",
-          name: "discount-analytics",
-          component: DiscountAnalyticsView,
-        },
-        {
           path: "contact-messages",
           name: "contact-messages",
           component: ContactMessagesView,
@@ -119,9 +122,9 @@ const router = createRouter({
           component: ReviewsManagementView,
         },
         {
-          path: "analytics",
-          name: "analytics",
-          component: AdminAnalyticsView,
+          path: "subscribers",
+          name: "subscribers",
+          component: SubscribersView,
         },
       ],
     },
@@ -130,6 +133,44 @@ const router = createRouter({
       redirect: "/dashboard",
     },
   ],
+});
+
+// Route guard - protect dashboard routes
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore();
+
+  // If route requires auth
+  if (to.meta.requiresAuth !== false) {
+    // Check if we have a token
+    if (!authStore.token) {
+      // No token, redirect to login
+      next({ name: "login", query: { redirect: to.fullPath } });
+      return;
+    }
+
+    // Verify token is still valid
+    const isValid = await authStore.verifyToken();
+    if (!isValid) {
+      // Token invalid, redirect to login
+      next({ name: "login", query: { redirect: to.fullPath } });
+      return;
+    }
+  } else {
+    // Login page - if already authenticated, redirect to dashboard
+    if (authStore.isAuthenticated) {
+      const redirect = (to.query.redirect as string) || "/dashboard";
+      next(redirect);
+      return;
+    }
+  }
+
+  next();
+});
+
+// Initialize auth store on app start
+router.beforeResolve(async () => {
+  const authStore = useAuthStore();
+  await authStore.init();
 });
 
 export default router;

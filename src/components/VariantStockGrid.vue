@@ -242,6 +242,23 @@ const updateStock = (size: string, color: string, value: number) => {
   stockInputValues.value[key] = String(stockMatrix.value[key]);
 };
 
+// Update stock and emit changes (for +/- buttons)
+const updateStockAndEmit = (size: string, color: string, delta: number) => {
+  const key = `${size}-${color}`;
+  const currentStock = stockMatrix.value[key] ?? 0;
+  const updatedValue = Math.max(0, currentStock + delta);
+  
+  // Update the matrix directly
+  stockMatrix.value[key] = updatedValue;
+  stockInputValues.value[key] = String(updatedValue);
+  
+  // Clear typing flag
+  isUserTypingStock.value[key] = false;
+  
+  // Emit changes immediately
+  emitChanges();
+};
+
 // Update price input value (allows typing)
 const updatePriceInput = (size: string, color: string, inputValue: string) => {
   const key = `${size}-${color}`;
@@ -457,67 +474,73 @@ const setUserTyping = (size: string, color: string) => {
               >
                 <div class="space-y-2">
                   <!-- Stock Input -->
-                  <div class="flex items-center gap-1">
-                    <Button
-                      v-if="!readonly"
-                      @click="updateStock(size, getColorName(color), getStock(size, getColorName(color)) - 1)"
-                      size="icon"
-                      variant="ghost"
-                      class="h-7 w-7"
-                      :disabled="getStock(size, getColorName(color)) <= 0"
-                    >
-                      <Minus class="h-3 w-3" />
-                    </Button>
-                    <input
-                      :value="getStockInput(size, getColorName(color))"
-                      @input="
-                        (e: any) =>
-                          updateStockInput(size, getColorName(color), (e.target as HTMLInputElement).value)
-                      "
-                      @focus="setUserTypingStock(size, getColorName(color))"
-                      @blur="commitStock(size, getColorName(color))"
-                      type="text"
-                      inputmode="numeric"
-                      class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-center ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      :readonly="readonly"
-                    />
-                    <Button
-                      v-if="!readonly"
-                      @click="updateStock(size, getColorName(color), getStock(size, getColorName(color)) + 1)"
-                      size="icon"
-                      variant="ghost"
-                      class="h-7 w-7"
-                    >
-                      <Plus class="h-3 w-3" />
-                    </Button>
+                  <div class="space-y-1">
+                    <label class="text-[10px] text-muted-foreground font-medium">Количество</label>
+                    <div class="flex items-center gap-1">
+                      <Button
+                        v-if="!readonly"
+                        @click="updateStockAndEmit(size, getColorName(color), -1)"
+                        size="icon"
+                        variant="ghost"
+                        class="h-7 w-7"
+                        :disabled="getStock(size, getColorName(color)) <= 0"
+                      >
+                        <Minus class="h-3 w-3" />
+                      </Button>
+                      <input
+                        :value="getStockInput(size, getColorName(color))"
+                        @input="
+                          (e: any) =>
+                            updateStockInput(size, getColorName(color), (e.target as HTMLInputElement).value)
+                        "
+                        @focus="setUserTypingStock(size, getColorName(color))"
+                        @blur="commitStock(size, getColorName(color)); emitChanges()"
+                        type="text"
+                        inputmode="numeric"
+                        class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-center ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        :readonly="readonly"
+                      />
+                      <Button
+                        v-if="!readonly"
+                        @click="updateStockAndEmit(size, getColorName(color), 1)"
+                        size="icon"
+                        variant="ghost"
+                        class="h-7 w-7"
+                      >
+                        <Plus class="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
 
                   <!-- Price Input -->
-                  <div class="relative">
-                    <input
-                      :value="getPriceInput(size, getColorName(color))"
-                      @input="
-                        (e: any) =>
-                          updatePriceInput(size, getColorName(color), (e.target as HTMLInputElement).value)
-                      "
-                      @focus="setUserTyping(size, getColorName(color))"
-                      @blur="commitPrice(size, getColorName(color))"
-                      type="text"
-                      inputmode="decimal"
-                      :placeholder="basePrice ? `${basePrice.toFixed(2)} лв` : 'Цена'"
-                      class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-center ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8"
-                      :readonly="readonly"
-                    />
-                    <span
-                      class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none"
-                    >
-                      лв
-                    </span>
-                    <div
-                      v-if="getPrice(size, getColorName(color)) === null && basePrice"
-                      class="text-[10px] text-center text-muted-foreground mt-0.5"
-                    >
-                      Базова цена: {{ basePrice.toFixed(2) }} лв
+                  <div class="space-y-1">
+                    <label class="text-[10px] text-muted-foreground font-medium">Цена</label>
+                    <div class="relative">
+                      <input
+                        :value="getPriceInput(size, getColorName(color))"
+                        @input="
+                          (e: any) =>
+                            updatePriceInput(size, getColorName(color), (e.target as HTMLInputElement).value)
+                        "
+                        @focus="setUserTyping(size, getColorName(color))"
+                        @blur="commitPrice(size, getColorName(color)); emitChanges()"
+                        type="text"
+                        inputmode="decimal"
+                        :placeholder="basePrice ? `${basePrice.toFixed(2)} лв` : 'Цена'"
+                        class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-center ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8"
+                        :readonly="readonly"
+                      />
+                      <span
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none"
+                      >
+                        лв
+                      </span>
+                      <div
+                        v-if="getPrice(size, getColorName(color)) === null && basePrice"
+                        class="text-[10px] text-center text-muted-foreground mt-0.5"
+                      >
+                        Базова цена: {{ basePrice.toFixed(2) }} лв
+                      </div>
                     </div>
                   </div>
 

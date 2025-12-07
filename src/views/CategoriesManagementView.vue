@@ -39,6 +39,7 @@ interface Category {
     height: number;
   };
   isActive: boolean;
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +68,7 @@ const form = reactive({
     width: 30,
     height: 20,
   },
+  imageUrl: null as string | null,
 });
 
 const formErrors = reactive({
@@ -75,7 +77,13 @@ const formErrors = reactive({
   sizes: "",
   defaultWeight: "",
   defaultDimensions: "",
+  imageUrl: "",
 });
+
+// Image upload state
+const selectedImage = ref<File | null>(null);
+const imagePreview = ref<string | null>(null);
+const isUploadingImage = ref(false);
 
 // Computed
 const filteredCategories = computed(() => {
@@ -134,6 +142,9 @@ const openEditDialog = (category: Category) => {
     width: 30,
     height: 20,
   };
+  form.imageUrl = category.imageUrl || null;
+  imagePreview.value = category.imageUrl || null;
+  selectedImage.value = null;
   resetFormErrors();
   isDialogOpen.value = true;
 };
@@ -150,6 +161,9 @@ const resetForm = () => {
   form.currentSize = "";
   form.defaultWeight = 0.5;
   form.defaultDimensions = { length: 40, width: 30, height: 20 };
+  form.imageUrl = null;
+  selectedImage.value = null;
+  imagePreview.value = null;
   resetFormErrors();
 };
 
@@ -159,6 +173,7 @@ const resetFormErrors = () => {
   formErrors.sizes = "";
   formErrors.defaultWeight = "";
   formErrors.defaultDimensions = "";
+  formErrors.imageUrl = "";
 };
 
 const validateForm = (): boolean => {
@@ -232,6 +247,95 @@ const handleSizeInput = (e: KeyboardEvent) => {
   }
 };
 
+// Image upload functions
+const handleImageSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (!file) return;
+
+  // Validate file type
+  if (!file.type.startsWith("image/")) {
+    toast({
+      title: "Грешка",
+      description: "Моля, изберете изображение",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    toast({
+      title: "Грешка",
+      description: "Изображението е твърде голямо (макс. 5MB)",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  selectedImage.value = file;
+
+  // Create preview
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imagePreview.value = e.target?.result as string;
+  };
+  reader.readAsDataURL(file);
+
+  // Upload immediately
+  uploadImage();
+};
+
+const uploadImage = async () => {
+  if (!selectedImage.value) return;
+
+  try {
+    isUploadingImage.value = true;
+    formErrors.imageUrl = "";
+
+    const formData = new FormData();
+    formData.append("file", selectedImage.value);
+
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3030";
+    const response = await fetch(`${API_URL}/api/uploads/category-image`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Неуспешно качване на изображението");
+    }
+
+    form.imageUrl = data.url;
+    toast({
+      title: "Успех",
+      description: "Изображението беше качено успешно",
+    });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Възникна грешка";
+    formErrors.imageUrl = errorMessage;
+    toast({
+      title: "Грешка",
+      description: errorMessage,
+      variant: "destructive",
+    });
+    // Clear the selected image on error
+    selectedImage.value = null;
+    imagePreview.value = form.imageUrl; // Revert to existing image if any
+  } finally {
+    isUploadingImage.value = false;
+  }
+};
+
+const removeImage = () => {
+  selectedImage.value = null;
+  imagePreview.value = null;
+  form.imageUrl = null;
+};
+
 const handleSubmit = async () => {
   if (!validateForm()) return;
 
@@ -244,6 +348,7 @@ const handleSubmit = async () => {
       sizes: form.sizes,
       defaultWeight: form.defaultWeight,
       defaultDimensions: form.defaultDimensions,
+      imageUrl: form.imageUrl,
     };
 
     let data;
@@ -568,6 +673,53 @@ onMounted(() => {
                   </button>
                 </Badge>
               </div>
+            </div>
+          </div>
+
+          <!-- Image Upload Section -->
+          <div class="space-y-2 border-t pt-4">
+            <Label for="categoryImage">Изображение на категорията</Label>
+            <div class="space-y-3">
+              <!-- Image Preview -->
+              <div v-if="imagePreview" class="relative">
+                <Card class="overflow-hidden">
+                  <img
+                    :src="imagePreview"
+                    alt="Category preview"
+                    class="w-full h-48 object-cover"
+                  />
+                </Card>
+                <Button
+                  @click="removeImage"
+                  variant="destructive"
+                  size="icon"
+                  class="absolute top-2 right-2"
+                  type="button"
+                  :disabled="isUploadingImage"
+                >
+                  <X class="h-4 w-4" />
+                </Button>
+              </div>
+
+              <!-- Upload Input -->
+              <div class="flex items-center gap-2">
+                <Input
+                  id="categoryImage"
+                  type="file"
+                  accept="image/*"
+                  @change="handleImageSelect"
+                  :disabled="isUploadingImage"
+                  class="flex-1"
+                />
+                <Loader2 v-if="isUploadingImage" class="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+
+              <p v-if="formErrors.imageUrl" class="text-xs text-destructive">
+                {{ formErrors.imageUrl }}
+              </p>
+              <p class="text-xs text-muted-foreground">
+                Препоръчителен размер: 800x600px. Максимален размер: 5MB
+              </p>
             </div>
           </div>
 
