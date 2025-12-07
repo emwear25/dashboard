@@ -71,7 +71,7 @@ const generateVariants = () => {
 
   for (const size of form.sizes) {
     for (const color of form.colors) {
-      const colorName = typeof color === 'string' ? color : color.name;
+      const colorName = typeof color === "string" ? color : color.name;
       // Try to find existing variant to preserve stock
       const existing = variants.value.find((v) => v.size === size && v.color === colorName);
 
@@ -92,16 +92,19 @@ const updateVariants = (updatedVariants: Variant[]) => {
   variants.value = updatedVariants;
 };
 
+// Computed property for colors to avoid type assertion in template
+const formColors = computed(() => form.colors as { name: string; hex?: string }[]);
+
 // Update all variants when stock field changes
 const updateAllVariantsStock = () => {
   if (variants.value.length === 0) return;
-  
+
   const newStockValue = parseInt(form.stock) || 0;
   const updatedVariants = variants.value.map((variant) => ({
     ...variant,
     stock: newStockValue,
   }));
-  
+
   variants.value = updatedVariants;
 };
 
@@ -207,20 +210,20 @@ const toggleColor = (colorName: string, colorHex: string) => {
 
 const addCustomColor = () => {
   const colorName = customColor.value.trim();
-  
+
   if (!colorName) {
     errors.value.colors = "Моля, въведете име на цвят";
     return;
   }
-  
+
   // Check if color already exists (by name, case-insensitive)
   const exists = form.colors.some((c) => c.name.toLowerCase() === colorName.toLowerCase());
-  
+
   if (exists) {
     errors.value.colors = `Цвят "${colorName}" вече е добавен`;
     return;
   }
-  
+
   form.colors.push({
     name: colorName,
     hex: customColorHex.value,
@@ -229,13 +232,13 @@ const addCustomColor = () => {
   customColorHex.value = "#9CA3AF";
   clearError("colors");
   generateVariants();
-  
+
   // Scroll to variants section if it becomes visible
   nextTick(() => {
     if (variants.value.length > 0) {
-      const variantsCard = document.querySelector('[data-variants-card]');
+      const variantsCard = document.querySelector("[data-variants-card]");
       if (variantsCard) {
-        variantsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        variantsCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
     }
   });
@@ -452,7 +455,7 @@ const fetchProduct = async () => {
       // Handle colors - convert string format to object format if needed
       if (Array.isArray(product.colors) && product.colors.length > 0) {
         form.colors = product.colors.map((color: any) => {
-          if (typeof color === 'string') {
+          if (typeof color === "string") {
             // Old format: convert string to object with default hex
             const colorHexMap: Record<string, string> = {
               black: "#000000",
@@ -954,10 +957,14 @@ onMounted(async () => {
                     :key="color.name"
                     type="button"
                     @click="toggleColor(color.name, color.value)"
-                    :variant="form.colors.some(c => c.name === color.name) ? 'default' : 'outline'"
+                    :variant="
+                      form.colors.some((c) => c.name === color.name) ? 'default' : 'outline'
+                    "
                     class="gap-2 h-11 justify-start"
                     :class="{
-                      'ring-2 ring-primary ring-offset-2': form.colors.some(c => c.name === color.name),
+                      'ring-2 ring-primary ring-offset-2': form.colors.some(
+                        (c) => c.name === color.name
+                      ),
                     }"
                   >
                     <div
@@ -1008,10 +1015,19 @@ onMounted(async () => {
                       class="w-3 h-3 rounded-full border border-border"
                       :style="{ backgroundColor: color.hex }"
                     ></div>
-                    <span>{{ typeof color === 'string' ? getColorDisplayName(color) : getColorDisplayName(color.name) }}</span>
+                    <span>{{
+                      typeof color === "string"
+                        ? getColorDisplayName(color)
+                        : getColorDisplayName(color.name)
+                    }}</span>
                     <button
                       type="button"
-                      @click="toggleColor(typeof color === 'string' ? color : color.name, typeof color === 'object' ? color.hex : '#9CA3AF')"
+                      @click="
+                        toggleColor(
+                          typeof color === 'string' ? color : color.name,
+                          typeof color === 'object' ? color.hex : '#9CA3AF'
+                        )
+                      "
                       class="ml-1 hover:text-destructive"
                     >
                       <X class="h-3 w-3" />
@@ -1043,7 +1059,7 @@ onMounted(async () => {
                 v-if="form.sizes.length > 0 && form.colors.length > 0"
                 :variants="variants"
                 :sizes="form.sizes"
-                :colors="form.colors as { name: string; hex?: string }[]"
+                :colors="formColors"
                 :base-price="parseFloat(form.price) || 0"
                 @update="updateVariants"
               />
