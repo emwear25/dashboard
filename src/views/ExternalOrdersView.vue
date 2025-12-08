@@ -36,6 +36,7 @@ import {
   Search,
   Truck,
 } from "lucide-vue-next";
+import EcontOfficeSelector from "@/components/EcontOfficeSelector.vue";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { apiGet, apiPost, apiPatch } from "@/utils/api";
 
@@ -87,6 +88,8 @@ interface ExternalOrder {
     phone: string;
     email?: string;
     address: string;
+    city?: string;
+    postCode?: string;
   };
   items: Array<{
     product: Product;
@@ -96,7 +99,11 @@ interface ExternalOrder {
   }>;
   totalAmount: number;
   shippingProvider: string;
+  deliveryMethod?: string;
   shippingNumber?: string;
+  shippingCost?: number;
+  econtOfficeCode?: string;
+  econtOfficeName?: string;
   status: string;
   notes?: string;
   createdAt: string;
@@ -129,17 +136,29 @@ const form = reactive({
   customerName: "",
   customerPhone: "",
   customerEmail: "",
-  customerAddress: "",
   shippingProvider: "",
-  shippingNumber: "",
+  deliveryMethod: "courier_address", // courier_address, econt_office, econt_automat
+  customerAddress: "",
+  customerCity: "",
+  customerPostCode: "",
   notes: "",
+  econtOfficeCode: "",
+  econtOfficeName: "",
 });
+
+// Econt office selection
+const selectedOffice = ref<any>(null);
+const shippingCost = ref(0);
+const calculatingShipping = ref(false);
+const econtOfficeType = ref<"office" | "aps" | "all">("all");
 
 const formErrors = reactive({
   source: "",
   customerName: "",
   customerPhone: "",
   customerAddress: "",
+  customerCity: "",
+  customerPostCode: "",
   shippingProvider: "",
   shippingNumber: "",
   items: "",
@@ -176,9 +195,7 @@ const filteredProducts = computed(() => {
   return filtered;
 });
 
-const totalAmount = computed(() => {
-  return orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
-});
+// Removed totalAmount computed - we show product price and shipping separately
 
 const sourceIcon = (source: string) => {
   switch (source) {
@@ -252,12 +269,21 @@ const fetchProducts = async () => {
 
     if (data.success) {
       products.value = data.data;
-      // Initialize selectedVariants for each product
+      // Initialize selectedVariants for each product and auto-select if only one option
       products.value.forEach((product) => {
         if (!selectedVariants.value[product._id]) {
+          const autoSize =
+            product.sizes && product.sizes.length === 1 ? product.sizes[0] : undefined;
+          const autoColor =
+            product.colors && product.colors.length === 1
+              ? typeof product.colors[0] === "string"
+                ? product.colors[0]
+                : product.colors[0].name
+              : undefined;
+
           selectedVariants.value[product._id] = {
-            size: undefined,
-            color: undefined,
+            size: autoSize,
+            color: autoColor,
           };
         }
       });
@@ -304,12 +330,19 @@ const resetForm = () => {
   form.customerName = "";
   form.customerPhone = "";
   form.customerEmail = "";
-  form.customerAddress = "";
   form.shippingProvider = "";
+  form.deliveryMethod = "courier_address";
+  form.customerAddress = "";
+  form.customerCity = "";
+  form.customerPostCode = "";
   form.shippingNumber = "";
   form.notes = "";
+  form.econtOfficeCode = "";
+  form.econtOfficeName = "";
   selectedCategory.value = "";
   orderItems.value = [];
+  selectedOffice.value = null;
+  shippingCost.value = 0;
   resetFormErrors();
 };
 
@@ -318,6 +351,8 @@ const resetFormErrors = () => {
   formErrors.customerName = "";
   formErrors.customerPhone = "";
   formErrors.customerAddress = "";
+  formErrors.customerCity = "";
+  formErrors.customerPostCode = "";
   formErrors.shippingProvider = "";
   formErrors.shippingNumber = "";
   formErrors.items = "";
@@ -417,9 +452,25 @@ const validateForm = (): boolean => {
     isValid = false;
   }
 
-  if (!form.customerAddress.trim()) {
-    formErrors.customerAddress = "Адресът на клиента е задължителен";
-    isValid = false;
+  // Validate address based on delivery method
+  if (form.deliveryMethod === "courier_address") {
+    if (!form.customerAddress.trim()) {
+      formErrors.customerAddress = "Адресът на клиента е задължителен";
+      isValid = false;
+    }
+    if (!form.customerCity.trim()) {
+      formErrors.customerCity = "Градът е задължителен";
+      isValid = false;
+    }
+    if (!form.customerPostCode.trim()) {
+      formErrors.customerPostCode = "Пощенският код е задължителен";
+      isValid = false;
+    }
+  } else if (form.deliveryMethod === "econt_office" || form.deliveryMethod === "econt_automat") {
+    if (!form.econtOfficeCode || !form.econtOfficeName) {
+      formErrors.customerAddress = "Моля, изберете офис или еконтомат";
+      isValid = false;
+    }
   }
 
   if (!form.shippingProvider) {
@@ -443,13 +494,38 @@ const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
 
+    // Build address based on delivery method
+    let customerAddress = "";
+    if (form.deliveryMethod === "courier_address") {
+      customerAddress =
+        `${form.customerAddress.trim()}, ${form.customerCity.trim()}, ${form.customerPostCode.trim()}`.trim();
+    } else if (
+      (form.deliveryMethod === "econt_office" || form.deliveryMethod === "econt_automat") &&
+      selectedOffice.value
+    ) {
+      customerAddress =
+        selectedOffice.value.address?.fullAddress ||
+        selectedOffice.value.name ||
+        form.econtOfficeName;
+    } else {
+      customerAddress = form.customerAddress.trim();
+    }
+
     const payload = {
       source: form.source,
       customer: {
         name: form.customerName.trim(),
         phone: form.customerPhone.trim(),
         email: form.customerEmail.trim() || undefined,
-        address: form.customerAddress.trim(),
+        address: customerAddress,
+        city:
+          form.deliveryMethod === "courier_address"
+            ? form.customerCity.trim()
+            : selectedOffice.value?.address?.city?.name || "",
+        postCode:
+          form.deliveryMethod === "courier_address"
+            ? form.customerPostCode.trim()
+            : selectedOffice.value?.address?.city?.postCode || "",
       },
       items: orderItems.value.map((item) => ({
         product: item.product,
@@ -458,7 +534,17 @@ const handleSubmit = async () => {
         quantity: item.quantity,
       })),
       shippingProvider: form.shippingProvider,
+      deliveryMethod: form.deliveryMethod,
       shippingNumber: form.shippingNumber.trim(),
+      shippingCost: shippingCost.value,
+      econtOfficeCode:
+        form.deliveryMethod === "econt_office" || form.deliveryMethod === "econt_automat"
+          ? form.econtOfficeCode.trim() || undefined
+          : undefined,
+      econtOfficeName:
+        form.deliveryMethod === "econt_office" || form.deliveryMethod === "econt_automat"
+          ? form.econtOfficeName.trim() || undefined
+          : undefined,
       notes: form.notes.trim(),
     };
 
@@ -528,6 +614,142 @@ const saveShippingNumber = async (orderId: string) => {
       description: "Неуспешно запазване на номера",
       variant: "destructive",
     });
+  }
+};
+
+const handleShippingProviderChange = (value: string) => {
+  if (value !== "ekont") {
+    selectedOffice.value = null;
+    form.econtOfficeCode = "";
+    form.econtOfficeName = "";
+    form.deliveryMethod = "courier_address";
+    shippingCost.value = 0;
+    econtOfficeType.value = "all";
+  } else {
+    // Default to courier for Econt
+    form.deliveryMethod = "courier_address";
+    selectedOffice.value = null;
+    form.econtOfficeCode = "";
+    form.econtOfficeName = "";
+    shippingCost.value = 0;
+  }
+};
+
+const handleDeliveryMethodChange = (method: string) => {
+  form.deliveryMethod = method;
+  if (method === "courier_address") {
+    // Clear office selection
+    selectedOffice.value = null;
+    form.econtOfficeCode = "";
+    form.econtOfficeName = "";
+    shippingCost.value = 0;
+  } else if (method === "econt_office") {
+    // Clear address fields
+    form.customerAddress = "";
+    form.customerCity = "";
+    form.customerPostCode = "";
+    // Clear office selection to allow new selection
+    selectedOffice.value = null;
+    form.econtOfficeCode = "";
+    form.econtOfficeName = "";
+    shippingCost.value = 0;
+  } else if (method === "econt_automat") {
+    // Clear address fields
+    form.customerAddress = "";
+    form.customerCity = "";
+    form.customerPostCode = "";
+    // Clear office selection to allow new selection
+    selectedOffice.value = null;
+    form.econtOfficeCode = "";
+    form.econtOfficeName = "";
+    shippingCost.value = 0;
+  }
+};
+
+const handleOfficeSelected = async (office: any) => {
+  if (!office) {
+    selectedOffice.value = null;
+    form.econtOfficeCode = "";
+    form.econtOfficeName = "";
+    shippingCost.value = 0;
+    return;
+  }
+
+  selectedOffice.value = office;
+  form.econtOfficeCode = office.code;
+  form.econtOfficeName = office.name;
+
+  // Calculate shipping cost
+  await calculateShippingCost(office);
+};
+
+const calculateShippingCost = async (office: any) => {
+  if (!office || !orderItems.value || orderItems.value.length === 0) {
+    shippingCost.value = 0;
+    calculatingShipping.value = false;
+    return;
+  }
+
+  try {
+    calculatingShipping.value = true;
+
+    // Calculate total weight and dimensions from order items
+    // For now, use default weight estimation (0.5kg per item)
+    // In production, you might want to get actual product weights
+    const totalWeight = orderItems.value.reduce((sum, item) => {
+      if (!item || !item.quantity) return sum;
+      return sum + item.quantity * 0.5; // Default 0.5kg per item
+    }, 0);
+
+    const subtotal = orderItems.value.reduce((sum, item) => {
+      if (!item || !item.price || !item.quantity) return sum;
+      return sum + item.price * item.quantity;
+    }, 0);
+
+    // Free shipping over 110 BGN
+    if (subtotal >= 110) {
+      shippingCost.value = 0;
+      calculatingShipping.value = false;
+      return;
+    }
+
+    const requestData = {
+      receiverCityName: office.address.city.name,
+      receiverPostCode: office.address.city.postCode || "1000",
+      officeCode: office.code,
+      weight: Math.max(totalWeight, 0.5), // Minimum 0.5kg
+      receiverName: form.customerName || "Клиент",
+      receiverPhone: form.customerPhone || "0888000000",
+      services: [
+        {
+          type: "CD",
+          amount: subtotal, // Cash on delivery amount
+          currency: "BGN",
+        },
+      ],
+    };
+
+    const response = await apiPost("econt/calculate-price", requestData);
+
+    if (response && response.success && response.data && response.data.totalPrice) {
+      shippingCost.value = parseFloat(response.data.totalPrice);
+    } else {
+      // Fallback price
+      shippingCost.value = subtotal >= 110 ? 0 : 5.99;
+    }
+  } catch (error: any) {
+    console.error("Failed to calculate shipping:", error);
+    const subtotal =
+      orderItems.value && orderItems.value.length > 0
+        ? orderItems.value.reduce((sum, item) => {
+            if (!item || !item.price || !item.quantity) return sum;
+            return sum + item.price * item.quantity;
+          }, 0)
+        : 0;
+    // Fallback: free shipping over 110, otherwise 5.99
+    shippingCost.value = subtotal >= 110 ? 0 : 5.99;
+  } finally {
+    calculatingShipping.value = false;
   }
 };
 
@@ -702,10 +924,26 @@ onMounted(() => {
                     <div class="md:col-span-2">
                       <span class="font-medium">Адрес:</span>
                       {{ order.customer.address }}
+                      <span
+                        v-if="order.deliveryMethod === 'econt_office'"
+                        class="text-xs text-muted-foreground ml-2"
+                      >
+                        (Офис)
+                      </span>
+                      <span
+                        v-else-if="order.deliveryMethod === 'econt_automat'"
+                        class="text-xs text-muted-foreground ml-2"
+                      >
+                        (Еконтомат)
+                      </span>
                     </div>
                     <div>
                       <span class="font-medium">Доставчик:</span>
                       {{ order.shippingProvider === "ekont" ? "Еконт" : "Speedy" }}
+                    </div>
+                    <div v-if="order.shippingCost && order.shippingCost > 0">
+                      <span class="font-medium">Цена за доставка:</span>
+                      {{ order.shippingCost.toFixed(2) }} лв.
                     </div>
                     <div>
                       <span class="font-medium">Номер на пратка:</span>
@@ -759,9 +997,7 @@ onMounted(() => {
                       />
                       <Truck v-else class="mr-2 h-4 w-4" />
                       {{
-                        creatingShipment === order._id
-                          ? "Създаване..."
-                          : "Създай Econt пратка"
+                        creatingShipment === order._id ? "Създаване..." : "Създайте econt пратка"
                       }}
                     </Button>
                     <p class="text-xs text-muted-foreground mt-2 text-center">
@@ -788,10 +1024,26 @@ onMounted(() => {
                   </div>
                 </div>
 
-                <!-- Total Amount -->
+                <!-- Product Price and Shipping -->
                 <div class="text-right">
-                  <p class="text-sm text-muted-foreground">Обща Сума</p>
-                  <p class="text-2xl font-bold">{{ order.totalAmount.toFixed(2) }} лв.</p>
+                  <p class="text-sm text-muted-foreground">Стойност на продуктите</p>
+                  <p class="text-xl font-bold">
+                    {{
+                      order.items
+                        .reduce(
+                          (sum, item) => sum + (item.priceAtOrder || 0) * (item.quantity || 0),
+                          0
+                        )
+                        .toFixed(2)
+                    }}
+                    лв.
+                  </p>
+                  <p
+                    v-if="order.shippingCost && order.shippingCost > 0"
+                    class="text-sm text-muted-foreground mt-1"
+                  >
+                    Доставка: {{ order.shippingCost.toFixed(2) }} лв.
+                  </p>
                   <p class="text-xs text-muted-foreground mt-1">
                     {{ new Date(order.createdAt).toLocaleDateString("bg-BG") }}
                   </p>
@@ -876,52 +1128,135 @@ onMounted(() => {
             </p>
           </div>
 
+          <!-- Shipping Provider -->
           <div class="space-y-2">
-            <Label for="customerAddress"> Адрес <span class="text-destructive">*</span> </Label>
-            <Textarea
-              id="customerAddress"
-              v-model="form.customerAddress"
-              placeholder="Пълен адрес за доставка"
-              rows="2"
-              :class="{ 'border-destructive': formErrors.customerAddress }"
-            />
-            <p v-if="formErrors.customerAddress" class="text-xs text-destructive">
-              {{ formErrors.customerAddress }}
+            <Label for="shippingProvider">
+              Доставчик <span class="text-destructive">*</span>
+            </Label>
+            <Select
+              v-model="form.shippingProvider"
+              @update:model-value="handleShippingProviderChange"
+            >
+              <SelectTrigger :class="{ 'border-destructive': formErrors.shippingProvider }">
+                <SelectValue placeholder="Изберете доставчик" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ekont">Еконт</SelectItem>
+                <SelectItem value="speedy">Speedy</SelectItem>
+              </SelectContent>
+            </Select>
+            <p v-if="formErrors.shippingProvider" class="text-xs text-destructive">
+              {{ formErrors.shippingProvider }}
             </p>
           </div>
 
-          <!-- Shipping Info -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Delivery Method (only for Econt) -->
+          <div v-if="form.shippingProvider === 'ekont'" class="space-y-2">
+            <Label>Начин на доставка <span class="text-destructive">*</span></Label>
+            <div class="flex flex-wrap gap-2">
+              <Button
+                @click="handleDeliveryMethodChange('courier_address')"
+                :variant="form.deliveryMethod === 'courier_address' ? 'default' : 'outline'"
+                size="sm"
+              >
+                Куриер до адрес
+              </Button>
+              <Button
+                @click="handleDeliveryMethodChange('econt_office')"
+                :variant="form.deliveryMethod === 'econt_office' ? 'default' : 'outline'"
+                size="sm"
+              >
+                Офис
+              </Button>
+              <Button
+                @click="handleDeliveryMethodChange('econt_automat')"
+                :variant="form.deliveryMethod === 'econt_automat' ? 'default' : 'outline'"
+                size="sm"
+              >
+                Еконтомат
+              </Button>
+            </div>
+          </div>
+
+          <!-- Address Fields (only for courier) -->
+          <div
+            v-if="form.shippingProvider === 'ekont' && form.deliveryMethod === 'courier_address'"
+            class="space-y-4"
+          >
             <div class="space-y-2">
-              <Label for="shippingProvider">
-                Доставчик <span class="text-destructive">*</span>
-              </Label>
-              <Select v-model="form.shippingProvider">
-                <SelectTrigger :class="{ 'border-destructive': formErrors.shippingProvider }">
-                  <SelectValue placeholder="Изберете доставчик" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ekont">Еконт</SelectItem>
-                  <SelectItem value="speedy">Speedy</SelectItem>
-                </SelectContent>
-              </Select>
-              <p v-if="formErrors.shippingProvider" class="text-xs text-destructive">
-                {{ formErrors.shippingProvider }}
+              <Label for="customerAddress"> Адрес <span class="text-destructive">*</span> </Label>
+              <Input
+                id="customerAddress"
+                v-model="form.customerAddress"
+                placeholder="Улица, номер, блок, вход..."
+                :class="{ 'border-destructive': formErrors.customerAddress }"
+              />
+              <p v-if="formErrors.customerAddress" class="text-xs text-destructive">
+                {{ formErrors.customerAddress }}
               </p>
             </div>
 
-            <div v-if="form.shippingProvider" class="space-y-2">
-              <Label for="shippingNumber"> Номер на Пратка </Label>
-              <Input
-                id="shippingNumber"
-                v-model="form.shippingNumber"
-                placeholder="Въведете номер (незадължително)"
-                :class="{ 'border-destructive': formErrors.shippingNumber }"
-              />
-              <p class="text-xs text-muted-foreground">Може да бъде добавен по-късно</p>
-              <p v-if="formErrors.shippingNumber" class="text-xs text-destructive">
-                {{ formErrors.shippingNumber }}
-              </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="customerCity"> Град <span class="text-destructive">*</span> </Label>
+                <Input
+                  id="customerCity"
+                  v-model="form.customerCity"
+                  placeholder="Град"
+                  :class="{ 'border-destructive': formErrors.customerCity }"
+                />
+                <p v-if="formErrors.customerCity" class="text-xs text-destructive">
+                  {{ formErrors.customerCity }}
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="customerPostCode">
+                  Пощенски код <span class="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="customerPostCode"
+                  v-model="form.customerPostCode"
+                  placeholder="1000"
+                  :class="{ 'border-destructive': formErrors.customerPostCode }"
+                />
+                <p v-if="formErrors.customerPostCode" class="text-xs text-destructive">
+                  {{ formErrors.customerPostCode }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Office/Econtomat Selection (only for office/automat) -->
+          <div
+            v-if="
+              form.shippingProvider === 'ekont' &&
+              (form.deliveryMethod === 'econt_office' || form.deliveryMethod === 'econt_automat')
+            "
+            class="space-y-4"
+          >
+            <EcontOfficeSelector
+              :office-type="form.deliveryMethod === 'econt_office' ? 'office' : 'aps'"
+              @office-selected="handleOfficeSelected"
+            />
+            <div
+              v-if="calculatingShipping && selectedOffice"
+              class="text-sm text-muted-foreground flex items-center gap-2"
+            >
+              <Loader2 class="h-4 w-4 animate-spin" />
+              Изчисляване на цена за доставка...
+            </div>
+            <div
+              v-else-if="!calculatingShipping && selectedOffice && shippingCost > 0"
+              class="text-sm font-medium text-green-600"
+            >
+              Цена за доставка: {{ shippingCost.toFixed(2) }} лв
+            </div>
+            <div
+              v-else-if="!calculatingShipping && selectedOffice && shippingCost === 0"
+              class="text-sm font-medium text-green-600"
+            >
+              Безплатна доставка (над 110 лв.)
             </div>
           </div>
 
@@ -1040,7 +1375,13 @@ onMounted(() => {
                               "
                             >
                               <SelectTrigger class="h-7 text-[10px]">
-                                <SelectValue placeholder="Избери" />
+                                <SelectValue
+                                  :placeholder="
+                                    product.sizes && product.sizes.length === 1
+                                      ? product.sizes[0]
+                                      : 'Избери'
+                                  "
+                                />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem v-for="size in product.sizes" :key="size" :value="size">
@@ -1062,15 +1403,23 @@ onMounted(() => {
                               "
                             >
                               <SelectTrigger class="h-7 text-[10px]">
-                                <SelectValue placeholder="Избери" />
+                                <SelectValue
+                                  :placeholder="
+                                    product.colors && product.colors.length === 1
+                                      ? typeof product.colors[0] === 'string'
+                                        ? product.colors[0]
+                                        : product.colors[0].name
+                                      : 'Избери'
+                                  "
+                                />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem
                                   v-for="color in product.colors"
-                                  :key="color"
-                                  :value="color"
+                                  :key="typeof color === 'string' ? color : color._id || color.name"
+                                  :value="typeof color === 'string' ? color : color.name"
                                 >
-                                  {{ color }}
+                                  {{ typeof color === "string" ? color : color.name }}
                                 </SelectItem>
                               </SelectContent>
                             </Select>
@@ -1078,11 +1427,19 @@ onMounted(() => {
                         </div>
                         <Button
                           @click="
-                            addProductToOrder(
-                              product,
-                              selectedVariants[product._id]?.size,
-                              selectedVariants[product._id]?.color
-                            )
+                            (() => {
+                              const size = selectedVariants[product._id]?.size;
+                              const color = selectedVariants[product._id]?.color;
+                              const colorName =
+                                typeof color === 'string' ? color : color?.name || color;
+                              addProductToOrder(product, size, colorName);
+                            })()
+                          "
+                          :disabled="
+                            product.variants &&
+                            product.variants.length > 0 &&
+                            (!selectedVariants[product._id]?.size ||
+                              !selectedVariants[product._id]?.color)
                           "
                           size="sm"
                           class="w-full h-7 text-xs"
@@ -1120,7 +1477,10 @@ onMounted(() => {
                   <div class="flex-1">
                     <p class="font-medium">{{ item.productName }}</p>
                     <p v-if="item.size && item.color" class="text-xs text-muted-foreground">
-                      Размер: {{ item.size }}, Цвят: {{ item.color }}
+                      Размер: {{ item.size }}, Цвят:
+                      {{
+                        typeof item.color === "string" ? item.color : item.color?.name || item.color
+                      }}
                     </p>
                     <p class="text-sm text-muted-foreground">
                       {{ item.price.toFixed(2) }} лв. × {{ item.quantity }} =
@@ -1151,9 +1511,55 @@ onMounted(() => {
                   </div>
                 </div>
               </div>
-              <div class="flex justify-between items-center pt-2 border-t">
-                <span class="font-semibold">Обща Сума:</span>
-                <span class="text-xl font-bold">{{ totalAmount.toFixed(2) }} лв.</span>
+              <div class="space-y-2 pt-2 border-t">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-muted-foreground">Стойност на продуктите:</span>
+                  <span class="font-medium">
+                    {{
+                      (orderItems.value && orderItems.value.length > 0
+                        ? orderItems.value.reduce((sum, item) => {
+                            if (!item || !item.price || !item.quantity) return sum;
+                            return sum + item.price * item.quantity;
+                          }, 0)
+                        : 0
+                      ).toFixed(2)
+                    }}
+                    лв.
+                  </span>
+                </div>
+                <div
+                  v-if="
+                    form.shippingProvider === 'ekont' &&
+                    (form.deliveryMethod === 'econt_office' ||
+                      form.deliveryMethod === 'econt_automat') &&
+                    selectedOffice &&
+                    calculatingShipping
+                  "
+                  class="flex justify-between items-center"
+                >
+                  <span class="text-sm text-muted-foreground">Доставка:</span>
+                  <span class="text-sm text-muted-foreground flex items-center gap-2">
+                    <Loader2 class="h-3 w-3 animate-spin" />
+                    Изчислява се...
+                  </span>
+                </div>
+                <div v-else-if="shippingCost > 0" class="flex justify-between items-center">
+                  <span class="text-sm text-muted-foreground">Доставка:</span>
+                  <span class="font-medium">{{ shippingCost.toFixed(2) }} лв.</span>
+                </div>
+                <div
+                  v-else-if="
+                    form.shippingProvider === 'ekont' &&
+                    (form.deliveryMethod === 'econt_office' ||
+                      form.deliveryMethod === 'econt_automat') &&
+                    selectedOffice &&
+                    !calculatingShipping
+                  "
+                  class="flex justify-between items-center"
+                >
+                  <span class="text-sm text-muted-foreground">Доставка:</span>
+                  <span class="text-sm text-muted-foreground">Безплатна (над 110 лв.)</span>
+                </div>
               </div>
             </div>
             <p v-if="formErrors.items" class="text-xs text-destructive">
