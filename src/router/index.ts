@@ -16,6 +16,8 @@ import CreateCouponView from "@/views/CreateCouponView.vue";
 import ContactMessagesView from "@/views/ContactMessagesView.vue";
 import ReviewsManagementView from "@/views/ReviewsManagementView.vue";
 import SubscribersView from "@/views/SubscribersView.vue";
+import ArticlesView from "@/views/ArticlesView.vue";
+import ArticleEditorView from "@/views/ArticleEditorView.vue";
 import { useAuthStore } from "@/stores/authStore";
 
 const router = createRouter({
@@ -125,6 +127,21 @@ const router = createRouter({
           path: "subscribers",
           name: "subscribers",
           component: SubscribersView,
+        },
+        {
+          path: "articles",
+          name: "articles",
+          component: ArticlesView,
+        },
+        {
+          path: "articles/create",
+          name: "articles-create",
+          component: ArticleEditorView,
+        },
+        {
+          path: "articles/edit/:id",
+          name: "articles-edit",
+          component: ArticleEditorView,
         },
       ],
     },

@@ -31,6 +31,7 @@ import {
   Star,
   Mail,
   LogOut,
+  FileText,
 } from "lucide-vue-next";
 
 interface NavigationItem {
@@ -79,6 +80,11 @@ const navigationItems: NavigationItem[] = [
     name: "Външни Поръчки",
     path: "/external-orders",
     icon: ShoppingCart,
+  },
+  {
+    name: "Статии",
+    path: "/articles",
+    icon: FileText,
   },
   {
     name: "Контактни Съобщения",

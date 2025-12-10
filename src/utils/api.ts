@@ -55,7 +55,7 @@ export const apiRequest = async <T = any>(
 
   // Get admin token if available
   const token = getAdminToken();
-  
+
   // Convert headers to Record<string, string> for easier manipulation
   const headersRecord: Record<string, string> = {
     "Content-Type": "application/json",
@@ -201,25 +201,52 @@ export const apiUpload = async <T = any>(
 ): Promise<T> => {
   const url = getApiUrl(endpoint);
 
+  // Get admin token
+  const token = getAdminToken();
+
   // Determine method: if endpoint contains an ID (like products/123), use PUT for update
   // Otherwise use POST for create
   const isUpdate = /\/[a-f0-9]{24}$/i.test(endpoint); // MongoDB ObjectId pattern
   const method = isUpdate ? "PUT" : "POST";
 
+  // Create headers object
+  const headersRecord: Record<string, string> = {};
+
+  // Add admin token to headers if available
+  if (token) {
+    headersRecord["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Merge existing headers if provided
+  if (options?.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        if (key !== "Content-Type") {
+          headersRecord[key] = value;
+        }
+      });
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([key, value]) => {
+        if (key !== "Content-Type") {
+          headersRecord[key] = value;
+        }
+      });
+    } else {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        if (key !== "Content-Type") {
+          headersRecord[key] = value;
+        }
+      });
+    }
+  }
+
   const defaultOptions: RequestInit = {
     credentials: "include",
     method,
     body: formData,
-    // Don't set Content-Type header, browser will set it with boundary
+    headers: headersRecord,
     ...options,
   };
-
-  // Remove Content-Type header if present (FormData needs boundary)
-  if (defaultOptions.headers) {
-    const headers = new Headers(defaultOptions.headers);
-    headers.delete("Content-Type");
-    defaultOptions.headers = headers;
-  }
 
   const response = await fetch(url, defaultOptions);
 
