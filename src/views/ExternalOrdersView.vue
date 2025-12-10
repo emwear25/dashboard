@@ -63,8 +63,8 @@ interface Product {
   stock: number;
   variants?: Variant[];
   sizes?: string[];
-  colors?: string[];
-  category: string;
+  colors?: (string | { name: string })[];
+  category: string | { name: string; slug: string };
   images: Array<{ url: string; public_id: string }>;
 }
 
@@ -144,6 +144,7 @@ const form = reactive({
   notes: "",
   econtOfficeCode: "",
   econtOfficeName: "",
+  shippingNumber: "",
 });
 
 // Econt office selection
@@ -1516,8 +1517,8 @@ onMounted(() => {
                   <span class="text-sm text-muted-foreground">Стойност на продуктите:</span>
                   <span class="font-medium">
                     {{
-                      (orderItems.value && orderItems.value.length > 0
-                        ? orderItems.value.reduce((sum, item) => {
+                      (orderItems && orderItems.length > 0
+                        ? orderItems.reduce((sum: number, item: OrderItem) => {
                             if (!item || !item.price || !item.quantity) return sum;
                             return sum + item.price * item.quantity;
                           }, 0)

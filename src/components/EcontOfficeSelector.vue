@@ -102,6 +102,9 @@ interface Office {
       id: number;
       name: string;
       postCode: string;
+      country?: {
+        code3: string;
+      };
     };
     location: {
       latitude: number;
@@ -109,6 +112,7 @@ interface Office {
     };
     fullAddress?: string;
     street?: string;
+    countryCode?: string;
   };
 }
 
