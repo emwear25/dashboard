@@ -1417,7 +1417,7 @@ onMounted(() => {
                               <SelectContent>
                                 <SelectItem
                                   v-for="color in product.colors"
-                                  :key="typeof color === 'string' ? color : color._id || color.name"
+                                  :key="typeof color === 'string' ? color : color.name"
                                   :value="typeof color === 'string' ? color : color.name"
                                 >
                                   {{ typeof color === "string" ? color : color.name }}
@@ -1431,9 +1431,8 @@ onMounted(() => {
                             (() => {
                               const size = selectedVariants[product._id]?.size;
                               const color = selectedVariants[product._id]?.color;
-                              const colorName =
-                                typeof color === 'string' ? color : color?.name || color;
-                              addProductToOrder(product, size, colorName);
+                              const colorName = typeof color === 'string' ? color : (color as any)?.name || color;
+                              addProductToOrder(product, size, colorName as string);
                             })()
                           "
                           :disabled="
@@ -1479,9 +1478,7 @@ onMounted(() => {
                     <p class="font-medium">{{ item.productName }}</p>
                     <p v-if="item.size && item.color" class="text-xs text-muted-foreground">
                       Размер: {{ item.size }}, Цвят:
-                      {{
-                        typeof item.color === "string" ? item.color : item.color?.name || item.color
-                      }}
+                      {{ typeof item.color === "string" ? item.color : (item.color as any)?.name || item.color }}
                     </p>
                     <p class="text-sm text-muted-foreground">
                       {{ item.price.toFixed(2) }} лв. × {{ item.quantity }} =
