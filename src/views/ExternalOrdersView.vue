@@ -453,26 +453,30 @@ const validateForm = (): boolean => {
     isValid = false;
   }
 
-  // Validate address based on delivery method
-  if (form.deliveryMethod === "courier_address") {
-    if (!form.customerAddress.trim()) {
-      formErrors.customerAddress = "Адресът на клиента е задължителен";
-      isValid = false;
-    }
-    if (!form.customerCity.trim()) {
-      formErrors.customerCity = "Градът е задължителен";
-      isValid = false;
-    }
-    if (!form.customerPostCode.trim()) {
-      formErrors.customerPostCode = "Пощенският код е задължителен";
-      isValid = false;
-    }
-  } else if (form.deliveryMethod === "econt_office" || form.deliveryMethod === "econt_automat") {
-    if (!form.econtOfficeCode || !form.econtOfficeName) {
-      formErrors.customerAddress = "Моля, изберете офис или еконтомат";
-      isValid = false;
+  // Validate address based on delivery method and shipping provider
+  // Only validate address for Econt, not for Speedy
+  if (form.shippingProvider === "ekont") {
+    if (form.deliveryMethod === "courier_address") {
+      if (!form.customerAddress.trim()) {
+        formErrors.customerAddress = "Адресът на клиента е задължителен";
+        isValid = false;
+      }
+      if (!form.customerCity.trim()) {
+        formErrors.customerCity = "Градът е задължителен";
+        isValid = false;
+      }
+      if (!form.customerPostCode.trim()) {
+        formErrors.customerPostCode = "Пощенският код е задължителен";
+        isValid = false;
+      }
+    } else if (form.deliveryMethod === "econt_office" || form.deliveryMethod === "econt_automat") {
+      if (!form.econtOfficeCode || !form.econtOfficeName) {
+        formErrors.customerAddress = "Моля, изберете офис или еконтомат";
+        isValid = false;
+      }
     }
   }
+  // For Speedy, no address validation needed
 
   if (!form.shippingProvider) {
     formErrors.shippingProvider = "Доставчикът е задължителен";
@@ -490,7 +494,16 @@ const validateForm = (): boolean => {
 };
 
 const handleSubmit = async () => {
-  if (!validateForm()) return;
+  if (!validateForm()) {
+    // Show error toast when validation fails
+    const firstError = Object.values(formErrors).find(err => err !== "");
+    toast({
+      title: "Грешка при валидация",
+      description: firstError || "Моля, попълнете всички задължителни полета",
+      variant: "destructive",
+    });
+    return;
+  }
 
   try {
     isSubmitting.value = true;
