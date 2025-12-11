@@ -102,6 +102,8 @@ interface ExternalOrder {
   deliveryMethod?: string;
   shippingNumber?: string;
   shippingCost?: number;
+  discountPercent?: number;
+  discountAmount?: number;
   econtOfficeCode?: string;
   econtOfficeName?: string;
   status: string;
@@ -1048,27 +1050,39 @@ onMounted(() => {
 
                 <!-- Product Price and Shipping -->
                 <div class="text-right">
-                  <p class="text-sm text-muted-foreground">Стойност на продуктите</p>
-                  <p class="text-xl font-bold">
-                    {{
-                      order.items
-                        .reduce(
-                          (sum, item) => sum + (item.priceAtOrder || 0) * (item.quantity || 0),
-                          0
-                        )
-                        .toFixed(2)
-                    }}
-                    лв.
-                  </p>
-                  <p
-                    v-if="order.shippingCost && order.shippingCost > 0"
-                    class="text-sm text-muted-foreground mt-1"
-                  >
-                    Доставка: {{ order.shippingCost.toFixed(2) }} лв.
-                  </p>
-                  <p class="text-xs text-muted-foreground mt-1">
-                    {{ new Date(order.createdAt).toLocaleDateString("bg-BG") }}
-                  </p>
+                  <div class="space-y-2">
+                    <div class="text-sm text-muted-foreground">
+                      Продукти:
+                      <span class="font-semibold text-foreground">
+                        {{
+                          order.items
+                            .reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0)
+                            .toFixed(2)
+                        }}
+                        лв.
+                      </span>
+                    </div>
+                    
+                    <!-- Discount Display -->
+                    <div v-if="order.discountPercent && order.discountPercent > 0" class="text-sm">
+                      <div class="text-red-600">
+                        Отстъпка ({{ order.discountPercent }}%):
+                        <span class="font-semibold">
+                          -{{ (order.discountAmount || 0).toFixed(2) }} лв.
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div v-if="order.shippingCost && order.shippingCost > 0" class="text-sm text-muted-foreground">
+                      Доставка:
+                      <span class="font-semibold text-foreground">
+                        {{ order.shippingCost.toFixed(2) }} лв.
+                      </span>
+                    </div>
+                    <p class="text-xs text-muted-foreground mt-1">
+                      {{ new Date(order.createdAt).toLocaleDateString("bg-BG") }}
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
