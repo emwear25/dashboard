@@ -145,6 +145,7 @@ const form = reactive({
   econtOfficeCode: "",
   econtOfficeName: "",
   shippingNumber: "",
+  discountPercent: 0, // Discount percentage (0-100)
 });
 
 // Econt office selection
@@ -551,6 +552,13 @@ const handleSubmit = async () => {
       deliveryMethod: form.deliveryMethod,
       shippingNumber: form.shippingNumber.trim(),
       shippingCost: shippingCost.value,
+      discountPercent: form.discountPercent || 0,
+      discountAmount:
+        form.discountPercent > 0
+          ? (orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0) *
+              form.discountPercent) /
+            100
+          : 0,
       econtOfficeCode:
         form.deliveryMethod === "econt_office" || form.deliveryMethod === "econt_automat"
           ? form.econtOfficeCode.trim() || undefined
@@ -1538,6 +1546,62 @@ onMounted(() => {
                     лв.
                   </span>
                 </div>
+                
+                <!-- Discount Input -->
+                <div class="flex justify-between items-center gap-2">
+                  <span class="text-sm text-muted-foreground">Отстъпка (%):</span>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model.number="form.discountPercent"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      class="w-20 h-8 px-2 text-sm text-right border rounded"
+                      placeholder="0"
+                    />
+                    <span class="text-sm">%</span>
+                  </div>
+                </div>
+                
+                <!-- Discount Amount (if discount applied) -->
+                <div v-if="form.discountPercent > 0" class="flex justify-between items-center text-sm text-red-600">
+                  <span>Отстъпка:</span>
+                  <span>
+                    -{{
+                      (
+                        (orderItems && orderItems.length > 0
+                          ? orderItems.reduce((sum: number, item: OrderItem) => {
+                              if (!item || !item.price || !item.quantity) return sum;
+                              return sum + item.price * item.quantity;
+                            }, 0)
+                          : 0) *
+                        (form.discountPercent / 100)
+                      ).toFixed(2)
+                    }}
+                    лв.
+                  </span>
+                </div>
+                
+                <!-- Subtotal after discount -->
+                <div v-if="form.discountPercent > 0" class="flex justify-between items-center font-medium">
+                  <span class="text-sm">Междинна сума:</span>
+                  <span>
+                    {{
+                      (
+                        (orderItems && orderItems.length > 0
+                          ? orderItems.reduce((sum: number, item: OrderItem) => {
+                              if (!item || !item.price || !item.quantity) return sum;
+                              return sum + item.price * item.quantity;
+                            }, 0)
+                          : 0) *
+                        (1 - form.discountPercent / 100)
+                      ).toFixed(2)
+                    }}
+                    лв.
+                  </span>
+                </div>
+                
                 <div
                   v-if="
                     form.shippingProvider === 'ekont' &&
