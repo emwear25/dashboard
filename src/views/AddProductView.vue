@@ -878,7 +878,26 @@ onMounted(async () => {
                   </div>
                 </div>
 
+                <!-- Product Group Toggle - Available in both add and edit modes -->
                 <div class="space-y-2">
+                  <div class="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                    <div class="space-y-0.5">
+                      <Label for="linked-product" class="text-sm font-medium cursor-pointer">
+                        🔗 Свържи с Главен Продукт
+                      </Label>
+                      <p class="text-xs text-muted-foreground">
+                        Споделяне на размери, цветове и наличност с друг продукт
+                      </p>
+                    </div>
+                    <Switch id="linked-product" v-model:checked="isLinkedProduct" />
+                  </div>
+                  <p v-if="isLinkedProduct" class="text-xs text-amber-600 dark:text-amber-400">
+                    ℹ️ Този продукт ще наследи размери, цветове и наличност от главния продукт
+                  </p>
+                </div>
+
+                <!-- Stock field - Hidden when linked to master -->
+                <div v-if="!isLinkedProduct" class="space-y-2">
                   <Label for="stock" class="text-sm font-medium"
                     >Начална Наличност (по подразбиране)
                     <span class="text-destructive">*</span></Label
@@ -898,24 +917,6 @@ onMounted(async () => {
                   </p>
                   <p v-if="errors.stock" class="text-xs text-destructive mt-1">
                     {{ errors.stock }}
-                  </p>
-                </div>
-
-                <!-- Product Group Toggle - Available in both add and edit modes -->
-                <div class="space-y-2">
-                  <div class="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-                    <div class="space-y-0.5">
-                      <Label for="linked-product" class="text-sm font-medium cursor-pointer">
-                        🔗 Свържи с Главен Продукт
-                      </Label>
-                      <p class="text-xs text-muted-foreground">
-                        Споделяне на размери, цветове и наличност с друг продукт
-                      </p>
-                    </div>
-                    <Switch id="linked-product" v-model:checked="isLinkedProduct" />
-                  </div>
-                  <p v-if="isLinkedProduct" class="text-xs text-amber-600 dark:text-amber-400">
-                    ℹ️ Този продукт ще наследи размери, цветове и наличност от главния продукт
                   </p>
                 </div>
               </div>
