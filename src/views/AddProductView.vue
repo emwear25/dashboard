@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-vue-next";
 import VariantStockGrid from "@/components/VariantStockGrid.vue";
+import ProductGroupManager from "@/components/ProductGroupManager.vue";
 import { apiGet, apiUpload } from "@/utils/api";
 
 const router = useRouter();
@@ -117,6 +118,11 @@ watch(
     }
   }
 );
+
+// Product Group Linking State
+const isLinkedProduct = ref(false);
+const masterProductId = ref<string>("");
+const masterProductName = ref<string>("");
 
 const categories = ref<Category[]>([]);
 const categoriesLoading = ref(true);
@@ -383,12 +389,15 @@ const validateForm = () => {
     errors.value.category = "Категорията е задължителна";
   }
 
-  if (!form.stock || parseInt(form.stock) < 0) {
-    errors.value.stock = "Валидно количество на склад е задължително";
-  }
+  // Skip stock, sizes, and colors validation if product is linked to master
+  if (!isLinkedProduct.value) {
+    if (!form.stock || parseInt(form.stock) < 0) {
+      errors.value.stock = "Валидно количество на склад е задължително";
+    }
 
-  if (form.sizes.length === 0) {
-    errors.value.sizes = "Поне един размер е задължителен";
+    if (form.sizes.length === 0) {
+      errors.value.sizes = "Поне един размер е задължителен";
+    }
   }
 
   // Colors are optional for all categories
@@ -579,10 +588,14 @@ const submitForm = async () => {
     formData.append("description", form.description.trim());
     formData.append("price", form.price.toString());
     formData.append("category", form.category);
-    formData.append("stock", form.stock.toString());
+    
+    // Only send stock, sizes, colors, and variants if NOT linked to master
+    if (!isLinkedProduct.value) {
+      formData.append("stock", form.stock.toString());
+      formData.append("sizes", JSON.stringify(form.sizes));
+      formData.append("colors", JSON.stringify(form.colors));
+    }
 
-    formData.append("sizes", JSON.stringify(form.sizes));
-    formData.append("colors", JSON.stringify(form.colors));
     formData.append("customEmbroidery", form.customEmbroidery.toString());
 
     if (form.customEmbroidery) {
@@ -887,11 +900,66 @@ onMounted(async () => {
                     {{ errors.stock }}
                   </p>
                 </div>
+
+                <!-- Product Group Toggle - Available in both add and edit modes -->
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                    <div class="space-y-0.5">
+                      <Label for="linked-product" class="text-sm font-medium cursor-pointer">
+                        🔗 Свържи с Главен Продукт
+                      </Label>
+                      <p class="text-xs text-muted-foreground">
+                        Споделяне на размери, цветове и наличност с друг продукт
+                      </p>
+                    </div>
+                    <Switch id="linked-product" v-model:checked="isLinkedProduct" />
+                  </div>
+                  <p v-if="isLinkedProduct" class="text-xs text-amber-600 dark:text-amber-400">
+                    ℹ️ Този продукт ще наследи размери, цветове и наличност от главния продукт
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <!-- Product Group Selector - Shown when linked to master -->
+          <Card v-if="isLinkedProduct">
+            <CardHeader class="pb-4">
+              <div class="flex items-center gap-2">
+                <div class="h-8 w-1 bg-primary rounded-full"></div>
+                <div>
+                  <CardTitle class="text-lg">🔗 Споделяне на Наличност</CardTitle>
+                  <CardDescription class="text-xs">
+                    Изберете главен продукт за споделяне на размери, цветове и наличност
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <!-- Edit Mode: Use full ProductGroupManager -->
+              <ProductGroupManager
+                v-if="isEditMode && productId"
+                :product-id="productId"
+                :product-name="form.name"
+              />
+              
+              <!-- Add Mode: Simple message -->
+              <div v-else class="space-y-4">
+                <div class="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
+                  <AlertCircle class="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                  <div class="text-sm text-amber-900 dark:text-amber-100">
+                    <p class="font-medium">Продуктът ще бъде свързан след създаване</p>
+                    <p class="text-xs mt-1 text-amber-700 dark:text-amber-300">
+                      Запазете продукта първо, след което ще можете да го свържете с главен продукт
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- Variants Card - Hidden when linked to master -->
+          <Card v-if="!isLinkedProduct">
             <CardHeader class="pb-4">
               <div class="flex items-center gap-2">
                 <div class="h-8 w-1 bg-primary rounded-full"></div>
@@ -1047,8 +1115,8 @@ onMounted(async () => {
             </CardContent>
           </Card>
 
-          <!-- Variant Stock Grid -->
-          <Card v-if="variants.length > 0">
+          <!-- Variant Stock Grid - Hidden when linked to master -->
+          <Card v-if="variants.length > 0 && !isLinkedProduct">
             <CardHeader class="pb-4">
               <div class="flex items-center gap-2">
                 <div class="h-8 w-1 bg-primary rounded-full"></div>

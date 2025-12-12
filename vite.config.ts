@@ -18,5 +18,12 @@ export default defineConfig({
   server: {
     port: 5173, // Doctor dashboard always runs on 5173
     strictPort: true, // Fail if port is already in use
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 })

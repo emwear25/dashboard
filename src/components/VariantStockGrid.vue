@@ -4,7 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Package, TrendingDown, Save, Plus, Minus } from "lucide-vue-next";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AlertCircle, Package, TrendingDown, Save, Plus, Minus, Link2, Unlink } from "lucide-vue-next";
+import { apiPost } from "@/utils/api";
 
 interface Variant {
   size: string;
@@ -13,6 +21,8 @@ interface Variant {
   reserved?: number;
   lowStockThreshold?: number;
   price?: number; // Optional variant-specific price
+  masterVariantId?: string; // Reference to master variant for size aliases
+  _id?: string; // Variant ID for alias resolution
 }
 
 interface Color {
@@ -27,6 +37,8 @@ interface Props {
   productId?: string;
   readonly?: boolean;
   basePrice?: number; // Base product price for fallback
+  masterProductId?: string; // If this product is linked to a master
+  masterProductName?: string; // Name of the master product
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,6 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: "update", variants: Variant[]): void;
   (e: "save", variants: Variant[]): void;
+  (e: "refresh"): void; // New event to request parent to refresh product data
 }>();
 
 // Helper functions to handle both string and object color formats
@@ -153,15 +166,44 @@ watch(
   { deep: true, immediate: true }
 );
 
-// Get stock for specific size/color
+// Get stock for a specific size/color combination
 const getStock = (size: string, color: string): number => {
   const key = `${size}-${color}`;
-  return stockMatrix.value[key] ?? 0;
+  const variant = getVariant(size, color);
+  
+  // Check if this variant is an alias
+  if (variant?.masterVariantId) {
+    // If it's an alias, return the master variant's stock from stockMatrix
+    const masterVariant = getMasterVariant(size, color);
+    if (masterVariant) {
+      const masterKey = `${masterVariant.size}-${masterVariant.color}`;
+      // Return from stockMatrix if available (for reactive updates), otherwise from master variant
+      return stockMatrix.value[masterKey] ?? masterVariant.stock ?? 0;
+    }
+  }
+  
+  // Otherwise return the variant's own stock from stockMatrix (for reactive updates)
+  return stockMatrix.value[key] ?? variant?.stock ?? 0;
 };
 
 // Get stock input value (for typing)
 const getStockInput = (size: string, color: string): string => {
   const key = `${size}-${color}`;
+  const variant = getVariant(size, color);
+  
+  // Check if this variant is an alias
+  if (variant?.masterVariantId) {
+    const masterVariant = getMasterVariant(size, color);
+    if (masterVariant) {
+      const masterKey = `${masterVariant.size}-${masterVariant.color}`;
+      // Return master's input value if user is typing, otherwise master's stock
+      if (stockInputValues.value[masterKey] !== undefined && stockInputValues.value[masterKey] !== "") {
+        return stockInputValues.value[masterKey];
+      }
+      return String(stockMatrix.value[masterKey] ?? masterVariant.stock ?? 0);
+    }
+  }
+  
   // Return input value if exists, otherwise fall back to stock matrix value
   if (stockInputValues.value[key] !== undefined && stockInputValues.value[key] !== "") {
     return stockInputValues.value[key];
@@ -181,6 +223,22 @@ const getPriceInput = (size: string, color: string): string => {
   return priceInputValues.value[key] ?? "";
 };
 
+// Get reserved stock
+const getReserved = (size: string, color: string): number => {
+  // Check if this variant is an alias
+  const variant = getVariant(size, color);
+  if (variant?.masterVariantId) {
+    // If it's an alias, return the master variant's reserved count
+    const masterVariant = getMasterVariant(size, color);
+    if (masterVariant) {
+      return masterVariant.reserved ?? 0;
+    }
+  }
+  
+  // Otherwise return the variant's own reserved count
+  return variant?.reserved ?? 0;
+};
+
 // Get display price (variant price or base price)
 const getDisplayPrice = (size: string, color: string): number => {
   const variantPrice = getPrice(size, color);
@@ -190,6 +248,22 @@ const getDisplayPrice = (size: string, color: string): number => {
 // Get variant for specific size/color
 const getVariant = (size: string, color: string): Variant | undefined => {
   return props.variants.find((v) => v.size === size && v.color === color);
+};
+
+// Check if variant is an alias (has a master variant)
+const isAliasVariant = (size: string, color: string): boolean => {
+  const variant = getVariant(size, color);
+  return !!variant?.masterVariantId;
+};
+
+// Get master variant for an alias
+const getMasterVariant = (size: string, color: string): Variant | undefined => {
+  const variant = getVariant(size, color);
+  if (!variant?.masterVariantId) return undefined;
+  
+  // Convert both IDs to strings for comparison (in case one is ObjectId)
+  const masterIdStr = String(variant.masterVariantId);
+  return props.variants.find((v) => String(v._id) === masterIdStr);
 };
 
 // Emit updated variants
@@ -255,6 +329,9 @@ const updateStockAndEmit = (size: string, color: string, delta: number) => {
   // Clear typing flag
   isUserTypingStock.value[key] = false;
   
+  // Force reactivity by creating a new object reference
+  stockMatrix.value = { ...stockMatrix.value };
+  
   // Emit changes immediately
   emitChanges();
 };
@@ -287,15 +364,16 @@ const commitPrice = (size: string, color: string) => {
 const isLowStock = (size: string, color: string): boolean => {
   const variant = getVariant(size, color);
   const stock = getStock(size, color);
-  const available = stock - (variant?.reserved || 0);
+  const reserved = getReserved(size, color);
+  const available = stock - reserved;
   return available <= (variant?.lowStockThreshold || 5) && available > 0;
 };
 
 // Check if variant is out of stock (uses local matrix for real-time updates)
 const isOutOfStock = (size: string, color: string): boolean => {
-  const variant = getVariant(size, color);
   const stock = getStock(size, color);
-  return stock - (variant?.reserved || 0) <= 0;
+  const reserved = getReserved(size, color);
+  return stock - reserved <= 0;
 };
 
 // Calculate totals
@@ -388,6 +466,76 @@ const setUserTyping = (size: string, color: string) => {
   const key = `${size}-${color}`;
   isUserTyping.value[key] = true;
 };
+
+// Size alias management
+const linkingVariant = ref<{ size: string; color: string } | null>(null);
+
+const linkVariantToMaster = async (aliasSize: string, aliasColor: string, masterSize: string, masterColor: string) => {
+  if (!props.productId) return;
+
+  try {
+    const result = await apiPost('variant-aliases/link', {
+      productId: props.productId,
+      aliasSize,
+      aliasColor,
+      masterSize,
+      masterColor,
+    });
+
+    // Find the alias variant and update it locally
+    const aliasVariant = props.variants.find(v => v.size === aliasSize && v.color === aliasColor);
+    const masterVariant = props.variants.find(v => v.size === masterSize && v.color === masterColor);
+    
+    if (aliasVariant && masterVariant?._id) {
+      aliasVariant.masterVariantId = masterVariant._id;
+      emit('update', props.variants);
+    }
+
+    alert(`✅ Успешно! Размер "${aliasSize}" сега споделя наличност с "${masterSize}".`);
+  } catch (error: any) {
+    console.error('Error linking variant:', error);
+    alert(error.message || 'Failed to link variant');
+  }
+};
+
+const unlinkVariant = async (size: string, color: string) => {
+  if (!props.productId) return;
+
+  if (!confirm(`Сигурни ли сте, че искате да премахнете връзката за размер "${size}"?`)) {
+    return;
+  }
+
+  try {
+    await apiPost('variant-aliases/unlink', {
+      productId: props.productId,
+      size,
+      color,
+    });
+
+    // Find the variant and remove the masterVariantId locally
+    const variant = props.variants.find(v => v.size === size && v.color === color);
+    if (variant) {
+      variant.masterVariantId = undefined;
+      emit('update', props.variants);
+    }
+
+    alert(`✅ Успешно! Размер "${size}" вече не споделя наличност.`);
+  } catch (error: any) {
+    console.error('Error unlinking variant:', error);
+    alert(error.message || 'Failed to unlink variant');
+  }
+};
+
+// Get available master variants for a given color
+const getAvailableMasterVariants = (currentSize: string, color: string) => {
+  return props.sizes
+    .filter(size => size !== currentSize)
+    .filter(size => {
+      const variant = getVariant(size, color);
+      // Only show variants that are not aliases themselves
+      return variant && !variant.masterVariantId;
+    });
+};
 </script>
 
 <template>
@@ -399,6 +547,13 @@ const setUserTyping = (size: string, color: string) => {
           <CardDescription class="text-xs">
             Управлявайте наличността за всяка комбинация размер/цвят
           </CardDescription>
+          <!-- Product Group Indicator -->
+          <div v-if="masterProductId" class="mt-2">
+            <Badge variant="outline" class="text-xs gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Споделя наличност с: {{ masterProductName || 'Master Product' }}
+            </Badge>
+          </div>
         </div>
         <div class="flex gap-2">
           <Badge variant="outline" class="gap-1">
@@ -473,6 +628,14 @@ const setUserTyping = (size: string, color: string) => {
                 }"
               >
                 <div class="space-y-2">
+                  <!-- Alias Indicator -->
+                  <div v-if="isAliasVariant(size, getColorName(color))" class="text-center">
+                    <Badge variant="outline" class="text-[10px] gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                      Споделя с {{ getMasterVariant(size, getColorName(color))?.size }}
+                    </Badge>
+                  </div>
+
                   <!-- Stock Input -->
                   <div class="space-y-1">
                     <label class="text-[10px] text-muted-foreground font-medium">Количество</label>
@@ -498,10 +661,11 @@ const setUserTyping = (size: string, color: string) => {
                         type="text"
                         inputmode="numeric"
                         class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-center ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        :readonly="readonly"
+                        :readonly="readonly || !!masterProductId || isAliasVariant(size, getColorName(color))"
+                        :title="masterProductId ? `Този продукт споделя наличност с ${masterProductName}` : (isAliasVariant(size, getColorName(color)) ? `Този размер споделя наличност с ${getMasterVariant(size, getColorName(color))?.size}` : undefined)"
                       />
                       <Button
-                        v-if="!readonly"
+                        v-if="!readonly && !masterProductId"
                         @click="updateStockAndEmit(size, getColorName(color), 1)"
                         size="icon"
                         variant="ghost"
@@ -544,15 +708,54 @@ const setUserTyping = (size: string, color: string) => {
                     </div>
                   </div>
 
+                  <!-- Size Alias Management -->
+                  <div v-if="!readonly && !masterProductId" class="space-y-1">
+                    <label class="text-[10px] text-muted-foreground font-medium">Споделя размер с</label>
+                    <div v-if="isAliasVariant(size, getColorName(color))" class="flex items-center gap-1">
+                      <div class="flex-1 text-xs text-center py-1 px-2 bg-muted rounded">
+                        {{ getMasterVariant(size, getColorName(color))?.size }}
+                      </div>
+                      <Button
+                        @click="unlinkVariant(size, getColorName(color))"
+                        size="icon"
+                        variant="ghost"
+                        class="h-7 w-7"
+                        title="Премахни връзката"
+                      >
+                        <Unlink class="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Select
+                      v-else
+                      :model-value="''"
+                      @update:model-value="(value: string) => {
+                        if (value) {
+                          linkVariantToMaster(size, getColorName(color), value, getColorName(color));
+                        }
+                      }"
+                    >
+                      <SelectTrigger class="h-7 text-xs">
+                        <SelectValue placeholder="Избери..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          v-for="masterSize in getAvailableMasterVariants(size, getColorName(color))"
+                          :key="masterSize"
+                          :value="masterSize"
+                        >
+                          {{ masterSize }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <!-- Reserved Badge -->
                   <div
-                    v-if="
-                      getVariant(size, getColorName(color))?.reserved && getVariant(size, getColorName(color))!.reserved! > 0
-                    "
+                    v-if="getReserved(size, getColorName(color)) > 0"
                     class="text-xs text-center"
                   >
                     <Badge variant="secondary" class="text-[10px]">
-                      Резервирани: {{ getVariant(size, getColorName(color))?.reserved }}
+                      Резервирани: {{ getReserved(size, getColorName(color)) }}
                     </Badge>
                   </div>
                 </div>
