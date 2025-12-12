@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-vue-next";
 import VariantStockGrid from "@/components/VariantStockGrid.vue";
 import ProductGroupManager from "@/components/ProductGroupManager.vue";
-import { apiGet, apiUpload } from "@/utils/api";
+import { apiGet, apiUpload, apiPost } from "@/utils/api";
 
 const router = useRouter();
 const route = useRoute();
@@ -715,6 +715,14 @@ const fetchAvailableMasters = async () => {
   }
 };
 
+// Filter master products by selected category
+const filteredMasterProducts = computed(() => {
+  if (!form.category) {
+    return availableMasterProducts.value;
+  }
+  return availableMasterProducts.value.filter((p: any) => p.category === form.category);
+});
+
 onMounted(async () => {
   // Fetch categories on mount
   await fetchCategories();
@@ -980,7 +988,7 @@ onMounted(async () => {
               
               <!-- Add Mode: Show dropdown to select master -->
               <div v-else class="space-y-4">
-                <div class="space-y-2">
+                <div v-if="filteredMasterProducts.length > 0" class="space-y-2">
                   <Label class="text-sm font-medium">Избери главен продукт:</Label>
                   <Select v-model="selectedMasterForNewProduct">
                     <SelectTrigger>
@@ -988,7 +996,7 @@ onMounted(async () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem
-                        v-for="master in availableMasterProducts"
+                        v-for="master in filteredMasterProducts"
                         :key="master._id"
                         :value="master._id"
                       >
@@ -999,6 +1007,15 @@ onMounted(async () => {
                   <p class="text-xs text-muted-foreground">
                     След запазване, продуктът автоматично ще се свърже с избрания главен продукт
                   </p>
+                </div>
+                <div v-else class="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
+                  <AlertCircle class="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                  <div class="text-sm text-amber-900 dark:text-amber-100">
+                    <p class="font-medium">Няма налични главни продукти</p>
+                    <p class="text-xs mt-1 text-amber-700 dark:text-amber-300">
+                      {{ form.category ? 'Няма продукти с варианти в тази категория' : 'Изберете категория първо' }}
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
