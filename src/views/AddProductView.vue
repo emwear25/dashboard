@@ -123,6 +123,8 @@ watch(
 const isLinkedProduct = ref(false);
 const masterProductId = ref<string>("");
 const masterProductName = ref<string>("");
+const availableMasterProducts = ref<any[]>([]);
+const selectedMasterForNewProduct = ref<string>("");
 
 const categories = ref<Category[]>([]);
 const categoriesLoading = ref(true);
@@ -645,6 +647,20 @@ const submitForm = async () => {
         isEditMode.value ? "Продуктът е актуализиран успешно!" : "Продуктът е създаден успешно!"
       );
 
+      // Auto-link to master if selected in add mode
+      if (!isEditMode.value && isLinkedProduct.value && selectedMasterForNewProduct.value && result.data?._id) {
+        try {
+          await apiPost('product-groups/link', {
+            childProductId: result.data._id,
+            masterProductId: selectedMasterForNewProduct.value,
+          });
+          showMessage("success", "Продуктът е свързан успешно с главния продукт!");
+        } catch (linkErr: any) {
+          console.error('Error linking product:', linkErr);
+          showMessage("error", "Продуктът е създаден, но не успя да се свърже с главния продукт");
+        }
+      }
+
       if (!isEditMode.value) {
         resetForm();
       }
@@ -684,9 +700,27 @@ const submitForm = async () => {
   }
 };
 
+// Fetch available master products for linking
+const fetchAvailableMasters = async () => {
+  try {
+    const response = await apiGet('products?limit=100');
+    if (response.success && response.data) {
+      // Filter: only products with variants
+      availableMasterProducts.value = response.data.filter((p: any) => {
+        return p.variants && p.variants.length > 0;
+      });
+    }
+  } catch (err: any) {
+    console.error('Error fetching master products:', err);
+  }
+};
+
 onMounted(async () => {
   // Fetch categories on mount
   await fetchCategories();
+  
+  // Fetch available master products for linking
+  await fetchAvailableMasters();
 
   // If in edit mode, fetch product data
   if (isEditMode.value && productId.value) {
@@ -944,16 +978,27 @@ onMounted(async () => {
                 :product-name="form.name"
               />
               
-              <!-- Add Mode: Simple message -->
+              <!-- Add Mode: Show dropdown to select master -->
               <div v-else class="space-y-4">
-                <div class="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
-                  <AlertCircle class="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-                  <div class="text-sm text-amber-900 dark:text-amber-100">
-                    <p class="font-medium">Продуктът ще бъде свързан след създаване</p>
-                    <p class="text-xs mt-1 text-amber-700 dark:text-amber-300">
-                      Запазете продукта първо, след което ще можете да го свържете с главен продукт
-                    </p>
-                  </div>
+                <div class="space-y-2">
+                  <Label class="text-sm font-medium">Избери главен продукт:</Label>
+                  <Select v-model="selectedMasterForNewProduct">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Избери главен продукт..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="master in availableMasterProducts"
+                        :key="master._id"
+                        :value="master._id"
+                      >
+                        {{ master.name }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p class="text-xs text-muted-foreground">
+                    След запазване, продуктът автоматично ще се свърже с избрания главен продукт
+                  </p>
                 </div>
               </div>
             </CardContent>
