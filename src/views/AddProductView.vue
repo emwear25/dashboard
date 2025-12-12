@@ -502,10 +502,17 @@ const fetchProduct = async () => {
         ? [...product.embroideryColors]
         : [];
 
-      // Set existing images
-      if (Array.isArray(product.images) && product.images.length > 0) {
-        existingImages.value = [...product.images];
+      // Initialize product group linking state
+      if (product.masterProductId) {
+        isLinkedProduct.value = true;
+        masterProductId.value = product.masterProductId;
+        if (product.masterProduct) {
+          masterProductName.value = product.masterProduct.name;
+        }
       }
+
+      // Set existing images
+      existingImages.value = product.images || [];
     } else {
       throw new Error("Неуспешно зареждане на продукта");
     }
@@ -720,7 +727,23 @@ const filteredMasterProducts = computed(() => {
   if (!form.category) {
     return availableMasterProducts.value;
   }
-  return availableMasterProducts.value.filter((p: any) => p.category === form.category);
+  
+  // Find the selected category object to get both slug and name
+  const selectedCategory = categories.value.find((cat) => cat.slug === form.category);
+  
+  const filtered = availableMasterProducts.value.filter((p: any) => {
+    // Product category might be stored as object or string
+    const productCategorySlug = typeof p.category === 'object' ? p.category?.slug : p.category;
+    const productCategoryName = typeof p.category === 'object' ? p.category?.name : p.category;
+    
+    // Match by slug OR by category name
+    const matchesSlug = productCategorySlug === form.category;
+    const matchesName = selectedCategory && productCategoryName === selectedCategory.name;
+    
+    return matchesSlug || matchesName;
+  });
+  
+  return filtered;
 });
 
 onMounted(async () => {
