@@ -129,9 +129,10 @@ const selectedMasterForNewProduct = ref<string>("");
 const categories = ref<Category[]>([]);
 const categoriesLoading = ref(true);
 
-const availableColors = [
+const defaultColors = [
   { name: "Black", displayName: "Черен", value: "#000000" },
   { name: "White", displayName: "Бял", value: "#ffffff" },
+  { name: "Beige", displayName: "Бежово", value: "#F5F5DC" },
   { name: "Red", displayName: "Червен", value: "#ef4444" },
   { name: "Blue", displayName: "Син", value: "#3b82f6" },
   { name: "Green", displayName: "Зелен", value: "#10b981" },
@@ -142,9 +143,45 @@ const availableColors = [
   { name: "Navy", displayName: "Морско синьо", value: "#1e40af" },
 ];
 
+// Load custom colors from localStorage
+const savedCustomColors = ref<{ name: string; displayName: string; value: string }[]>([]);
+
+const loadSavedColors = () => {
+  try {
+    const saved = localStorage.getItem('customProductColors');
+    if (saved) {
+      savedCustomColors.value = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Error loading saved colors:', e);
+  }
+};
+
+const saveCustomColor = (name: string, hex: string) => {
+  // Check if color already exists in saved colors
+  const exists = savedCustomColors.value.some(
+    c => c.name.toLowerCase() === name.toLowerCase()
+  );
+  if (!exists) {
+    savedCustomColors.value.push({ name, displayName: name, value: hex });
+    localStorage.setItem('customProductColors', JSON.stringify(savedCustomColors.value));
+  }
+};
+
+const removeCustomColor = (colorName: string) => {
+  savedCustomColors.value = savedCustomColors.value.filter(c => c.name !== colorName);
+  localStorage.setItem('customProductColors', JSON.stringify(savedCustomColors.value));
+};
+
+// Merge default + custom colors
+const availableColors = computed(() => [
+  ...defaultColors,
+  ...savedCustomColors.value
+]);
+
 // Helper function to get display name for a color
 const getColorDisplayName = (colorName: string): string => {
-  const color = availableColors.find((c) => c.name === colorName);
+  const color = availableColors.value.find((c) => c.name === colorName);
   return color?.displayName || colorName;
 };
 
@@ -236,6 +273,10 @@ const addCustomColor = () => {
     name: colorName,
     hex: customColorHex.value,
   });
+
+  // Save custom color to localStorage for future use
+  saveCustomColor(colorName, customColorHex.value);
+
   customColor.value = "";
   customColorHex.value = "#9CA3AF";
   clearError("colors");
@@ -747,6 +788,9 @@ const filteredMasterProducts = computed(() => {
 });
 
 onMounted(async () => {
+  // Load saved custom colors from localStorage
+  loadSavedColors();
+  
   // Fetch categories on mount
   await fetchCategories();
   
