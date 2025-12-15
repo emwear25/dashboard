@@ -388,9 +388,10 @@ const validateForm = () => {
     errors.value.stock = "Валидно количество на склад е задължително";
   }
 
-  if (form.sizes.length === 0) {
-    errors.value.sizes = "Поне един размер е задължителен";
-  }
+  // Sizes are now optional - not all products need sizes (accessories, decorative items, etc.)
+  // if (form.sizes.length === 0) {
+  //   errors.value.sizes = "Поне един размер е задължителен";
+  // }
 
   // Colors are optional for all categories
 

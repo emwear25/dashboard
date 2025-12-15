@@ -196,10 +196,11 @@ const validateForm = (): boolean => {
     isValid = false;
   }
 
-  if (form.sizes.length === 0) {
-    formErrors.sizes = "Добавете поне един размер";
-    isValid = false;
-  }
+  // Sizes are now optional - not all categories need sizes (accessories, decorative items, etc.)
+  // if (form.sizes.length === 0) {
+  //   formErrors.sizes = "Добавете поне един размер";
+  //   isValid = false;
+  // }
 
   if (form.defaultWeight <= 0) {
     formErrors.defaultWeight = "Теглото трябва да бъде по-голямо от 0";
