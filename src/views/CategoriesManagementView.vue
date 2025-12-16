@@ -26,6 +26,15 @@ import { Loader2, Plus, Edit2, Trash2, Tags, X } from "lucide-vue-next";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/utils/api";
 
+interface PersonalizationField {
+  name: string;
+  label: string;
+  type: 'text' | 'number' | 'date' | 'time' | 'textarea';
+  placeholder: string;
+  required: boolean;
+  order: number;
+}
+
 interface Category {
   _id: string;
   name: string;
@@ -40,6 +49,7 @@ interface Category {
   };
   isActive: boolean;
   imageUrl?: string | null;
+  personalizationFields?: PersonalizationField[];
   createdAt: string;
   updatedAt: string;
 }
@@ -69,6 +79,7 @@ const form = reactive({
     height: 20,
   },
   imageUrl: null as string | null,
+  personalizationFields: [] as PersonalizationField[],
 });
 
 const formErrors = reactive({
@@ -143,6 +154,7 @@ const openEditDialog = (category: Category) => {
     height: 20,
   };
   form.imageUrl = category.imageUrl || null;
+  form.personalizationFields = category.personalizationFields ? [...category.personalizationFields] : [];
   imagePreview.value = category.imageUrl || null;
   selectedImage.value = null;
   resetFormErrors();
@@ -162,6 +174,7 @@ const resetForm = () => {
   form.defaultWeight = 0.5;
   form.defaultDimensions = { length: 40, width: 30, height: 20 };
   form.imageUrl = null;
+  form.personalizationFields = [];
   selectedImage.value = null;
   imagePreview.value = null;
   resetFormErrors();
@@ -246,6 +259,39 @@ const handleSizeInput = (e: KeyboardEvent) => {
     e.preventDefault();
     addSize();
   }
+};
+
+// Personalization Fields functions
+const addPersonalizationField = () => {
+  const newField: PersonalizationField = {
+    name: '',
+    label: '',
+    type: 'text',
+    placeholder: '',
+    required: false,
+    order: form.personalizationFields.length,
+  };
+  form.personalizationFields.push(newField);
+};
+
+const removePersonalizationField = (index: number) => {
+  form.personalizationFields.splice(index, 1);
+  // Update order values
+  form.personalizationFields.forEach((field, i) => {
+    field.order = i;
+  });
+};
+
+const generateFieldName = (label: string): string => {
+  // Generate a camelCase name from the label
+  return label
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .split(' ')
+    .map((word, index) => 
+      index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
+    )
+    .join('');
 };
 
 // Image upload functions
@@ -350,6 +396,7 @@ const handleSubmit = async () => {
       defaultWeight: form.defaultWeight,
       defaultDimensions: form.defaultDimensions,
       imageUrl: form.imageUrl,
+      personalizationFields: form.personalizationFields,
     };
 
     let data;
@@ -805,6 +852,74 @@ onMounted(() => {
               <p class="text-xs text-muted-foreground">
                 Размери на кутията за един продукт (напр. Чанти: 33×25×10 cm)
               </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personalization Fields Section -->
+        <div class="space-y-4 border-t pt-4 mt-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="font-medium">Персонализирани полета</h4>
+              <p class="text-sm text-muted-foreground">
+                Допълнителни полета за бродерия (напр. данни за бебе)
+              </p>
+            </div>
+            <Button size="sm" variant="outline" @click="addPersonalizationField">
+              <Plus class="h-3 w-3 mr-1" />
+              Добави поле
+            </Button>
+          </div>
+          
+          <div v-if="form.personalizationFields.length === 0" class="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-lg">
+            Няма добавени персонализирани полета
+          </div>
+          
+          <div v-else class="space-y-3">
+            <div 
+              v-for="(field, index) in form.personalizationFields" 
+              :key="index"
+              class="p-3 border rounded-lg space-y-3 bg-muted/30"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium">Поле #{{ index + 1 }}</span>
+                <Button size="sm" variant="ghost" @click="removePersonalizationField(index)">
+                  <Trash2 class="h-3 w-3 text-destructive" />
+                </Button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <Label class="text-xs">Етикет</Label>
+                  <Input 
+                    v-model="field.label" 
+                    placeholder="Напр. Дата на раждане"
+                    @blur="field.name = generateFieldName(field.label)"
+                  />
+                </div>
+                <div>
+                  <Label class="text-xs">Тип</Label>
+                  <select 
+                    v-model="field.type" 
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="text">Текст</option>
+                    <option value="number">Число</option>
+                    <option value="date">Дата</option>
+                    <option value="time">Час</option>
+                    <option value="textarea">Текстово поле</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <Label class="text-xs">Placeholder</Label>
+                  <Input v-model="field.placeholder" placeholder="Въведете подсказка..." />
+                </div>
+                <div class="flex items-center gap-2 pt-5">
+                  <Switch v-model:checked="field.required" />
+                  <Label class="text-xs">Задължително</Label>
+                </div>
+              </div>
             </div>
           </div>
         </div>

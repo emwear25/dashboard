@@ -192,6 +192,21 @@ const formatDate = (dateString: string) => {
   });
 };
 
+// Helper to convert camelCase field names to readable labels
+const formatFieldName = (fieldName: string): string => {
+  const fieldLabels: Record<string, string> = {
+    babyName: 'Име на бебето',
+    birthDate: 'Дата на раждане',
+    birthTime: 'Час на раждане',
+    babyWeight: 'Тегло при раждане',
+    babyLength: 'Ръст при раждане',
+  };
+  return fieldLabels[fieldName] || fieldName
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (str) => str.toUpperCase())
+    .trim();
+};
+
 onMounted(() => {
   fetchOrder();
 });
@@ -259,6 +274,29 @@ onMounted(() => {
                       <p v-if="item.customization" class="text-primary font-medium">
                         {{ item.customization }}
                       </p>
+                      <!-- Embroidery Details -->
+                      <div v-if="item.embroidery" class="mt-2 p-2 bg-orange-50 rounded-md border border-orange-200">
+                        <p class="text-xs font-semibold text-orange-700 mb-1">🧵 Детайли за бродерия:</p>
+                        <p v-if="item.embroidery.name" class="text-sm">
+                          <strong>Име:</strong> {{ item.embroidery.name }}
+                        </p>
+                        <p v-if="item.embroidery.color" class="text-sm">
+                          <strong>Цвят:</strong> {{ item.embroidery.color }}
+                        </p>
+                        <p v-if="item.embroidery.font" class="text-sm">
+                          <strong>Шрифт:</strong> {{ item.embroidery.font }}
+                        </p>
+                        <p v-if="item.embroidery.notes" class="text-sm text-orange-600 mt-1">
+                          <strong>📝 Инструкции:</strong> {{ item.embroidery.notes }}
+                        </p>
+                        <!-- Custom Fields (e.g., birth details) -->
+                        <div v-if="item.embroidery.customFields && Object.keys(item.embroidery.customFields).length > 0" class="mt-1 pt-1 border-t border-orange-200">
+                          <p class="text-xs font-semibold text-orange-700">Персонализирани полета:</p>
+                          <div v-for="(value, key) in item.embroidery.customFields" :key="key" class="text-sm">
+                            <strong>{{ formatFieldName(key) }}:</strong> {{ value }}
+                          </div>
+                        </div>
+                      </div>
                       <p>Количество: {{ item.quantity }}</p>
                       <p>Цена: {{ item.price.toFixed(2) }} лв.</p>
                     </div>
