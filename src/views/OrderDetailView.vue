@@ -293,7 +293,7 @@ onMounted(() => {
                         <div v-if="item.embroidery.customFields && Object.keys(item.embroidery.customFields).length > 0" class="mt-1 pt-1 border-t border-orange-200">
                           <p class="text-xs font-semibold text-orange-700">Персонализирани полета:</p>
                           <div v-for="(value, key) in item.embroidery.customFields" :key="key" class="text-sm">
-                            <strong>{{ formatFieldName(key) }}:</strong> {{ value }}
+                            <strong>{{ formatFieldName(String(key)) }}:</strong> {{ value }}
                           </div>
                         </div>
                       </div>
