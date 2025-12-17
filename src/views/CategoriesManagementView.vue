@@ -29,10 +29,11 @@ import { apiGet, apiPost, apiPut, apiDelete } from "@/utils/api";
 interface PersonalizationField {
   name: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'time' | 'textarea';
+  type: 'text' | 'number' | 'date' | 'time' | 'textarea' | 'checkbox';
   placeholder: string;
   required: boolean;
   order: number;
+  price: number;
 }
 
 interface Category {
@@ -270,6 +271,7 @@ const addPersonalizationField = () => {
     placeholder: '',
     required: false,
     order: form.personalizationFields.length,
+    price: 0,
   };
   form.personalizationFields.push(newField);
 };
@@ -907,15 +909,20 @@ onMounted(() => {
                     <option value="date">Дата</option>
                     <option value="time">Час</option>
                     <option value="textarea">Текстово поле</option>
+                    <option value="checkbox">Чекбокс (+цена)</option>
                   </select>
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
                   <Label class="text-xs">Placeholder</Label>
-                  <Input v-model="field.placeholder" placeholder="Въведете подсказка..." />
+                  <Input v-model="field.placeholder" placeholder="Въведете подсказка..." :disabled="field.type === 'checkbox'" />
                 </div>
-                <div class="flex items-center gap-2 pt-5">
+                <div v-if="field.type === 'checkbox'">
+                  <Label class="text-xs">Цена (+лв)</Label>
+                  <Input v-model.number="field.price" type="number" min="0" step="0.01" placeholder="0.00" />
+                </div>
+                <div v-else class="flex items-center gap-2 pt-5">
                   <Switch v-model:checked="field.required" />
                   <Label class="text-xs">Задължително</Label>
                 </div>
