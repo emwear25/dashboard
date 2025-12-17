@@ -285,11 +285,36 @@ const removePersonalizationField = (index: number) => {
 };
 
 const generateFieldName = (label: string): string => {
-  // Generate a camelCase name from the label
-  return label
+  if (!label || !label.trim()) return '';
+  
+  // Cyrillic to Latin transliteration map
+  const cyrillicToLatin: Record<string, string> = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+    'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f',
+    'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sht', 'ъ': 'a', 'ь': '',
+    'ю': 'yu', 'я': 'ya'
+  };
+  
+  // Transliterate Cyrillic to Latin
+  const transliterated = label
     .toLowerCase()
-    .replace(/[^\w\s]/g, '')
-    .split(' ')
+    .split('')
+    .map(char => cyrillicToLatin[char] || char)
+    .join('');
+  
+  // Generate camelCase name from transliterated text
+  const words = transliterated
+    .replace(/[^a-z0-9\s]/g, '') // Keep only Latin letters, numbers, spaces
+    .split(/\s+/)
+    .filter(word => word.length > 0);
+  
+  if (words.length === 0) {
+    // Fallback: generate unique name if all characters were filtered
+    return 'field_' + Date.now().toString(36);
+  }
+  
+  return words
     .map((word, index) => 
       index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
     )
