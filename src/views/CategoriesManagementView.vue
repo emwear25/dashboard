@@ -391,6 +391,17 @@ const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
 
+    // Clean up personalization fields before submission
+    // - Auto-generate names from labels if missing
+    // - Filter out fields without labels
+    const cleanedFields = form.personalizationFields
+      .filter(field => field.label && field.label.trim()) // Remove fields without labels
+      .map(field => ({
+        ...field,
+        name: field.name || generateFieldName(field.label), // Auto-generate name if missing
+        label: field.label.trim(),
+      }));
+
     const payload = {
       name: form.name.trim(),
       displayName: form.displayName.trim(),
@@ -398,7 +409,7 @@ const handleSubmit = async () => {
       defaultWeight: form.defaultWeight,
       defaultDimensions: form.defaultDimensions,
       imageUrl: form.imageUrl,
-      personalizationFields: form.personalizationFields,
+      personalizationFields: cleanedFields,
     };
 
     let data;
