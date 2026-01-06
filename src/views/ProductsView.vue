@@ -131,9 +131,9 @@ watch(
   }
 );
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("bg-BG", {
   style: "currency",
-  currency: "USD",
+  currency: "EUR",
   minimumFractionDigits: 2,
 });
 

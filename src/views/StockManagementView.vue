@@ -55,6 +55,7 @@ type Product = {
   name: string;
   category?: string | { name: string } | null;
   price: number;
+  compareAt?: number; // Original price before discount
   stock: number;
   variants?: Variant[];
   sizes?: string[];
@@ -79,13 +80,15 @@ const stockOperation = ref<"set" | "add" | "subtract">("add");
 const stockAmount = ref("");
 const isUpdating = ref(false);
 const updateError = ref("");
+const isSaving = ref(false); // Separate loading state for saving (doesn't hide table)
 
 const fetchProducts = async () => {
   isLoading.value = true;
   errorMessage.value = "";
 
   try {
-    const result = await apiGet("products?limit=100");
+    // Add cache-busting timestamp to ensure fresh data
+    const result = await apiGet(`products?limit=100&showAll=true&_t=${Date.now()}`);
 
     if (result.success && Array.isArray(result.data)) {
       products.value = result.data;
@@ -156,6 +159,34 @@ const getTotalStock = (product: Product): number => {
   return product.stock;
 };
 
+// EUR to BGN conversion rate (Bulgarian lev is pegged to EUR)
+const EUR_TO_BGN_RATE = 1.95583;
+
+// Convert BGN to EUR for display
+const bgnToEur = (bgn: number): number => bgn / EUR_TO_BGN_RATE;
+
+// Get display price - for products with variants, show variant price range or single variant price
+// Note: All prices in DB are stored in BGN, so we convert to EUR for display
+const getDisplayPrice = (product: Product): { main: number; isRange: boolean; min?: number; max?: number } => {
+  if (product.variants && product.variants.length > 0) {
+    // Get all variant prices (use base price as fallback for variants without custom price)
+    const pricesInBgn = product.variants.map(v => v.price ?? product.price);
+    const minBgn = Math.min(...pricesInBgn);
+    const maxBgn = Math.max(...pricesInBgn);
+    
+    // Convert to EUR for display
+    const minEur = bgnToEur(minBgn);
+    const maxEur = bgnToEur(maxBgn);
+    
+    if (minBgn === maxBgn) {
+      return { main: minEur, isRange: false };
+    }
+    return { main: minEur, isRange: true, min: minEur, max: maxEur };
+  }
+  // Convert base price to EUR
+  return { main: bgnToEur(product.compareAt || product.price), isRange: false };
+};
+
 // Store pending variant updates
 const pendingVariantUpdates = ref<Record<string, Variant[]>>({});
 
@@ -176,14 +207,17 @@ const saveVariantChanges = async (product: Product, updatedVariants?: Variant[])
   }
 
   try {
-    isLoading.value = true;
+    isSaving.value = true;
     const result = await apiPut(`variant-stock/${product._id}/variants/bulk`, {
       variants: variantsToSave,
     });
 
     if (result.success) {
-      // Refresh products to get updated data from server
-      await fetchProducts();
+      // Update product variants in-place instead of re-fetching (preserves expansion state)
+      const productIndex = products.value.findIndex((p) => p._id === product._id);
+      if (productIndex !== -1 && result.data?.variants) {
+        products.value[productIndex].variants = result.data.variants;
+      }
       // Clear pending updates
       delete pendingVariantUpdates.value[product._id];
       errorMessage.value = "";
@@ -206,7 +240,7 @@ const saveVariantChanges = async (product: Product, updatedVariants?: Variant[])
       variant: "destructive",
     });
   } finally {
-    isLoading.value = false;
+    isSaving.value = false;
   }
 };
 
@@ -277,9 +311,9 @@ const formatCategory = (category: string | { name: string } | undefined | null) 
     .join(" ");
 };
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("bg-BG", {
   style: "currency",
-  currency: "USD",
+  currency: "EUR",
   minimumFractionDigits: 2,
 });
 
@@ -443,7 +477,19 @@ fetchProducts();
                 <TableCell>
                   <Badge variant="secondary">{{ formatCategory(product.category) }}</Badge>
                 </TableCell>
-                <TableCell>{{ formatPrice(product.price) }}</TableCell>
+                <TableCell>
+                  <div class="flex flex-col">
+                    <template v-if="getDisplayPrice(product).isRange">
+                      <span>{{ formatPrice(getDisplayPrice(product).min!) }} - {{ formatPrice(getDisplayPrice(product).max!) }}</span>
+                    </template>
+                    <template v-else>
+                      <span>{{ formatPrice(getDisplayPrice(product).main) }}</span>
+                    </template>
+                    <span v-if="product.compareAt && product.compareAt > product.price && !product.variants?.length" class="text-xs text-muted-foreground">
+                      Отстъпка: {{ formatPrice(product.price) }}
+                    </span>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <span class="text-lg font-semibold">{{ getTotalStock(product) }}</span>
                   <span class="text-muted-foreground text-sm ml-1">броя</span>
