@@ -928,11 +928,11 @@ onMounted(async () => {
                 <div class="grid grid-cols-2 gap-4">
                   <div class="space-y-2">
                     <Label for="price" class="text-sm font-medium"
-                      >Цена (BGN) <span class="text-destructive">*</span></Label
+                      >Цена (EUR) <span class="text-destructive">*</span></Label
                     >
                     <div class="relative">
                       <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        лв.
+                        €
                       </span>
                       <Input
                         id="price"

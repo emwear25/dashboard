@@ -730,7 +730,7 @@ const calculateShippingCost = async (office: any) => {
       return sum + item.price * item.quantity;
     }, 0);
 
-    // Free shipping over 110 BGN
+    // Free shipping over 55 EUR
     if (subtotal >= 110) {
       shippingCost.value = 0;
       calculatingShipping.value = false;
@@ -748,7 +748,7 @@ const calculateShippingCost = async (office: any) => {
         {
           type: "CD",
           amount: subtotal, // Cash on delivery amount
-          currency: "BGN",
+          currency: "EUR",
         },
       ],
     };
@@ -967,7 +967,7 @@ onMounted(() => {
                     </div>
                     <div v-if="order.shippingCost && order.shippingCost > 0">
                       <span class="font-medium">Цена за доставка:</span>
-                      {{ order.shippingCost.toFixed(2) }} лв.
+                      €{{ order.shippingCost.toFixed(2) }}
                     </div>
                     <div>
                       <span class="font-medium">Номер на пратка:</span>
@@ -1041,7 +1041,7 @@ onMounted(() => {
                         <Badge variant="outline" class="font-normal"> {{ item.quantity }}x </Badge>
                         <span>{{ item.productName }}</span>
                         <span class="text-muted-foreground">
-                          ({{ item.priceAtOrder.toFixed(2) }} лв.)
+                          (€{{ item.priceAtOrder.toFixed(2) }})
                         </span>
                       </div>
                     </div>
@@ -1059,7 +1059,7 @@ onMounted(() => {
                             .reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0)
                             .toFixed(2)
                         }}
-                        лв.
+                      €
                       </span>
                     </div>
                     
@@ -1068,7 +1068,7 @@ onMounted(() => {
                       <div class="text-red-600">
                         Отстъпка ({{ order.discountPercent }}%):
                         <span class="font-semibold">
-                          -{{ (order.discountAmount || 0).toFixed(2) }} лв.
+                          -€{{ (order.discountAmount || 0).toFixed(2) }}
                         </span>
                       </div>
                     </div>
@@ -1076,7 +1076,7 @@ onMounted(() => {
                     <div v-if="order.shippingCost && order.shippingCost > 0" class="text-sm text-muted-foreground">
                       Доставка:
                       <span class="font-semibold text-foreground">
-                        {{ order.shippingCost.toFixed(2) }} лв.
+                        €{{ order.shippingCost.toFixed(2) }}
                       </span>
                     </div>
                     <p class="text-xs text-muted-foreground mt-1">
@@ -1286,13 +1286,13 @@ onMounted(() => {
               v-else-if="!calculatingShipping && selectedOffice && shippingCost > 0"
               class="text-sm font-medium text-green-600"
             >
-              Цена за доставка: {{ shippingCost.toFixed(2) }} лв
+              Цена за доставка: €{{ shippingCost.toFixed(2) }}
             </div>
             <div
               v-else-if="!calculatingShipping && selectedOffice && shippingCost === 0"
               class="text-sm font-medium text-green-600"
             >
-              Безплатна доставка (над 110 лв.)
+              Безплатна доставка (над 55 €)
             </div>
           </div>
 
@@ -1388,7 +1388,7 @@ onMounted(() => {
                           {{ product.name }}
                         </h4>
                         <p class="text-sm font-bold text-primary mt-0.5">
-                          {{ product.price.toFixed(2) }} лв.
+                          €{{ product.price.toFixed(2) }}
                         </p>
                       </div>
 
@@ -1516,8 +1516,8 @@ onMounted(() => {
                       {{ typeof item.color === "string" ? item.color : (item.color as any)?.name || item.color }}
                     </p>
                     <p class="text-sm text-muted-foreground">
-                      {{ item.price.toFixed(2) }} лв. × {{ item.quantity }} =
-                      {{ (item.price * item.quantity).toFixed(2) }} лв.
+                      €{{ item.price.toFixed(2) }} × {{ item.quantity }} =
+                      €{{ (item.price * item.quantity).toFixed(2) }}
                     </p>
                   </div>
                   <div class="flex items-center gap-2">
@@ -1548,7 +1548,7 @@ onMounted(() => {
                 <div class="flex justify-between items-center">
                   <span class="text-sm text-muted-foreground">Стойност на продуктите:</span>
                   <span class="font-medium">
-                    {{
+                    €{{
                       (orderItems && orderItems.length > 0
                         ? orderItems.reduce((sum: number, item: OrderItem) => {
                             if (!item || !item.price || !item.quantity) return sum;
@@ -1557,7 +1557,6 @@ onMounted(() => {
                         : 0
                       ).toFixed(2)
                     }}
-                    лв.
                   </span>
                 </div>
                 
@@ -1582,7 +1581,7 @@ onMounted(() => {
                 <div v-if="form.discountPercent > 0" class="flex justify-between items-center text-sm text-red-600">
                   <span>Отстъпка:</span>
                   <span>
-                    -{{
+                    -€{{
                       (
                         (orderItems && orderItems.length > 0
                           ? orderItems.reduce((sum: number, item: OrderItem) => {
@@ -1593,7 +1592,6 @@ onMounted(() => {
                         (form.discountPercent / 100)
                       ).toFixed(2)
                     }}
-                    лв.
                   </span>
                 </div>
                 
@@ -1601,7 +1599,7 @@ onMounted(() => {
                 <div v-if="form.discountPercent > 0" class="flex justify-between items-center font-medium">
                   <span class="text-sm">Междинна сума:</span>
                   <span>
-                    {{
+                    €{{
                       (
                         (orderItems && orderItems.length > 0
                           ? orderItems.reduce((sum: number, item: OrderItem) => {
@@ -1612,7 +1610,6 @@ onMounted(() => {
                         (1 - form.discountPercent / 100)
                       ).toFixed(2)
                     }}
-                    лв.
                   </span>
                 </div>
                 
@@ -1634,7 +1631,7 @@ onMounted(() => {
                 </div>
                 <div v-else-if="shippingCost > 0" class="flex justify-between items-center">
                   <span class="text-sm text-muted-foreground">Доставка:</span>
-                  <span class="font-medium">{{ shippingCost.toFixed(2) }} лв.</span>
+                  <span class="font-medium">€{{ shippingCost.toFixed(2) }}</span>
                 </div>
                 <div
                   v-else-if="
@@ -1647,7 +1644,7 @@ onMounted(() => {
                   class="flex justify-between items-center"
                 >
                   <span class="text-sm text-muted-foreground">Доставка:</span>
-                  <span class="text-sm text-muted-foreground">Безплатна (над 110 лв.)</span>
+                  <span class="text-sm text-muted-foreground">Безплатна (над 55 €)</span>
                 </div>
               </div>
             </div>

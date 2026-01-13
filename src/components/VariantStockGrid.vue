@@ -107,7 +107,7 @@ const initializeMatrix = () => {
       }
 
       const variantPrice = existingVariant?.price;
-      price[key] = variantPrice ?? null; // null means use base price (stored in BGN)
+      price[key] = variantPrice ?? null; // null means use base price (stored in EUR)
 
       // Preserve user's current input if they're typing, otherwise use the price directly (already EUR)
       if (isUserTyping.value[key] && priceInputValues.value[key] !== undefined) {

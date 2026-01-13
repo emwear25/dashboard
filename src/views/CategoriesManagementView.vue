@@ -955,7 +955,7 @@ onMounted(() => {
                   <Input v-model="field.placeholder" placeholder="Въведете подсказка..." :disabled="field.type === 'checkbox'" />
                 </div>
                 <div v-if="field.type === 'checkbox'">
-                  <Label class="text-xs">Цена (+лв)</Label>
+                  <Label class="text-xs">Цена (+€)</Label>
                   <Input v-model.number="field.price" type="number" min="0" step="0.01" placeholder="0.00" />
                 </div>
                 <div v-else class="flex items-center gap-2 pt-5">

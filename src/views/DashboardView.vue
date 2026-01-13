@@ -120,9 +120,9 @@ const fetchAnalytics = async () => {
 
 const formatCurrency = (value: number) => {
   if (value === null || value === undefined || isNaN(value)) {
-    return "0.00 лв";
+    return "€0.00";
   }
-  return `${value.toFixed(2)} лв`;
+  return `€${value.toFixed(2)}`;
 };
 
 const formatDate = (dateString: string) => {

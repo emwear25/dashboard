@@ -122,7 +122,7 @@ const formatDiscountValue = (discount: Discount) => {
   if (discount.type === "percentage") {
     return `${discount.value}%`;
   } else if (discount.type === "fixed_amount") {
-    return `${discount.value} лв`;
+    return `€${discount.value}`;
   } else if (discount.type === "free_shipping") {
     return "Безплатна";
   }
@@ -347,7 +347,7 @@ onMounted(() => {
                     v-if="discount.conditions?.minPurchaseAmount"
                     class="text-sm text-muted-foreground"
                   >
-                    Мин. {{ discount.conditions.minPurchaseAmount }} лв
+                    Мин. €{{ discount.conditions.minPurchaseAmount }}
                   </div>
                 </TableCell>
                 <TableCell>

@@ -298,11 +298,11 @@ onMounted(() => {
                         </div>
                       </div>
                       <p>Количество: {{ item.quantity }}</p>
-                      <p>Цена: {{ item.price.toFixed(2) }} лв.</p>
+                      <p>Цена: €{{ item.price.toFixed(2) }}</p>
                     </div>
                   </div>
                   <div class="text-right font-semibold">
-                    {{ (item.price * item.quantity).toFixed(2) }} лв.
+                    €{{ (item.price * item.quantity).toFixed(2) }}
                   </div>
                 </div>
               </div>
@@ -479,19 +479,19 @@ onMounted(() => {
               <div class="space-y-3">
                 <div class="flex justify-between text-sm">
                   <span class="text-muted-foreground">Междинна сума:</span>
-                  <span>{{ order.subtotal.toFixed(2) }} лв.</span>
+                  <span>€{{ order.subtotal.toFixed(2) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span class="text-muted-foreground">Доставка:</span>
-                  <span>{{ order.shippingCost.toFixed(2) }} лв.</span>
+                  <span>€{{ order.shippingCost.toFixed(2) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span class="text-muted-foreground">ДДС:</span>
-                  <span>{{ order.tax.toFixed(2) }} лв.</span>
+                  <span>€{{ order.tax.toFixed(2) }}</span>
                 </div>
                 <div class="flex justify-between font-bold text-lg pt-3 border-t">
                   <span>Общо:</span>
-                  <span>{{ order.total.toFixed(2) }} лв.</span>
+                  <span>€{{ order.total.toFixed(2) }}</span>
                 </div>
               </div>
             </CardContent>

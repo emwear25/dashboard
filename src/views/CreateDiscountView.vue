@@ -226,7 +226,7 @@ onMounted(() => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percentage">Процент (%)</SelectItem>
-                  <SelectItem value="fixed_amount">Фиксирана сума (лв)</SelectItem>
+                  <SelectItem value="fixed_amount">Фиксирана сума (€)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -284,7 +284,7 @@ onMounted(() => {
                 />
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium">{{ product.name }}</p>
-                  <p class="text-xs text-muted-foreground">{{ product.price }} лв</p>
+                  <p class="text-xs text-muted-foreground">€{{ product.price }}</p>
                 </div>
               </label>
             </div>

@@ -12,7 +12,7 @@
           <div class="stat-card__label">Изчакващи</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__value">{{ stats.totalRevenue?.toFixed(2) }} лв</div>
+          <div class="stat-card__value">€{{ stats.totalRevenue?.toFixed(2) }}</div>
           <div class="stat-card__label">Общ приход</div>
         </div>
       </div>
@@ -80,7 +80,7 @@
             <td>
               {{ formatDate(order.createdAt) }}
             </td>
-            <td class="orders-table__total">{{ order.total?.toFixed(2) }} лв</td>
+            <td class="orders-table__total">€{{ order.total?.toFixed(2) }}</td>
             <td>
               <span :class="['status-badge', `status-badge--${order.orderStatus}`]">
                 {{ getStatusLabel(order.orderStatus) }}
