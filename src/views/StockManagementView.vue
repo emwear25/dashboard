@@ -82,6 +82,13 @@ const isUpdating = ref(false);
 const updateError = ref("");
 const isSaving = ref(false); // Separate loading state for saving (doesn't hide table)
 
+// Price dialog state
+const isPriceDialogOpen = ref(false);
+const selectedProductForPrice = ref<Product | null>(null);
+const newPriceEur = ref("");
+const isUpdatingPrice = ref(false);
+const priceUpdateError = ref("");
+
 const fetchProducts = async () => {
   isLoading.value = true;
   errorMessage.value = "";
@@ -292,6 +299,65 @@ const updateStock = async () => {
     updateError.value = error instanceof Error ? error.message : "Failed to update stock";
   } finally {
     isUpdating.value = false;
+  }
+};
+
+// Price editing functions
+const openPriceDialog = (product: Product) => {
+  selectedProductForPrice.value = product;
+  // Convert current BGN price to EUR for display
+  newPriceEur.value = bgnToEur(product.price).toFixed(2);
+  priceUpdateError.value = "";
+  isPriceDialogOpen.value = true;
+};
+
+const closePriceDialog = () => {
+  isPriceDialogOpen.value = false;
+  selectedProductForPrice.value = null;
+  newPriceEur.value = "";
+  priceUpdateError.value = "";
+};
+
+const updatePrice = async () => {
+  if (!selectedProductForPrice.value) return;
+
+  const priceInEur = parseFloat(newPriceEur.value);
+  if (isNaN(priceInEur) || priceInEur < 0) {
+    priceUpdateError.value = "Моля, въведете валидна цена";
+    return;
+  }
+
+  // Convert EUR to BGN for storage
+  const priceInBgn = priceInEur * EUR_TO_BGN_RATE;
+
+  isUpdatingPrice.value = true;
+  priceUpdateError.value = "";
+
+  try {
+    const result = await apiPatch(`products/${selectedProductForPrice.value._id}`, {
+      price: priceInBgn,
+    });
+
+    if (result.success && result.data) {
+      // Update the product in the list
+      const index = products.value.findIndex((p) => p._id === result.data._id);
+      if (index !== -1) {
+        products.value[index] = result.data;
+      }
+
+      toast({
+        title: "Успешно",
+        description: `Цената на ${selectedProductForPrice.value.name} беше актуализирана`,
+      });
+
+      closePriceDialog();
+    } else {
+      throw new Error(result.message || "Неуспешно актуализиране на цената");
+    }
+  } catch (error) {
+    priceUpdateError.value = error instanceof Error ? error.message : "Неуспешно актуализиране на цената";
+  } finally {
+    isUpdatingPrice.value = false;
   }
 };
 
@@ -528,7 +594,15 @@ fetchProducts();
                     >
                       <Edit2 class="h-4 w-4" />
                     </Button>
-                    <Badge v-else variant="outline" class="text-xs"> Използвайте варианти </Badge>
+                    <Button
+                      v-else
+                      variant="outline"
+                      size="sm"
+                      @click="openPriceDialog(product)"
+                      title="Редактирай базова цена"
+                    >
+                      <Edit2 class="h-4 w-4" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -625,6 +699,52 @@ fetchProducts();
           <Button @click="updateStock" :disabled="isUpdating || !stockAmount">
             <Loader2 v-if="isUpdating" class="mr-2 h-4 w-4 animate-spin" />
             {{ isUpdating ? "Актуализация..." : "Актуализирай" }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Price Update Dialog -->
+    <Dialog :open="isPriceDialogOpen" @update:open="(open) => !open && closePriceDialog()">
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Редактирай Базова Цена</DialogTitle>
+          <DialogDescription>
+            Актуализирай базовата цена за {{ selectedProductForPrice?.name }}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div class="space-y-2">
+            <Label>Текуща Цена</Label>
+            <div class="text-2xl font-bold">
+              {{ selectedProductForPrice ? formatPrice(bgnToEur(selectedProductForPrice.price)) : '' }}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="price-amount">Нова Цена (EUR)</Label>
+            <Input
+              id="price-amount"
+              v-model="newPriceEur"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Въведете цена в EUR"
+              class="h-11"
+              :class="{ 'border-destructive': priceUpdateError }"
+            />
+            <p v-if="priceUpdateError" class="text-xs text-destructive">
+              {{ priceUpdateError }}
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="closePriceDialog" :disabled="isUpdatingPrice"> Откажи </Button>
+          <Button @click="updatePrice" :disabled="isUpdatingPrice || !newPriceEur">
+            <Loader2 v-if="isUpdatingPrice" class="mr-2 h-4 w-4 animate-spin" />
+            {{ isUpdatingPrice ? "Актуализация..." : "Актуализирай" }}
           </Button>
         </DialogFooter>
       </DialogContent>
