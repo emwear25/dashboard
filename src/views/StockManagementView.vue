@@ -567,12 +567,13 @@ fetchProducts();
                 </TableCell>
                 <TableCell class="text-right">
                   <div class="flex justify-end gap-2">
+                    <!-- Stock buttons only for products without variants -->
                     <Button
                       v-if="!product.variants || product.variants.length === 0"
                       variant="outline"
                       size="sm"
                       @click="openStockDialog(product, 'add')"
-                      title="Add stock"
+                      title="Добави наличност"
                     >
                       <Plus class="h-4 w-4" />
                     </Button>
@@ -581,25 +582,16 @@ fetchProducts();
                       variant="outline"
                       size="sm"
                       @click="openStockDialog(product, 'subtract')"
-                      title="Remove stock"
+                      title="Премахни наличност"
                     >
                       <Minus class="h-4 w-4" />
                     </Button>
+                    <!-- Price edit button - ALWAYS show for ALL products -->
                     <Button
-                      v-if="!product.variants || product.variants.length === 0"
-                      variant="outline"
-                      size="sm"
-                      @click="openStockDialog(product, 'set')"
-                      title="Set stock"
-                    >
-                      <Edit2 class="h-4 w-4" />
-                    </Button>
-                    <Button
-                      v-else
                       variant="outline"
                       size="sm"
                       @click="openPriceDialog(product)"
-                      title="Редактирай базова цена"
+                      title="Редактирай цена"
                     >
                       <Edit2 class="h-4 w-4" />
                     </Button>
