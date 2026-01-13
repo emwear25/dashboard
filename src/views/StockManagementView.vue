@@ -166,32 +166,22 @@ const getTotalStock = (product: Product): number => {
   return product.stock;
 };
 
-// EUR to BGN conversion rate (Bulgarian lev is pegged to EUR)
-const EUR_TO_BGN_RATE = 1.95583;
-
-// Convert BGN to EUR for display
-const bgnToEur = (bgn: number): number => bgn / EUR_TO_BGN_RATE;
-
 // Get display price - for products with variants, show variant price range or single variant price
-// Note: All prices in DB are stored in BGN, so we convert to EUR for display
+// Note: All prices in DB are now stored in EUR directly
 const getDisplayPrice = (product: Product): { main: number; isRange: boolean; min?: number; max?: number } => {
   if (product.variants && product.variants.length > 0) {
     // Get all variant prices (use base price as fallback for variants without custom price)
-    const pricesInBgn = product.variants.map(v => v.price ?? product.price);
-    const minBgn = Math.min(...pricesInBgn);
-    const maxBgn = Math.max(...pricesInBgn);
+    const prices = product.variants.map(v => v.price ?? product.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
     
-    // Convert to EUR for display
-    const minEur = bgnToEur(minBgn);
-    const maxEur = bgnToEur(maxBgn);
-    
-    if (minBgn === maxBgn) {
-      return { main: minEur, isRange: false };
+    if (minPrice === maxPrice) {
+      return { main: minPrice, isRange: false };
     }
-    return { main: minEur, isRange: true, min: minEur, max: maxEur };
+    return { main: minPrice, isRange: true, min: minPrice, max: maxPrice };
   }
-  // Convert base price to EUR
-  return { main: bgnToEur(product.compareAt || product.price), isRange: false };
+  // Return base price directly (already in EUR)
+  return { main: product.compareAt || product.price, isRange: false };
 };
 
 // Store pending variant updates
@@ -305,8 +295,8 @@ const updateStock = async () => {
 // Price editing functions
 const openPriceDialog = (product: Product) => {
   selectedProductForPrice.value = product;
-  // Convert current BGN price to EUR for display
-  newPriceEur.value = bgnToEur(product.price).toFixed(2);
+  // Price is already in EUR - no conversion needed
+  newPriceEur.value = product.price.toFixed(2);
   priceUpdateError.value = "";
   isPriceDialogOpen.value = true;
 };
@@ -327,15 +317,13 @@ const updatePrice = async () => {
     return;
   }
 
-  // Convert EUR to BGN for storage
-  const priceInBgn = priceInEur * EUR_TO_BGN_RATE;
-
+  // Price is stored in EUR directly - no conversion needed
   isUpdatingPrice.value = true;
   priceUpdateError.value = "";
 
   try {
     const result = await apiPatch(`products/${selectedProductForPrice.value._id}`, {
-      price: priceInBgn,
+      price: priceInEur,
     });
 
     if (result.success && result.data) {
@@ -710,7 +698,7 @@ fetchProducts();
           <div class="space-y-2">
             <Label>Текуща Цена</Label>
             <div class="text-2xl font-bold">
-              {{ selectedProductForPrice ? formatPrice(bgnToEur(selectedProductForPrice.price)) : '' }}
+              {{ selectedProductForPrice ? formatPrice(selectedProductForPrice.price) : '' }}
             </div>
           </div>
 

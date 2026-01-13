@@ -51,14 +51,8 @@ const emit = defineEmits<{
   (e: "refresh"): void; // New event to request parent to refresh product data
 }>();
 
-// EUR to BGN conversion rate (Bulgarian lev is pegged to EUR)
-const EUR_TO_BGN_RATE = 1.95583;
-
-// Convert BGN to EUR for display
-const bgnToEur = (bgn: number): number => bgn / EUR_TO_BGN_RATE;
-
-// Convert EUR to BGN for storage
-const eurToBgn = (eur: number): number => eur * EUR_TO_BGN_RATE;
+// Note: All prices are now stored in EUR directly in the database
+// No conversion needed - display and save values as-is
 
 // Helper functions to handle both string and object color formats
 const getColorName = (color: string | Color): string => {
@@ -115,12 +109,12 @@ const initializeMatrix = () => {
       const variantPrice = existingVariant?.price;
       price[key] = variantPrice ?? null; // null means use base price (stored in BGN)
 
-      // Preserve user's current input if they're typing, otherwise convert BGN to EUR for display
+      // Preserve user's current input if they're typing, otherwise use the price directly (already EUR)
       if (isUserTyping.value[key] && priceInputValues.value[key] !== undefined) {
         priceInput[key] = priceInputValues.value[key];
       } else {
-        // Convert BGN price to EUR for display in the input field
-        priceInput[key] = variantPrice ? bgnToEur(variantPrice).toFixed(2) : "";
+        // Price is already in EUR - display directly
+        priceInput[key] = variantPrice ? variantPrice.toFixed(2) : "";
       }
     });
   });
@@ -435,17 +429,17 @@ const saveChanges = () => {
       const key = `${size}-${colorName}`;
       const existingVariant = props.variants.find((v) => v.size === size && v.color === colorName);
       
-      // Get the EUR price from input and convert to BGN for storage
+      // Get the EUR price from input - store directly as EUR (no conversion needed)
       const inputPriceEur = priceMatrix.value[key];
-      const priceInBgn = inputPriceEur !== null && inputPriceEur !== undefined && inputPriceEur > 0
-        ? Math.round(eurToBgn(inputPriceEur) * 100) / 100 // Round to 2 decimal places
+      const priceToSave = inputPriceEur !== null && inputPriceEur !== undefined && inputPriceEur > 0
+        ? Math.round(inputPriceEur * 100) / 100 // Round to 2 decimal places
         : undefined;
       
       updatedVariants.push({
         size,
         color: colorName,
         stock: stockMatrix.value[key] ?? 0,
-        price: priceInBgn,
+        price: priceToSave,
         reserved: existingVariant?.reserved,
         lowStockThreshold: existingVariant?.lowStockThreshold,
       });
@@ -703,7 +697,7 @@ const getAvailableMasterVariants = (currentSize: string, color: string) => {
                         @blur="commitPrice(size, getColorName(color)); saveChanges()"
                         type="text"
                         inputmode="decimal"
-                        :placeholder="basePrice ? `€${bgnToEur(basePrice).toFixed(2)}` : 'Цена'"
+                        :placeholder="basePrice ? `€${basePrice.toFixed(2)}` : 'Цена'"
                         class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-center ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8"
                         :readonly="readonly"
                       />
@@ -716,7 +710,7 @@ const getAvailableMasterVariants = (currentSize: string, color: string) => {
                         v-if="getPrice(size, getColorName(color)) === null && basePrice"
                         class="text-[10px] text-center text-muted-foreground mt-0.5"
                       >
-                        Базова цена: €{{ bgnToEur(basePrice).toFixed(2) }}
+                        Базова цена: €{{ basePrice.toFixed(2) }}
                       </div>
                     </div>
                   </div>
