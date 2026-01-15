@@ -730,8 +730,8 @@ const calculateShippingCost = async (office: any) => {
       return sum + item.price * item.quantity;
     }, 0);
 
-    // Free shipping over 55 EUR
-    if (subtotal >= 110) {
+    // Free shipping over 60 EUR
+    if (subtotal >= 60) {
       shippingCost.value = 0;
       calculatingShipping.value = false;
       return;
@@ -759,7 +759,7 @@ const calculateShippingCost = async (office: any) => {
       shippingCost.value = parseFloat(response.data.totalPrice);
     } else {
       // Fallback price
-      shippingCost.value = subtotal >= 110 ? 0 : 5.99;
+      shippingCost.value = subtotal >= 60 ? 0 : 5.99;
     }
   } catch (error: any) {
     console.error("Failed to calculate shipping:", error);
@@ -770,8 +770,8 @@ const calculateShippingCost = async (office: any) => {
             return sum + item.price * item.quantity;
           }, 0)
         : 0;
-    // Fallback: free shipping over 110, otherwise 5.99
-    shippingCost.value = subtotal >= 110 ? 0 : 5.99;
+    // Fallback: free shipping over 60, otherwise 5.99
+    shippingCost.value = subtotal >= 60 ? 0 : 5.99;
   } finally {
     calculatingShipping.value = false;
   }
