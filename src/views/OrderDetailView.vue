@@ -15,6 +15,7 @@ import {
   User,
   CheckCircle,
   Copy,
+  Ticket,
 } from "lucide-vue-next";
 import { apiGet, apiPost } from "@/utils/api";
 
@@ -477,6 +478,36 @@ onMounted(() => {
             </CardHeader>
             <CardContent>
               <div class="space-y-3">
+                <!-- Show original subtotal if discount was applied -->
+                <div v-if="order.discountTotal > 0 || order.couponCode" class="flex justify-between text-sm">
+                  <span class="text-muted-foreground">Първоначална сума:</span>
+                  <span class="line-through text-muted-foreground">€{{ (order.subtotalBeforeDiscount || (order.subtotal + (order.discountTotal || 0))).toFixed(2) }}</span>
+                </div>
+
+                <!-- Coupon/Discount Applied -->
+                <div v-if="order.couponCode || order.discountTotal > 0" class="p-2 bg-green-50 rounded-md border border-green-200">
+                  <div class="flex items-center gap-2 text-green-700">
+                    <Ticket class="h-4 w-4" />
+                    <span class="font-medium text-sm">Приложена отстъпка</span>
+                  </div>
+                  <div v-if="order.couponCode" class="mt-1 text-sm">
+                    <span class="text-muted-foreground">Код:</span>
+                    <Badge variant="outline" class="ml-2 font-mono">{{ order.couponCode }}</Badge>
+                  </div>
+                  <!-- Show applied discounts details -->
+                  <div v-if="order.appliedDiscounts && order.appliedDiscounts.length > 0" class="mt-1 space-y-1">
+                    <div v-for="(discount, idx) in order.appliedDiscounts" :key="idx" class="text-xs text-green-600">
+                      <span v-if="discount.name">{{ discount.name }}: </span>
+                      <span v-if="discount.type === 'percentage'">{{ discount.value }}%</span>
+                      <span v-else>-€{{ discount.amount?.toFixed(2) || '0.00' }}</span>
+                    </div>
+                  </div>
+                  <div class="flex justify-between mt-2 text-sm font-medium text-green-700">
+                    <span>Отстъпка:</span>
+                    <span>-€{{ (order.discountTotal || 0).toFixed(2) }}</span>
+                  </div>
+                </div>
+
                 <div class="flex justify-between text-sm">
                   <span class="text-muted-foreground">Междинна сума:</span>
                   <span>€{{ order.subtotal.toFixed(2) }}</span>

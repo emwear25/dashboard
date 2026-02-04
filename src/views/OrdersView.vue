@@ -80,7 +80,12 @@
             <td>
               {{ formatDate(order.createdAt) }}
             </td>
-            <td class="orders-table__total">€{{ order.total?.toFixed(2) }}</td>
+            <td class="orders-table__total">
+              <span>€{{ order.total?.toFixed(2) }}</span>
+              <span v-if="order.couponCode || order.discountTotal > 0" class="coupon-badge" :title="order.couponCode ? `Код: ${order.couponCode}` : 'Приложена отстъпка'">
+                -{{ order.discountTotal?.toFixed(2) || '0.00' }}
+              </span>
+            </td>
             <td>
               <span :class="['status-badge', `status-badge--${order.orderStatus}`]">
                 {{ getStatusLabel(order.orderStatus) }}
@@ -524,6 +529,18 @@ onMounted(() => {
 .guest-email {
   color: #856404;
   font-weight: 500;
+}
+
+.coupon-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  background: #d4edda;
+  color: #155724;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: help;
 }
 
 .status-badge {
