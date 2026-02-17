@@ -63,6 +63,7 @@ type Product = {
   isActive: boolean;
   image?: ProductImage;
   images?: ProductImage[];
+  masterProductId?: string; // If linked to a master product for shared stock
 };
 
 const products = ref<Product[]>([]);
@@ -203,9 +204,12 @@ const saveVariantChanges = async (product: Product, updatedVariants?: Variant[])
     return;
   }
 
+  // For linked products, variants live on the master product - save there instead
+  const targetProductId = product.masterProductId || product._id;
+
   try {
     isSaving.value = true;
-    const result = await apiPut(`variant-stock/${product._id}/variants/bulk`, {
+    const result = await apiPut(`variant-stock/${targetProductId}/variants/bulk`, {
       variants: variantsToSave,
     });
 
