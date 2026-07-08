@@ -275,6 +275,19 @@ onMounted(() => {
                       <p v-if="item.customization" class="text-primary font-medium">
                         {{ item.customization }}
                       </p>
+                      <!-- Priced personalization options (e.g., back embroidery) -->
+                      <div
+                        v-if="item.pricedOptions && item.pricedOptions.length > 0"
+                        class="mt-1 p-2 bg-amber-50 rounded-md border border-amber-200"
+                      >
+                        <p
+                          v-for="opt in item.pricedOptions"
+                          :key="opt.name"
+                          class="text-sm text-amber-700 font-medium"
+                        >
+                          ➕ {{ opt.label || opt.name }}: +€{{ (opt.price || 0).toFixed(2) }}
+                        </p>
+                      </div>
                       <!-- Embroidery Details -->
                       <div v-if="item.embroidery" class="mt-2 p-2 bg-orange-50 rounded-md border border-orange-200">
                         <p class="text-xs font-semibold text-orange-700 mb-1">🧵 Детайли за бродерия:</p>
