@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus, Edit2, Trash2, Tags, X } from "lucide-vue-next";
 import { useToast } from "@/components/ui/toast/use-toast";
-import { apiGet, apiPost, apiPut, apiDelete } from "@/utils/api";
+import { apiGet, apiPost, apiPut, apiDelete, getApiUrl } from "@/utils/api";
 
 interface PersonalizationField {
   name: string;
@@ -371,8 +371,10 @@ const uploadImage = async () => {
     const formData = new FormData();
     formData.append("file", selectedImage.value);
 
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3030";
-    const response = await fetch(`${API_URL}/api/uploads/category-image`, {
+    // getApiUrl uses VITE_API_BASE_URL like the rest of the app
+    // (previously read the non-existent VITE_API_URL and fell back
+    // to localhost:3030 in production)
+    const response = await fetch(getApiUrl("uploads/category-image"), {
       method: "POST",
       body: formData,
     });
