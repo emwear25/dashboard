@@ -947,7 +947,7 @@ onMounted(() => {
                     <option value="date">Дата</option>
                     <option value="time">Час</option>
                     <option value="textarea">Текстово поле</option>
-                    <option value="checkbox">Чекбокс (+цена)</option>
+                    <option value="checkbox">Чекбокс</option>
                   </select>
                 </div>
               </div>
@@ -956,14 +956,14 @@ onMounted(() => {
                   <Label class="text-xs">Placeholder</Label>
                   <Input v-model="field.placeholder" placeholder="Въведете подсказка..." :disabled="field.type === 'checkbox'" />
                 </div>
-                <div v-if="field.type === 'checkbox'">
-                  <Label class="text-xs">Цена (+€)</Label>
+                <div>
+                  <Label class="text-xs">Цена (+€, 0 = безплатно)</Label>
                   <Input v-model.number="field.price" type="number" min="0" step="0.01" placeholder="0.00" />
                 </div>
-                <div v-else class="flex items-center gap-2 pt-5">
-                  <Switch v-model:checked="field.required" />
-                  <Label class="text-xs">Задължително</Label>
-                </div>
+              </div>
+              <div v-if="field.type !== 'checkbox'" class="flex items-center gap-2">
+                <Switch v-model:checked="field.required" />
+                <Label class="text-xs">Задължително</Label>
               </div>
             </div>
           </div>
