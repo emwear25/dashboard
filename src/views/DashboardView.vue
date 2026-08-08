@@ -8,6 +8,7 @@ import { apiGet } from "@/utils/api";
 type AnalyticsData = {
   overview: {
     totalOrders: number;
+    revenueOrders?: number;
     totalRevenue: number;
     totalProducts: number;
     activeProducts: number;
@@ -148,11 +149,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-8 pb-8 pt-6">
+  <div class="space-y-6 sm:space-y-8 pb-8 pt-4 sm:pt-6">
     <!-- Header Section -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 class="text-4xl font-bold tracking-tight">Табло</h1>
+        <h1 class="text-2xl sm:text-4xl font-bold tracking-tight">Табло</h1>
         <p class="text-muted-foreground mt-1.5">
           Преглед на цялостната статистика на платформата
         </p>
@@ -201,7 +202,7 @@ onMounted(() => {
               {{ formatCurrency(analytics.overview.totalRevenue) }}
             </div>
             <p class="text-xs text-muted-foreground">
-              От {{ analytics.overview.totalOrders }} поръчки
+              От {{ analytics.overview.revenueOrders ?? analytics.overview.totalOrders }} поръчки
             </p>
           </CardContent>
         </Card>
@@ -342,18 +343,18 @@ onMounted(() => {
               <div
                 v-for="(product, index) in analytics.products.topProducts.slice(0, 5)"
                 :key="product.productId"
-                class="flex items-center justify-between p-2 rounded-lg border"
+                class="flex items-center justify-between gap-2 p-2 rounded-lg border"
               >
-                <div class="flex items-center gap-3">
-                  <span class="text-sm font-semibold text-muted-foreground">#{{ index + 1 }}</span>
-                  <div>
-                    <p class="text-sm font-medium">{{ product.productName }}</p>
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="text-sm font-semibold text-muted-foreground shrink-0">#{{ index + 1 }}</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium break-words">{{ product.productName }}</p>
                     <p class="text-xs text-muted-foreground">
                       {{ product.orderCount }} поръчки • {{ product.totalQuantity }} броя
                     </p>
                   </div>
                 </div>
-                <span class="text-sm font-semibold">{{ formatCurrency(product.totalRevenue) }}</span>
+                <span class="text-sm font-semibold shrink-0 whitespace-nowrap">{{ formatCurrency(product.totalRevenue) }}</span>
               </div>
             </div>
           </CardContent>
