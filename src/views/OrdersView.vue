@@ -60,10 +60,10 @@
         </thead>
         <tbody>
           <tr v-for="order in orders" :key="order._id" class="orders-table__row">
-            <td class="orders-table__order-number">
+            <td class="orders-table__order-number" data-label="Номер">
               {{ order.orderNumber }}
             </td>
-            <td>
+            <td data-label="Клиент">
               <div class="orders-table__customer">
                 <div class="orders-table__customer-name">
                   {{ order.shippingAddress.firstName }}
@@ -78,21 +78,21 @@
                 </div>
               </div>
             </td>
-            <td>
+            <td data-label="Дата">
               {{ formatDate(order.createdAt) }}
             </td>
-            <td class="orders-table__total">
+            <td class="orders-table__total" data-label="Сума">
               <span>€{{ order.total?.toFixed(2) }}</span>
               <span v-if="order.couponCode || order.discountTotal > 0" class="coupon-badge" :title="order.couponCode ? `Код: ${order.couponCode}` : 'Приложена отстъпка'">
                 -{{ order.discountTotal?.toFixed(2) || '0.00' }}
               </span>
             </td>
-            <td>
+            <td data-label="Статус">
               <span :class="['status-badge', `status-badge--${order.orderStatus}`]">
                 {{ getStatusLabel(order.orderStatus) }}
               </span>
             </td>
-            <td>
+            <td data-label="Некоректен">
               <span
                 v-if="order.fraudCheck?.status === 'reported'"
                 class="fraud-badge fraud-badge--reported"
@@ -115,7 +115,7 @@
                 —
               </span>
             </td>
-            <td>
+            <td data-label="Действия" class="orders-table__actions-cell">
               <div class="orders-table__actions">
                 <button
                   @click="viewOrder(order._id)"
@@ -606,6 +606,129 @@ onMounted(() => {
 .guest-email {
   color: #856404;
   font-weight: 500;
+}
+
+// ============ Mobile: stats/filters stack, table becomes cards ============
+@media (max-width: 768px) {
+  .orders-view {
+    padding: 1rem;
+
+    &__title {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    &__stats {
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    &__filters {
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    &__search {
+      min-width: 0;
+      width: 100%;
+    }
+
+    &__select,
+    &__refresh-btn {
+      width: 100%;
+    }
+
+    &__table-container {
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+      overflow: visible;
+    }
+
+    &__pagination {
+      border-top: none;
+      padding: 1rem 0;
+    }
+  }
+
+  .stat-card {
+    padding: 1rem;
+
+    &__value {
+      font-size: 1.35rem;
+    }
+
+    &__label {
+      font-size: 0.8rem;
+    }
+  }
+
+  .orders-table {
+    display: block;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: block;
+
+      tr {
+        display: block;
+        background: white;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+        padding: 0.5rem 1rem;
+      }
+
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        text-align: right;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &::before {
+          content: attr(data-label);
+          font-weight: 600;
+          color: #666;
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          text-align: left;
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    &__customer {
+      text-align: right;
+    }
+
+    &__actions-cell {
+      flex-wrap: wrap;
+    }
+
+    &__actions {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      row-gap: 0.5rem;
+    }
+
+    &__status-select {
+      max-width: 150px;
+    }
+  }
 }
 
 .coupon-badge {

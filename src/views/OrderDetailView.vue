@@ -268,14 +268,16 @@ onMounted(() => {
     <!-- Order Details -->
     <div v-else-if="order" class="space-y-6">
       <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold">Поръчка #{{ order.orderNumber }}</h1>
-          <p class="text-muted-foreground mt-1">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <h1 class="text-xl sm:text-3xl font-bold break-words">
+            Поръчка #{{ order.orderNumber }}
+          </h1>
+          <p class="text-muted-foreground mt-1 text-sm sm:text-base">
             {{ formatDate(order.createdAt) }}
           </p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
           <Badge :variant="getStatusBadgeVariant(order.orderStatus)">
             {{ order.orderStatus }}
           </Badge>
@@ -299,13 +301,13 @@ onMounted(() => {
                 <div
                   v-for="item in order.items"
                   :key="item._id"
-                  class="flex gap-4 pb-4 border-b last:border-0"
+                  class="flex flex-wrap gap-4 pb-4 border-b last:border-0"
                 >
                   <img
                     v-if="item.image"
                     :src="item.image"
                     :alt="item.name"
-                    class="w-20 h-20 object-cover rounded-lg"
+                    class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg"
                   />
                   <div class="flex-1">
                     <h4 class="font-semibold">{{ item.name }}</h4>
@@ -719,5 +721,11 @@ onMounted(() => {
 <style scoped>
 .order-detail {
   padding: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .order-detail {
+    padding: 0.75rem;
+  }
 }
 </style>
