@@ -656,8 +656,8 @@ onMounted(() => {
                   <span>€{{ order.subtotal.toFixed(2) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                  <span class="text-muted-foreground">Доставка:</span>
-                  <span>€{{ order.shippingCost.toFixed(2) }}</span>
+                  <span class="text-muted-foreground">Доставка (при получаване):</span>
+                  <span>~€{{ order.shippingCost.toFixed(2) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span class="text-muted-foreground">ДДС:</span>
