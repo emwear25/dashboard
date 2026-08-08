@@ -135,6 +135,14 @@
                   <option value="delivered">Доставена</option>
                   <option value="cancelled">Отказана</option>
                 </select>
+                <button
+                  @click="deleteOrder(order)"
+                  class="orders-table__action-btn orders-table__action-btn--delete"
+                  :disabled="deletingOrderId === order._id"
+                  title="Изтрий поръчката"
+                >
+                  🗑️
+                </button>
               </div>
             </td>
           </tr>
@@ -169,7 +177,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { apiGet, apiPatch } from "@/utils/api";
+import { apiGet, apiPatch, apiDelete } from "@/utils/api";
 
 const router = useRouter();
 
@@ -273,6 +281,37 @@ const updateOrderStatus = async (orderId: string, event: Event) => {
 
 const viewOrder = (orderId: string) => {
   router.push(`/orders/${orderId}`);
+};
+
+const deletingOrderId = ref<string | null>(null);
+
+const deleteOrder = async (order: any) => {
+  const customer = `${order.shippingAddress?.firstName || ""} ${order.shippingAddress?.lastName || ""}`.trim();
+  if (
+    !confirm(
+      `Сигурни ли сте, че искате да изтриете поръчка ${order.orderNumber} (${customer})?\n\nТова действие е необратимо!`
+    )
+  ) {
+    return;
+  }
+
+  deletingOrderId.value = order._id;
+
+  try {
+    const data = await apiDelete(`orders/admin/${order._id}`);
+
+    if (data.success) {
+      await loadOrders();
+      await loadStats();
+    } else {
+      alert(data.message || "Грешка при изтриване на поръчката");
+    }
+  } catch (err) {
+    console.error("Failed to delete order:", err);
+    alert("Грешка при изтриване на поръчката");
+  } finally {
+    deletingOrderId.value = null;
+  }
 };
 
 const changePage = (page: number) => {
@@ -532,6 +571,20 @@ onMounted(() => {
 
       &:hover {
         background: #2980b9;
+      }
+    }
+
+    &--delete {
+      background: #fdf0ef;
+      padding: 0.5rem 0.6rem;
+
+      &:hover {
+        background: #f8d7da;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
     }
   }
