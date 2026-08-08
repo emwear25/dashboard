@@ -41,27 +41,13 @@ const fetchOrder = async () => {
     const orderId = route.params.id;
     console.log("[OrderDetail] Fetching order:", orderId);
 
-    // Try to get single order by ID first
-    const data = await apiGet("orders/admin/all");
-
-    if (!data.success) {
-      throw new Error("Failed to fetch orders");
-    }
-    console.log("[OrderDetail] Response:", data);
+    const data = await apiGet(`orders/admin/${orderId}`);
 
     if (data.success && data.data) {
-      // Find order by ID
-      const foundOrder = data.data.find((o: any) => o._id === orderId || o.orderNumber === orderId);
-
-      if (foundOrder) {
-        order.value = foundOrder;
-        console.log("[OrderDetail] Order found:", foundOrder.orderNumber);
-      } else {
-        error.value = "Order not found";
-        console.log("[OrderDetail] Order not found in", data.data.length, "orders");
-      }
+      order.value = data.data;
+      console.log("[OrderDetail] Order found:", data.data.orderNumber);
     } else {
-      error.value = "No orders returned";
+      error.value = data.message || "Order not found";
     }
   } catch (err) {
     console.error("[OrderDetail] Failed to load order:", err);
