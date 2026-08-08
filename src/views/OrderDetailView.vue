@@ -16,6 +16,10 @@ import {
   CheckCircle,
   Copy,
   Ticket,
+  ShieldCheck,
+  ShieldAlert,
+  ShieldQuestion,
+  RefreshCw,
 } from "lucide-vue-next";
 import { apiGet, apiPost } from "@/utils/api";
 
@@ -168,6 +172,56 @@ const createSpeedyShipment = async () => {
     });
   } finally {
     isCreatingShipment.value = false;
+  }
+};
+
+const isCheckingFraud = ref(false);
+
+const recheckFraud = async () => {
+  if (!order.value) return;
+
+  isCheckingFraud.value = true;
+
+  try {
+    const data = await apiPost(`orders/admin/${order.value._id}/fraud-check`, {});
+
+    if (data.success && data.data) {
+      order.value.fraudCheck = data.data;
+
+      if (data.data.status === "reported") {
+        toast({
+          title: "⚠️ Внимание!",
+          description: `Намерени са ${data.data.reportsCount} сигнала за този номер в nekorekten.com`,
+          variant: "destructive",
+          duration: 6000,
+        });
+      } else if (data.data.status === "clean") {
+        toast({
+          title: "✅ Чист номер",
+          description: "Няма сигнали за този номер в nekorekten.com",
+          duration: 4000,
+        });
+      } else {
+        toast({
+          title: "❌ Грешка при проверката",
+          description: data.data.error || "Проверката не беше успешна",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    } else {
+      throw new Error(data.message || "Failed to check phone");
+    }
+  } catch (err: any) {
+    console.error("Failed to check fraud status:", err);
+    toast({
+      title: "❌ Грешка",
+      description: err.message || "Не успяхме да проверим номера",
+      variant: "destructive",
+      duration: 5000,
+    });
+  } finally {
+    isCheckingFraud.value = false;
   }
 };
 
@@ -484,6 +538,96 @@ onMounted(() => {
 
         <!-- Right Column - Summary -->
         <div class="space-y-6">
+          <!-- Nekorekten.com Fraud Check -->
+          <Card
+            :class="{
+              'border-red-300 bg-red-50/50': order.fraudCheck?.status === 'reported',
+              'border-green-300': order.fraudCheck?.status === 'clean',
+            }"
+          >
+            <CardHeader>
+              <CardTitle class="flex items-center gap-2">
+                <ShieldAlert
+                  v-if="order.fraudCheck?.status === 'reported'"
+                  class="h-5 w-5 text-red-600"
+                />
+                <ShieldCheck
+                  v-else-if="order.fraudCheck?.status === 'clean'"
+                  class="h-5 w-5 text-green-600"
+                />
+                <ShieldQuestion v-else class="h-5 w-5 text-muted-foreground" />
+                Некоректен.com
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div class="space-y-3">
+                <!-- Reported -->
+                <div v-if="order.fraudCheck?.status === 'reported'">
+                  <p class="font-bold text-red-700">
+                    ⚠️ {{ order.fraudCheck.reportsCount }} сигнала за този номер!
+                  </p>
+                  <div
+                    v-for="(report, idx) in order.fraudCheck.reports"
+                    :key="idx"
+                    class="mt-2 p-2 bg-white rounded-md border border-red-200 text-sm"
+                  >
+                    <p v-if="report.text" class="text-red-800">{{ report.text }}</p>
+                    <p v-if="report.city" class="text-xs text-muted-foreground mt-1">
+                      📍 {{ report.city }}
+                    </p>
+                    <p v-if="report.createdAt" class="text-xs text-muted-foreground">
+                      {{ formatDate(report.createdAt) }}
+                    </p>
+                    <a
+                      v-if="report.url"
+                      :href="report.url"
+                      target="_blank"
+                      class="text-xs text-blue-600 hover:underline"
+                    >
+                      Виж сигнала →
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Clean -->
+                <p v-else-if="order.fraudCheck?.status === 'clean'" class="text-sm text-green-700">
+                  ✅ Няма сигнали за телефонния номер
+                </p>
+
+                <!-- Error / skipped -->
+                <p
+                  v-else-if="order.fraudCheck?.status === 'error' || order.fraudCheck?.status === 'skipped'"
+                  class="text-sm text-amber-700"
+                >
+                  {{ order.fraudCheck.error || "Проверката не беше успешна" }}
+                </p>
+
+                <!-- Not checked yet -->
+                <p v-else class="text-sm text-muted-foreground">
+                  Номерът не е проверяван. Натиснете бутона за проверка в nekorekten.com
+                </p>
+
+                <!-- Checked at / cache info -->
+                <p v-if="order.fraudCheck?.checkedAt" class="text-xs text-muted-foreground">
+                  Проверено: {{ formatDate(order.fraudCheck.checkedAt) }}
+                  <span v-if="order.fraudCheck.fromCache">(от кеш)</span>
+                </p>
+
+                <Button
+                  @click="recheckFraud"
+                  :disabled="isCheckingFraud"
+                  variant="outline"
+                  size="sm"
+                  class="w-full"
+                >
+                  <Loader2 v-if="isCheckingFraud" class="mr-2 h-4 w-4 animate-spin" />
+                  <RefreshCw v-else class="mr-2 h-4 w-4" />
+                  {{ isCheckingFraud ? "Проверка..." : order.fraudCheck?.checkedAt ? "Провери отново" : "Провери номера" }}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <!-- Price Summary -->
           <Card>
             <CardHeader>

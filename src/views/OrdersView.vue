@@ -54,6 +54,7 @@
             <th>Дата</th>
             <th>Сума</th>
             <th>Статус</th>
+            <th>Некоректен</th>
             <th>Действия</th>
           </tr>
         </thead>
@@ -89,6 +90,29 @@
             <td>
               <span :class="['status-badge', `status-badge--${order.orderStatus}`]">
                 {{ getStatusLabel(order.orderStatus) }}
+              </span>
+            </td>
+            <td>
+              <span
+                v-if="order.fraudCheck?.status === 'reported'"
+                class="fraud-badge fraud-badge--reported"
+                :title="`${order.fraudCheck.reportsCount} сигнал(а) в nekorekten.com`"
+              >
+                ⚠️ {{ order.fraudCheck.reportsCount }} сигнала
+              </span>
+              <span
+                v-else-if="order.fraudCheck?.status === 'clean'"
+                class="fraud-badge fraud-badge--clean"
+                title="Няма сигнали в nekorekten.com"
+              >
+                ✓ Чист
+              </span>
+              <span
+                v-else
+                class="fraud-badge fraud-badge--unknown"
+                :title="order.fraudCheck?.error || 'Няма извършена проверка'"
+              >
+                —
               </span>
             </td>
             <td>
@@ -541,6 +565,30 @@ onMounted(() => {
   font-weight: 600;
   border-radius: 4px;
   cursor: help;
+}
+
+.fraud-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: help;
+
+  &--reported {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  &--clean {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  &--unknown {
+    background: #f8f9fa;
+    color: #999;
+  }
 }
 
 .status-badge {
