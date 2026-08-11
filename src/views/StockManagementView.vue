@@ -223,10 +223,21 @@ const saveVariantChanges = async (product: Product, updatedVariants?: Variant[])
       delete pendingVariantUpdates.value[product._id];
       errorMessage.value = "";
 
-      toast({
-        title: "Success",
-        description: `Вариантите на ${product.name} бяха запазени успешно`,
-      });
+      if (result.warning) {
+        const missing = (result.data?.notFound || [])
+          .map((v: { size: string; color: string }) => `${v.size}/${v.color}`)
+          .join(", ");
+        toast({
+          title: "Частично запазено",
+          description: `Някои варианти не бяха намерени и не са запазени: ${missing}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Вариантите на ${product.name} бяха запазени успешно`,
+        });
+      }
     } else {
       throw new Error(result.message || "Failed to save variant changes");
     }
