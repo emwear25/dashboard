@@ -486,7 +486,7 @@ const fetchProduct = async () => {
 
   isLoading.value = true;
   try {
-    const result = await apiGet(`products/${productId.value}`);
+    const result = await apiGet(`products/${productId.value}?raw=true`);
     if (result.success && result.data) {
       const product = result.data;
 
