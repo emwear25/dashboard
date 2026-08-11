@@ -280,6 +280,7 @@ const emitChanges = () => {
       const key = `${size}-${colorName}`;
       const existingVariant = props.variants.find((v) => v.size === size && v.color === colorName);
       updatedVariants.push({
+        _id: existingVariant?._id, // Stable addressing on the server (survives color renames)
         size,
         color: colorName,
         stock: stockMatrix.value[key] ?? 0,
