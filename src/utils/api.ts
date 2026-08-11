@@ -274,3 +274,38 @@ export const apiUpload = async <T = any>(
 
 // Export the base URL getter for cases where full URL is needed
 export const getApiBaseUrl = getApiBase;
+
+/**
+ * Upload a single file to an upload endpoint (e.g. uploads/product-image).
+ * Returns the parsed JSON response ({ success, data: { url, publicId } }).
+ */
+export const apiUploadFile = async <T = any>(
+  endpoint: string,
+  file: File,
+  fieldName = "file"
+): Promise<T> => {
+  const url = getApiUrl(endpoint);
+  const token = getAdminToken();
+
+  const formData = new FormData();
+  formData.append(fieldName, file, file.name);
+
+  const response = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorData: any;
+    try {
+      errorData = await response.json();
+    } catch {
+      errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+    }
+    throw new Error(errorData.message || "Upload failed");
+  }
+
+  return (await response.json()) as T;
+};

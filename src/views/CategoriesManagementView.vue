@@ -36,11 +36,23 @@ interface PersonalizationField {
   price: number;
 }
 
+interface PersonalizationMethod {
+  type: "embroidery" | "print";
+  label: string;
+  price: number;
+  isActive: boolean;
+  fonts: string[];
+  colors: { name: string; value: string }[];
+}
+
 interface Category {
   _id: string;
   name: string;
   slug: string;
   displayName: string;
+  parent?: string | null;
+  order?: number;
+  personalizationMethods?: PersonalizationMethod[];
   sizes: string[];
   defaultWeight: number;
   defaultDimensions: {
@@ -81,6 +93,13 @@ const form = reactive({
   },
   imageUrl: null as string | null,
   personalizationFields: [] as PersonalizationField[],
+  parent: null as string | null,
+  order: 0,
+  // Simple embroidery/print defaults for products in this category
+  embroideryEnabled: false,
+  embroideryPrice: 0,
+  printEnabled: false,
+  printPrice: 0,
 });
 
 const formErrors = reactive({
@@ -108,6 +127,32 @@ const filteredCategories = computed(() => {
       cat.slug.toLowerCase().includes(query)
   );
 });
+
+// Root categories are the only valid parents (max 2 levels)
+const rootCategories = computed(() =>
+  categories.value.filter(
+    (c) => !c.parent && (!selectedCategory.value || c._id !== selectedCategory.value._id)
+  )
+);
+
+// Roots first, each followed by its subcategories (for the table display)
+const orderedCategories = computed(() => {
+  const source = filteredCategories.value;
+  if (searchQuery.value) return source;
+  const roots = source.filter((c) => !c.parent);
+  const result: Category[] = [];
+  for (const root of roots) {
+    result.push(root);
+    result.push(...source.filter((c) => c.parent === root._id));
+  }
+  // Orphans (parent not in the list) go to the end
+  for (const c of source) {
+    if (c.parent && !result.includes(c)) result.push(c);
+  }
+  return result;
+});
+
+const isSubcategory = (category: Category) => !!category.parent;
 
 // Functions
 const fetchCategories = async () => {
@@ -156,6 +201,14 @@ const openEditDialog = (category: Category) => {
   };
   form.imageUrl = category.imageUrl || null;
   form.personalizationFields = category.personalizationFields ? [...category.personalizationFields] : [];
+  form.parent = category.parent || null;
+  form.order = category.order || 0;
+  const embroidery = category.personalizationMethods?.find((m) => m.type === "embroidery");
+  const print = category.personalizationMethods?.find((m) => m.type === "print");
+  form.embroideryEnabled = !!embroidery && embroidery.isActive !== false;
+  form.embroideryPrice = embroidery?.price || 0;
+  form.printEnabled = !!print && print.isActive !== false;
+  form.printPrice = print?.price || 0;
   imagePreview.value = category.imageUrl || null;
   selectedImage.value = null;
   resetFormErrors();
@@ -176,6 +229,12 @@ const resetForm = () => {
   form.defaultDimensions = { length: 40, width: 30, height: 20 };
   form.imageUrl = null;
   form.personalizationFields = [];
+  form.parent = null;
+  form.order = 0;
+  form.embroideryEnabled = false;
+  form.embroideryPrice = 0;
+  form.printEnabled = false;
+  form.printPrice = 0;
   selectedImage.value = null;
   imagePreview.value = null;
   resetFormErrors();
@@ -437,6 +496,16 @@ const handleSubmit = async () => {
       defaultDimensions: form.defaultDimensions,
       imageUrl: form.imageUrl,
       personalizationFields: cleanedFields,
+      parent: form.parent,
+      order: form.order,
+      personalizationMethods: [
+        ...(form.embroideryEnabled
+          ? [{ type: "embroidery", label: "Бродирано име", price: form.embroideryPrice || 0, isActive: true }]
+          : []),
+        ...(form.printEnabled
+          ? [{ type: "print", label: "Име с печат", price: form.printPrice || 0, isActive: true }]
+          : []),
+      ],
     };
 
     let data;
@@ -624,9 +693,11 @@ onMounted(() => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="category in filteredCategories" :key="category._id">
+              <TableRow v-for="category in orderedCategories" :key="category._id">
                 <TableCell class="font-medium">{{ category.name }}</TableCell>
-                <TableCell>{{ category.displayName }}</TableCell>
+                <TableCell>
+                  <span v-if="isSubcategory(category)" class="text-muted-foreground">└─ </span>{{ category.displayName }}
+                </TableCell>
                 <TableCell>
                   <code class="text-xs bg-muted px-2 py-1 rounded">{{ category.slug }}</code>
                 </TableCell>
@@ -716,6 +787,56 @@ onMounted(() => {
             />
             <p v-if="formErrors.displayName" class="text-xs text-destructive">
               {{ formErrors.displayName }}
+            </p>
+          </div>
+
+          <!-- Parent category + menu order -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="parentCategory">Родителска категория</Label>
+              <select
+                id="parentCategory"
+                v-model="form.parent"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option :value="null">— Основна категория —</option>
+                <option v-for="root in rootCategories" :key="root._id" :value="root._id">
+                  {{ root.displayName }}
+                </option>
+              </select>
+              <p class="text-xs text-muted-foreground">
+                Продуктите от подкатегориите се показват и в родителската.
+              </p>
+            </div>
+            <div class="space-y-2">
+              <Label for="categoryOrder">Ред в менюто</Label>
+              <Input id="categoryOrder" v-model.number="form.order" type="number" min="0" />
+            </div>
+          </div>
+
+          <!-- Personalization methods (defaults for products in this category) -->
+          <div class="space-y-2 rounded-md border border-input p-3">
+            <Label>Персонализация (по подразбиране за продуктите)</Label>
+            <div class="flex items-center gap-3">
+              <input id="catEmbroidery" v-model="form.embroideryEnabled" type="checkbox" class="h-4 w-4" />
+              <label for="catEmbroidery" class="text-sm flex-1">Бродирано име</label>
+              <div v-if="form.embroideryEnabled" class="flex items-center gap-1">
+                <span class="text-xs text-muted-foreground">+</span>
+                <Input v-model.number="form.embroideryPrice" type="number" min="0" step="0.5" class="w-20 h-8" />
+                <span class="text-xs text-muted-foreground">€</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <input id="catPrint" v-model="form.printEnabled" type="checkbox" class="h-4 w-4" />
+              <label for="catPrint" class="text-sm flex-1">Име с печат</label>
+              <div v-if="form.printEnabled" class="flex items-center gap-1">
+                <span class="text-xs text-muted-foreground">+</span>
+                <Input v-model.number="form.printPrice" type="number" min="0" step="0.5" class="w-20 h-8" />
+                <span class="text-xs text-muted-foreground">€</span>
+              </div>
+            </div>
+            <p class="text-xs text-muted-foreground">
+              0 € = включено в цената. Продуктът може да замести тези настройки.
             </p>
           </div>
 
