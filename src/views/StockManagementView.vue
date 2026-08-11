@@ -96,7 +96,7 @@ const fetchProducts = async () => {
 
   try {
     // Add cache-busting timestamp to ensure fresh data
-    const result = await apiGet(`products?limit=100&showAll=true&_t=${Date.now()}`);
+    const result = await apiGet(`products?limit=500&showAll=true&_t=${Date.now()}`);
 
     if (result.success && Array.isArray(result.data)) {
       products.value = result.data;
@@ -133,9 +133,15 @@ const filteredProducts = computed(() => {
 const lowStockProducts = computed(() => {
   return products.value.filter((p) => {
     if (p.variants && p.variants.length > 0) {
-      return p.variants.some((v) => v.stock - (v.reserved || 0) <= (v.lowStockThreshold || 5));
+      // Low = at least one variant low, but the product is not fully sold out
+      // (sold-out products are counted in the out-of-stock card instead)
+      const allOut = p.variants.every((v) => v.stock - (v.reserved || 0) === 0);
+      return (
+        !allOut &&
+        p.variants.some((v) => v.stock - (v.reserved || 0) <= (v.lowStockThreshold || 5))
+      );
     }
-    return p.stock <= 10;
+    return p.stock > 0 && p.stock <= 10;
   });
 });
 

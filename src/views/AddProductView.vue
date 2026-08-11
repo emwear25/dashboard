@@ -752,7 +752,7 @@ const submitForm = async () => {
 // Fetch available master products for linking
 const fetchAvailableMasters = async () => {
   try {
-    const response = await apiGet('products?limit=100');
+    const response = await apiGet('products?limit=500');
     if (response.success && response.data) {
       // Filter: only products with variants
       availableMasterProducts.value = response.data.filter((p: any) => {

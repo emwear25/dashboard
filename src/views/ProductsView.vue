@@ -70,7 +70,7 @@ const fetchProducts = async () => {
   try {
     // Add cache-busting timestamp to ensure fresh data
     const timestamp = Date.now();
-    const result: ProductsResponse = await apiGet(`products?limit=100&showAll=true&_t=${timestamp}`);
+    const result: ProductsResponse = await apiGet(`products?limit=500&showAll=true&_t=${timestamp}`);
 
     if (result.success && Array.isArray(result.data)) {
       products.value = result.data;
