@@ -56,7 +56,7 @@ const fetchProduct = async () => {
 
   try {
     const productId = route.params.id;
-    const result = await apiGet(`products/${productId}`);
+    const result = await apiGet(`products/${productId}?raw=true`);
 
     if (result.success && result.data) {
       product.value = result.data;

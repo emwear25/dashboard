@@ -96,7 +96,7 @@ const fetchProducts = async () => {
 
   try {
     // Add cache-busting timestamp to ensure fresh data
-    const result = await apiGet(`products?limit=100&showAll=true&_t=${Date.now()}`);
+    const result = await apiGet(`products?limit=500&showAll=true&_t=${Date.now()}`);
 
     if (result.success && Array.isArray(result.data)) {
       products.value = result.data;
@@ -133,9 +133,15 @@ const filteredProducts = computed(() => {
 const lowStockProducts = computed(() => {
   return products.value.filter((p) => {
     if (p.variants && p.variants.length > 0) {
-      return p.variants.some((v) => v.stock - (v.reserved || 0) <= (v.lowStockThreshold || 5));
+      // Low = at least one variant low, but the product is not fully sold out
+      // (sold-out products are counted in the out-of-stock card instead)
+      const allOut = p.variants.every((v) => v.stock - (v.reserved || 0) === 0);
+      return (
+        !allOut &&
+        p.variants.some((v) => v.stock - (v.reserved || 0) <= (v.lowStockThreshold || 5))
+      );
     }
-    return p.stock <= 10;
+    return p.stock > 0 && p.stock <= 10;
   });
 });
 
@@ -170,19 +176,25 @@ const getTotalStock = (product: Product): number => {
 // Get display price - for products with variants, show variant price range or single variant price
 // Note: All prices in DB are now stored in EUR directly
 const getDisplayPrice = (product: Product): { main: number; isRange: boolean; min?: number; max?: number } => {
+  // Linked products always sell at their OWN base price - the variants shown
+  // for them belong to the master product, whose prices don't apply here
+  if (product.masterProductId) {
+    return { main: product.price, isRange: false };
+  }
+
   if (product.variants && product.variants.length > 0) {
     // Get all variant prices (use base price as fallback for variants without custom price)
     const prices = product.variants.map(v => v.price ?? product.price);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
-    
+
     if (minPrice === maxPrice) {
       return { main: minPrice, isRange: false };
     }
     return { main: minPrice, isRange: true, min: minPrice, max: maxPrice };
   }
-  // Return base price directly (already in EUR)
-  return { main: product.compareAt || product.price, isRange: false };
+  // Return the actual selling price (compareAt is the old crossed-out price)
+  return { main: product.price, isRange: false };
 };
 
 // Store pending variant updates
@@ -223,10 +235,21 @@ const saveVariantChanges = async (product: Product, updatedVariants?: Variant[])
       delete pendingVariantUpdates.value[product._id];
       errorMessage.value = "";
 
-      toast({
-        title: "Success",
-        description: `Вариантите на ${product.name} бяха запазени успешно`,
-      });
+      if (result.warning) {
+        const missing = (result.data?.notFound || [])
+          .map((v: { size: string; color: string }) => `${v.size}/${v.color}`)
+          .join(", ");
+        toast({
+          title: "Частично запазено",
+          description: `Някои варианти не бяха намерени и не са запазени: ${missing}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Вариантите на ${product.name} бяха запазени успешно`,
+        });
+      }
     } else {
       throw new Error(result.message || "Failed to save variant changes");
     }
@@ -325,9 +348,18 @@ const updatePrice = async () => {
   isUpdatingPrice.value = true;
   priceUpdateError.value = "";
 
+  // For products that own their variants, also clear per-variant price
+  // overrides - otherwise the old variant price keeps showing and charging.
+  // Linked products don't own the displayed variants (they're the master's),
+  // so only their own base price is updated.
+  const product = selectedProductForPrice.value;
+  const ownsVariants =
+    !product.masterProductId && !!product.variants && product.variants.length > 0;
+
   try {
-    const result = await apiPatch(`products/${selectedProductForPrice.value._id}`, {
+    const result = await apiPatch(`products/${product._id}`, {
       price: priceInEur,
+      ...(ownsVariants ? { clearVariantPrices: true } : {}),
     });
 
     if (result.success && result.data) {
@@ -722,6 +754,18 @@ fetchProducts();
               {{ priceUpdateError }}
             </p>
           </div>
+
+          <p
+            v-if="
+              selectedProductForPrice &&
+              !selectedProductForPrice.masterProductId &&
+              selectedProductForPrice.variants?.some((v) => v.price != null)
+            "
+            class="text-xs text-orange-600"
+          >
+            Този продукт има специфични цени за отделни варианти. Те ще бъдат премахнати
+            и всички варианти ще използват новата цена.
+          </p>
         </div>
 
         <DialogFooter>
