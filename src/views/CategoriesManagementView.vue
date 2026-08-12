@@ -816,7 +816,11 @@ onMounted(() => {
 
           <!-- Personalization methods (defaults for products in this category) -->
           <div class="space-y-2 rounded-md border border-input p-3">
-            <Label>Персонализация (по подразбиране за продуктите)</Label>
+            <Label>Персонализация с име - цена на метода</Label>
+            <p class="text-xs text-muted-foreground">
+              Колко доплаща клиентът за самото име (бродирано или печат). Важи по
+              подразбиране за всички продукти в категорията; продуктът може да замести цената.
+            </p>
             <div class="flex items-center gap-3">
               <input id="catEmbroidery" v-model="form.embroideryEnabled" type="checkbox" class="h-4 w-4" />
               <label for="catEmbroidery" class="text-sm flex-1">Бродирано име</label>
@@ -1021,9 +1025,12 @@ onMounted(() => {
         <div class="space-y-4 border-t pt-4 mt-4">
           <div class="flex items-center justify-between">
             <div>
-              <h4 class="font-medium">Персонализирани полета</h4>
+              <h4 class="font-medium">Персонализирани полета (допълнителни екстри)</h4>
               <p class="text-sm text-muted-foreground">
-                Допълнителни полета за бродерия (напр. данни за бебе)
+                Допълнителни полета КЪМ персонализацията - напр. „Дата на раждане" за
+                гергефи или „Бродерия на гърба". Цената на самото име се задава ГОРЕ
+                в „Персонализация" - тук слагай цена само на платена екстра
+                (0 = безплатно поле). Цените на екстрите се добавят към цената на метода.
               </p>
             </div>
             <Button size="sm" variant="outline" @click="addPersonalizationField">
