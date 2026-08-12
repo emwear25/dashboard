@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-vue-next";
 import VariantStockGrid from "@/components/VariantStockGrid.vue";
 import ProductGroupManager from "@/components/ProductGroupManager.vue";
-import { apiGet, apiUpload, apiPost } from "@/utils/api";
+import { apiGet, apiUpload, apiPost, apiUploadFile } from "@/utils/api";
 
 const router = useRouter();
 const route = useRoute();
@@ -47,7 +47,48 @@ const form = reactive({
   customEmbroidery: false,
   embroideryFonts: [] as string[],
   embroideryColors: [] as { name: string; value: string }[],
+  gender: "unisex" as "boy" | "girl" | "unisex",
+  // Personalization method pricing ("" = inherit the category default)
+  embroideryPrice: "" as string | number,
+  printEnabled: false,
+  printPrice: "" as string | number,
 });
+
+// Per-color image galleries: color name -> uploaded Cloudinary refs
+const colorImages = ref<Record<string, { url: string; publicId: string }[]>>({});
+const uploadingColorImages = ref<Record<string, boolean>>({});
+
+const uploadColorImage = async (colorName: string, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const files = input.files ? Array.from(input.files) : [];
+  input.value = "";
+  if (files.length === 0) return;
+
+  uploadingColorImages.value = { ...uploadingColorImages.value, [colorName]: true };
+  try {
+    for (const file of files) {
+      const result = await apiUploadFile("uploads/product-image", file);
+      if (result.success && result.data) {
+        const list = colorImages.value[colorName] || [];
+        colorImages.value = { ...colorImages.value, [colorName]: [...list, result.data] };
+      }
+    }
+  } catch (error) {
+    console.error("Color image upload failed:", error);
+    errors.value = {
+      ...errors.value,
+      colorImages: error instanceof Error ? error.message : "Качването на снимката се провали",
+    };
+  } finally {
+    uploadingColorImages.value = { ...uploadingColorImages.value, [colorName]: false };
+  }
+};
+
+const removeColorImage = (colorName: string, index: number) => {
+  const list = [...(colorImages.value[colorName] || [])];
+  list.splice(index, 1);
+  colorImages.value = { ...colorImages.value, [colorName]: list };
+};
 
 // Variant stock management
 interface Variant {
@@ -496,6 +537,32 @@ const fetchProduct = async () => {
       form.price = product.price?.toString() || "";
       form.stock = product.stock?.toString() || "";
       form.customEmbroidery = product.customEmbroidery || false;
+      form.gender = product.gender || "unisex";
+
+      // Personalization methods (price "" = inherit category default)
+      const embroideryMethod = product.personalizationMethods?.find(
+        (m: any) => m.type === "embroidery"
+      );
+      const printMethod = product.personalizationMethods?.find((m: any) => m.type === "print");
+      if (embroideryMethod) {
+        form.customEmbroidery = embroideryMethod.enabled !== false || form.customEmbroidery;
+        form.embroideryPrice =
+          embroideryMethod.price === null || embroideryMethod.price === undefined
+            ? ""
+            : embroideryMethod.price;
+      }
+      form.printEnabled = !!printMethod && printMethod.enabled !== false;
+      form.printPrice =
+        printMethod && printMethod.price !== null && printMethod.price !== undefined
+          ? printMethod.price
+          : "";
+
+      // Per-color image galleries
+      const loadedColorImages: Record<string, { url: string; publicId: string }[]> = {};
+      for (const entry of product.colorImages || []) {
+        loadedColorImages[entry.color] = [...(entry.images || [])];
+      }
+      colorImages.value = loadedColorImages;
 
       // Handle category (can be object or string)
       if (typeof product.category === "object" && product.category?.slug) {
@@ -648,6 +715,36 @@ const submitForm = async () => {
     }
 
     formData.append("customEmbroidery", form.customEmbroidery.toString());
+    formData.append("gender", form.gender);
+
+    // Personalization methods with per-product price override
+    const personalizationMethods = [] as any[];
+    if (form.customEmbroidery) {
+      personalizationMethods.push({
+        type: "embroidery",
+        enabled: true,
+        price: form.embroideryPrice === "" ? null : Number(form.embroideryPrice),
+        fonts: form.embroideryFonts,
+        colors: form.embroideryColors,
+      });
+    }
+    if (form.printEnabled) {
+      personalizationMethods.push({
+        type: "print",
+        enabled: true,
+        price: form.printPrice === "" ? null : Number(form.printPrice),
+        fonts: form.embroideryFonts,
+        colors: [],
+      });
+    }
+    formData.append("personalizationMethods", JSON.stringify(personalizationMethods));
+
+    // Per-color image galleries (already uploaded; referenced by publicId)
+    const colorImagesPayload = Object.entries(colorImages.value)
+      .filter(([colorName]) => form.colors.some((c) => c.name === colorName))
+      .map(([colorName, images]) => ({ color: colorName, images }))
+      .filter((entry) => entry.images.length > 0);
+    formData.append("colorImages", JSON.stringify(colorImagesPayload));
 
     if (form.customEmbroidery) {
       formData.append("embroideryFonts", JSON.stringify(form.embroideryFonts));
@@ -986,6 +1083,19 @@ onMounted(async () => {
                       {{ errors.category }}
                     </p>
                   </div>
+
+                  <div class="space-y-2">
+                    <Label for="gender" class="text-sm font-medium">За кого</Label>
+                    <select
+                      id="gender"
+                      v-model="form.gender"
+                      class="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="unisex">Унисекс (показва се и при момичета, и при момчета)</option>
+                      <option value="girl">Момиче</option>
+                      <option value="boy">Момче</option>
+                    </select>
+                  </div>
                 </div>
 
                 <!-- Product Group Toggle - Available in both add and edit modes -->
@@ -1239,6 +1349,62 @@ onMounted(async () => {
                     </button>
                   </Badge>
                 </div>
+
+                <!-- Per-color image galleries -->
+                <div v-if="form.colors.length > 0" class="space-y-3 mt-4 rounded-lg border border-gray-200 p-4">
+                  <div>
+                    <Label class="text-sm font-medium">Снимки по цвят</Label>
+                    <p class="text-xs text-muted-foreground">
+                      Клиентът вижда тези снимки при избор на цвета. Без качени снимки за даден
+                      цвят се показват общите снимки на продукта.
+                    </p>
+                  </div>
+                  <div
+                    v-for="color in formColors"
+                    :key="`ci-${color.name}`"
+                    class="space-y-2 border-t border-gray-100 pt-3"
+                  >
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-3.5 h-3.5 rounded-full border border-border"
+                        :style="{ backgroundColor: color.hex || '#9CA3AF' }"
+                      ></div>
+                      <span class="text-sm font-medium flex-1">{{ color.name }}</span>
+                      <label
+                        class="text-xs px-3 py-1.5 rounded-md border border-input cursor-pointer hover:bg-muted"
+                        :class="{ 'opacity-50 pointer-events-none': uploadingColorImages[color.name] }"
+                      >
+                        {{ uploadingColorImages[color.name] ? "Качване..." : "+ Добави снимки" }}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          class="hidden"
+                          @change="(e) => uploadColorImage(color.name, e)"
+                        />
+                      </label>
+                    </div>
+                    <div v-if="(colorImages[color.name] || []).length > 0" class="flex flex-wrap gap-2">
+                      <div
+                        v-for="(img, imgIndex) in colorImages[color.name]"
+                        :key="img.publicId"
+                        class="relative group"
+                      >
+                        <img :src="img.url" class="w-16 h-16 object-cover rounded-md border border-border" />
+                        <button
+                          type="button"
+                          class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-white text-xs leading-none hidden group-hover:block"
+                          @click="removeColorImage(color.name, imgIndex)"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <p v-if="errors.colorImages" class="text-xs text-destructive">
+                    {{ errors.colorImages }}
+                  </p>
+                </div>
                 <p v-if="errors.colors" class="text-xs text-destructive mt-1">
                   {{ errors.colors }}
                 </p>
@@ -1294,6 +1460,60 @@ onMounted(async () => {
                   </p>
                 </div>
                 <Switch id="embroidered" v-model:checked="form.customEmbroidery" />
+              </div>
+
+              <div
+                v-if="form.customEmbroidery"
+                class="flex items-center justify-between px-4 py-3 rounded-lg border"
+              >
+                <div class="space-y-0.5">
+                  <Label for="embroideryPrice" class="text-sm font-medium">Цена на бродерията (€)</Label>
+                  <p class="text-xs text-muted-foreground">
+                    Празно = цената от категорията; 0 = включена в цената
+                  </p>
+                </div>
+                <Input
+                  id="embroideryPrice"
+                  v-model="form.embroideryPrice"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="от категорията"
+                  class="w-36 h-10"
+                />
+              </div>
+
+              <div class="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                <div class="space-y-0.5">
+                  <Label for="printEnabled" class="text-sm font-medium cursor-pointer"
+                    >Активирай Печат с Име</Label
+                  >
+                  <p class="text-xs text-muted-foreground">
+                    Клиентът може да избере името да бъде щампирано вместо бродирано
+                  </p>
+                </div>
+                <Switch id="printEnabled" v-model:checked="form.printEnabled" />
+              </div>
+
+              <div
+                v-if="form.printEnabled"
+                class="flex items-center justify-between px-4 py-3 rounded-lg border"
+              >
+                <div class="space-y-0.5">
+                  <Label for="printPrice" class="text-sm font-medium">Цена на печата (€)</Label>
+                  <p class="text-xs text-muted-foreground">
+                    Празно = цената от категорията; 0 = включена в цената
+                  </p>
+                </div>
+                <Input
+                  id="printPrice"
+                  v-model="form.printPrice"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="от категорията"
+                  class="w-36 h-10"
+                />
               </div>
 
               <div
