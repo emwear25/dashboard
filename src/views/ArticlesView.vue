@@ -94,7 +94,7 @@
                 ✏️
               </button>
               <button
-                v-if="article.status === 'published'"
+                v-if="article.status === 'published' && shopStore.shop.articlePath(article.slug)"
                 class="btn btn--icon btn--ghost"
                 title="Преглед"
                 @click="viewArticle(article.slug)"
@@ -165,8 +165,10 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { apiGet, apiDelete } from "@/utils/api";
+import { useShopStore } from "@/stores/shopStore";
 
 const router = useRouter();
+const shopStore = useShopStore();
 
 interface Article {
   _id: string;
@@ -259,7 +261,9 @@ const editArticle = (id: string) => {
 };
 
 const viewArticle = (slug: string) => {
-  window.open(`${import.meta.env.VITE_CLIENT_URL || "http://localhost:3000"}/blog/${slug}`, "_blank");
+  // Preview on the storefront of the selected shop
+  const path = shopStore.shop.articlePath(slug);
+  if (path) window.open(`${shopStore.shop.siteUrl}${path}`, "_blank", "noopener");
 };
 
 const confirmDelete = (article: Article) => {

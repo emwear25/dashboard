@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watchEffect } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -10,7 +10,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/ThemeToggle.vue";
+import ShopSwitcher from "@/components/ShopSwitcher.vue";
 import { useAuthStore } from "@/stores/authStore";
+import { useShopStore } from "@/stores/shopStore";
 import { useRouter } from "vue-router";
 import type { LucideIcon } from "lucide-vue-next";
 import {
@@ -103,8 +105,14 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
-const brandName = "Emwear";
 const authStore = useAuthStore();
+const shopStore = useShopStore();
+const brandName = computed(() => shopStore.shop.name);
+
+// Make the active shop obvious in the browser tab too
+watchEffect(() => {
+  document.title = `${shopStore.shop.name} · Админ панел`;
+});
 const router = useRouter();
 const route = useRoute();
 
@@ -132,18 +140,23 @@ const handleLogout = () => {
   <div class="min-h-screen flex bg-background text-foreground transition-colors">
     <aside
       :class="[
-        'hidden lg:flex flex-col fixed h-screen bg-card border-r border-border transition-all duration-300 z-50',
+        'hidden lg:flex flex-col fixed h-screen bg-card border-r border-border border-t-4 transition-all duration-300 z-50',
         sidebarCollapsed ? 'w-16' : 'w-64',
       ]"
+      :style="{ borderTopColor: shopStore.shop.color }"
     >
       <div
         :class="['p-4 flex items-center', sidebarCollapsed ? 'justify-center' : 'justify-between']"
       >
         <h1 class="text-xl font-bold tracking-tight">
-          <span v-if="!sidebarCollapsed">{{ brandName }}</span>
-          <span v-else>{{ brandName.slice(0, 2).toUpperCase() }}</span>
+          <span v-if="!sidebarCollapsed">Админ панел</span>
+          <span v-else class="sr-only">Админ панел</span>
         </h1>
         <ThemeToggle v-if="!sidebarCollapsed" />
+      </div>
+
+      <div :class="['pb-3', sidebarCollapsed ? 'px-2' : 'px-4']">
+        <ShopSwitcher :collapsed="sidebarCollapsed" />
       </div>
 
       <nav :class="['flex-1 space-y-1', sidebarCollapsed ? 'px-2' : 'px-4']">
@@ -186,7 +199,10 @@ const handleLogout = () => {
       class="flex-1 flex flex-col transition-[margin] duration-300"
       :class="sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'"
     >
-      <div class="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
+      <div
+        class="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border border-t-4"
+        :style="{ borderTopColor: shopStore.shop.color }"
+      >
         <div class="flex items-center justify-between px-4 py-3">
           <span class="text-lg font-semibold">{{ brandName }}</span>
           <div class="flex items-center gap-2">
@@ -199,8 +215,8 @@ const handleLogout = () => {
               </SheetTrigger>
               <SheetContent side="left" class="w-64 p-0">
                 <div class="h-full flex flex-col">
-                  <div class="px-6 py-4 border-b border-border">
-                    <span class="text-xl font-semibold">{{ brandName }}</span>
+                  <div class="px-4 py-4 border-b border-border">
+                    <ShopSwitcher />
                   </div>
                   <nav class="flex-1 px-4 py-4">
                     <RouterLink
@@ -225,8 +241,17 @@ const handleLogout = () => {
       </div>
 
       <header
-        class="hidden lg:flex items-center justify-end bg-card border-b border-border px-6 py-4 sticky top-0 z-40"
+        class="hidden lg:flex items-center justify-between bg-card border-b border-border px-6 py-4 sticky top-0 z-40"
       >
+        <p class="flex items-center gap-2 text-sm text-muted-foreground">
+          <span
+            class="inline-block h-2.5 w-2.5 rounded-full"
+            :style="{ backgroundColor: shopStore.shop.color }"
+            aria-hidden="true"
+          />
+          Управлявате магазин
+          <strong class="text-foreground">{{ shopStore.shop.name }}</strong>
+        </p>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" class="gap-3">
@@ -257,7 +282,8 @@ const handleLogout = () => {
       </header>
 
       <main class="flex-1 lg:pt-0 pt-16 px-4 md:px-6 lg:px-8 py-6">
-        <RouterView />
+        <!-- Keyed by shop: switching shops remounts the page and reloads its data -->
+        <RouterView :key="shopStore.current" />
       </main>
     </div>
   </div>
