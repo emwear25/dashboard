@@ -18,6 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-vue-next";
 import VariantStockGrid from "@/components/VariantStockGrid.vue";
 import ProductGroupManager from "@/components/ProductGroupManager.vue";
+import StorefrontDetailsCard from "@/components/StorefrontDetailsCard.vue";
+import { useShopStore } from "@/stores/shopStore";
+import { emptyStorefront, storefrontFromProduct, type StorefrontDetails } from "@/utils/storefront";
 import { apiGet, apiUpload, apiPost, apiUploadFile } from "@/utils/api";
 
 const router = useRouter();
@@ -53,6 +56,11 @@ const form = reactive({
   printEnabled: false,
   printPrice: "" as string | number,
 });
+
+// Imagoo product page details (only edited/sent when managing Imagoo)
+const shopStore = useShopStore();
+const isImagoo = computed(() => shopStore.current === "imagoo");
+const storefront = ref<StorefrontDetails>(emptyStorefront());
 
 // Per-color image galleries: color name -> uploaded Cloudinary refs
 const colorImages = ref<Record<string, { url: string; publicId: string }[]>>({});
@@ -557,6 +565,8 @@ const fetchProduct = async () => {
           ? printMethod.price
           : "";
 
+      storefront.value = storefrontFromProduct(product.storefront);
+
       // Per-color image galleries
       const loadedColorImages: Record<string, { url: string; publicId: string }[]> = {};
       for (const entry of product.colorImages || []) {
@@ -745,6 +755,10 @@ const submitForm = async () => {
       .map(([colorName, images]) => ({ color: colorName, images }))
       .filter((entry) => entry.images.length > 0);
     formData.append("colorImages", JSON.stringify(colorImagesPayload));
+
+    if (isImagoo.value) {
+      formData.append("storefront", JSON.stringify(storefront.value));
+    }
 
     if (form.customEmbroidery) {
       formData.append("embroideryFonts", JSON.stringify(form.embroideryFonts));
@@ -1437,7 +1451,15 @@ onMounted(async () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <StorefrontDetailsCard
+            v-if="isImagoo"
+            v-model="storefront"
+            :colors="form.colors"
+            :categories="categories"
+            :main-category="form.category"
+          />
+
+          <Card v-if="!isImagoo">
             <CardHeader class="pb-4">
               <div class="flex items-center gap-2">
                 <div class="h-8 w-1 bg-primary rounded-full"></div>
