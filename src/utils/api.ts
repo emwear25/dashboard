@@ -1,7 +1,11 @@
 /**
  * Centralized API utility for making requests to the backend
  * All API calls should use this utility to avoid hardcoded URLs
+ *
+ * Multi-store: every request carries the selected shop in the X-Store header;
+ * the server scopes all data to that shop (see utils/shops.ts).
  */
+import { getCurrentShop } from "@/utils/shops";
 
 // Get API base URL from environment variable or use default
 const getApiBase = (): string => {
@@ -45,6 +49,18 @@ const getAdminToken = (): string | null => {
 };
 
 /**
+ * Headers every backend request needs: the selected shop and, when logged in,
+ * the admin token. Use for the rare direct fetch() calls (file downloads).
+ */
+export const getBaseHeaders = (): Record<string, string> => {
+  const token = getAdminToken();
+  return {
+    "X-Store": getCurrentShop(),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+/**
  * Make an authenticated API request
  */
 export const apiRequest = async <T = any>(
@@ -81,13 +97,18 @@ export const apiRequest = async <T = any>(
     headersRecord["Authorization"] = `Bearer ${token}`;
   }
 
+  // Scope the request to the selected shop
+  headersRecord["X-Store"] = getCurrentShop();
+
   const headers: HeadersInit = headersRecord;
 
   // Ensure credentials are included for cookie-based auth
+  // `headers` already contains the caller's headers merged with auth + shop,
+  // so it goes last - a caller's raw headers must never drop X-Store
   const defaultOptions: RequestInit = {
     credentials: "include",
-    headers,
     ...options,
+    headers,
   };
 
   const response = await fetch(url, defaultOptions);
@@ -217,6 +238,9 @@ export const apiUpload = async <T = any>(
     headersRecord["Authorization"] = `Bearer ${token}`;
   }
 
+  // Scope the upload to the selected shop
+  headersRecord["X-Store"] = getCurrentShop();
+
   // Merge existing headers if provided
   if (options?.headers) {
     if (options.headers instanceof Headers) {
@@ -244,8 +268,9 @@ export const apiUpload = async <T = any>(
     credentials: "include",
     method,
     body: formData,
-    headers: headersRecord,
     ...options,
+    // Merged caller headers + auth + shop; must not be overridden
+    headers: headersRecord,
   };
 
   const response = await fetch(url, defaultOptions);
@@ -285,7 +310,6 @@ export const apiUploadFile = async <T = any>(
   fieldName = "file"
 ): Promise<T> => {
   const url = getApiUrl(endpoint);
-  const token = getAdminToken();
 
   const formData = new FormData();
   formData.append(fieldName, file, file.name);
@@ -293,7 +317,7 @@ export const apiUploadFile = async <T = any>(
   const response = await fetch(url, {
     method: "POST",
     credentials: "include",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    headers: getBaseHeaders(),
     body: formData,
   });
 

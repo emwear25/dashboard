@@ -2,8 +2,8 @@
   <div class="login-view">
     <div class="login-container">
       <div class="login-header">
-        <h1 class="login-title">Emwear Dashboard</h1>
-        <p class="login-subtitle">Влезте в административния панел</p>
+        <h1 class="login-title">emWear · Imagoo</h1>
+        <p class="login-subtitle">Влезте в общия административен панел</p>
       </div>
 
       <form @submit.prevent="handleLogin" class="login-form">

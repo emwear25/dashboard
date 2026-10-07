@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, AlertCircle, Tag, Download, Copy, Plus } from "lucide-vue-next";
-import { apiGet } from "@/utils/api";
+import { apiGet, getApiUrl, getBaseHeaders } from "@/utils/api";
 
 type Coupon = {
   _id: string;
@@ -82,12 +82,10 @@ const copyCouponCode = async (code: string) => {
 const exportCoupons = async () => {
   try {
     // For file downloads, we need to use fetch directly
-    const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:3030";
-    const response = await fetch(`${apiBase}/api/coupons/export`, {
+    // Admin token + selected shop (exports only that shop's coupons)
+    const response = await fetch(getApiUrl("coupons/export"), {
       credentials: "include",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      },
+      headers: getBaseHeaders(),
     });
 
     if (!response.ok) {

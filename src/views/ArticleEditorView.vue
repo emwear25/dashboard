@@ -212,6 +212,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { apiGet, apiPost, apiPut, apiUpload } from "@/utils/api";
+import { useShopStore } from "@/stores/shopStore";
 
 const route = useRoute();
 const router = useRouter();
@@ -257,7 +258,7 @@ const article = ref<Article>({
   excerpt: "",
   content: "",
   featuredImage: { url: null, publicId: null, alt: "" },
-  author: { name: "emWear", avatar: null },
+  author: { name: useShopStore().shop.name, avatar: null },
   tags: [],
   seo: {
     metaTitle: "",
