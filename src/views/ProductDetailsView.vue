@@ -18,6 +18,7 @@ import {
   Box,
 } from "lucide-vue-next";
 import { apiGet, apiDelete } from "@/utils/api";
+import PrintSourceCard from "@/components/PrintSourceCard.vue";
 
 type ProductImage = {
   url: string;
@@ -288,6 +289,8 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+      <PrintSourceCard :product-id="product._id" />
 
       <!-- Embroidery Options Section -->
       <Card

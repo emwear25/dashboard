@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-vue-next";
 import VariantStockGrid from "@/components/VariantStockGrid.vue";
 import { apiGet, apiUpload } from "@/utils/api";
+import PrintSourceCard from "@/components/PrintSourceCard.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -1206,6 +1207,8 @@ onMounted(async () => {
         </div>
       </div>
     </form>
+
+    <PrintSourceCard v-if="productId" :product-id="productId" class="mt-6" />
 
     <!-- Success/Error Message -->
     <div

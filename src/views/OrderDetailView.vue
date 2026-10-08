@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   ShieldQuestion,
   RefreshCw,
+  Printer,
 } from "lucide-vue-next";
 import { apiGet, apiPost } from "@/utils/api";
 
@@ -32,6 +33,20 @@ const order = ref<any>(null);
 const isLoading = ref(true);
 const isCreatingShipment = ref(false);
 const error = ref("");
+
+// Print-file links (MakerWorld etc.) for the ordered products, keyed by product id
+const printSources = ref<Record<string, { url: string; note: string }>>({});
+const productIdOf = (item: any): string => String(item?.product?._id || item?.product || "");
+const fetchPrintSources = async () => {
+  const ids = [...new Set((order.value?.items || []).map(productIdOf).filter(Boolean))];
+  if (!ids.length) return;
+  try {
+    const res = await apiGet(`products/print-sources?ids=${ids.join(",")}`);
+    printSources.value = res?.data || {};
+  } catch (err) {
+    console.warn("[OrderDetail] Print sources unavailable:", err);
+  }
+};
 
 const fetchOrder = async () => {
   isLoading.value = true;
@@ -46,6 +61,7 @@ const fetchOrder = async () => {
     if (data.success && data.data) {
       order.value = data.data;
       console.log("[OrderDetail] Order found:", data.data.orderNumber);
+      fetchPrintSources();
     } else {
       error.value = data.message || "Order not found";
     }
@@ -314,6 +330,18 @@ onMounted(() => {
                     <div class="text-sm text-muted-foreground space-y-1 mt-1">
                       <p v-if="item.size">Размер: {{ item.size }}</p>
                       <p v-if="item.color">Цвят: {{ item.color }}</p>
+                      <a
+                        v-if="printSources[productIdOf(item)]?.url"
+                        :href="printSources[productIdOf(item)].url"
+                        target="_blank"
+                        rel="noopener"
+                        class="inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-md border text-sm font-medium text-primary hover:bg-muted"
+                      >
+                        <Printer class="h-4 w-4" /> Отвори файла за печат
+                      </a>
+                      <p v-if="printSources[productIdOf(item)]?.note" class="text-xs">
+                        🖨 {{ printSources[productIdOf(item)].note }}
+                      </p>
                       <p v-if="item.customization" class="text-primary font-medium">
                         {{ item.customization }}
                       </p>
