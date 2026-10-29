@@ -630,6 +630,11 @@ const fetchProduct = async () => {
         }
       }
 
+      // Hand-picked suggested add-ons (stored as product ids)
+      suggestedAddOnIds.value = Array.isArray(product.suggestedAddOnIds)
+        ? product.suggestedAddOnIds.map((id: any) => String(id))
+        : [];
+
       // Set existing images
       existingImages.value = product.images || [];
     } else {
@@ -685,6 +690,8 @@ const resetForm = () => {
   form.customEmbroidery = false;
   form.embroideryFonts = [];
   form.embroideryColors = [];
+  suggestedAddOnIds.value = [];
+  addOnSearch.value = "";
 
   imageFiles.value = [];
   imagePreviews.value = [];
@@ -755,6 +762,9 @@ const submitForm = async () => {
       .map(([colorName, images]) => ({ color: colorName, images }))
       .filter((entry) => entry.images.length > 0);
     formData.append("colorImages", JSON.stringify(colorImagesPayload));
+
+    // Hand-picked cross-sell add-ons (ordered list of product ids)
+    formData.append("suggestedAddOnIds", JSON.stringify(suggestedAddOnIds.value));
 
     if (isImagoo.value) {
       formData.append("storefront", JSON.stringify(storefront.value));
@@ -865,7 +875,9 @@ const fetchAvailableMasters = async () => {
   try {
     const response = await apiGet('products?limit=500');
     if (response.success && response.data) {
-      // Filter: only products with variants
+      // Keep the full list for the suggested-add-ons picker...
+      availableProducts.value = response.data;
+      // ...and the variant-only subset for master linking
       availableMasterProducts.value = response.data.filter((p: any) => {
         return p.variants && p.variants.length > 0;
       });
@@ -874,6 +886,45 @@ const fetchAvailableMasters = async () => {
     console.error('Error fetching master products:', err);
   }
 };
+
+// ── Suggested add-ons (cross-sell picker) ────────────────────────────────
+// Hand-pick other products to suggest with this one ("goes well with" on the
+// product page and an upsell in the cart), e.g. keychains for a bag.
+const availableProducts = ref<any[]>([]);
+const suggestedAddOnIds = ref<string[]>([]);
+const addOnSearch = ref("");
+
+const selectedAddOns = computed(() =>
+  suggestedAddOnIds.value
+    .map((id) => availableProducts.value.find((p: any) => p._id === id))
+    .filter(Boolean)
+);
+
+const addOnSearchResults = computed(() => {
+  const q = addOnSearch.value.trim().toLowerCase();
+  if (!q) return [];
+  return availableProducts.value
+    .filter(
+      (p: any) =>
+        p._id !== productId.value && !suggestedAddOnIds.value.includes(p._id)
+    )
+    .filter((p: any) => (p.name || "").toLowerCase().includes(q))
+    .slice(0, 8);
+});
+
+const addAddOn = (p: any) => {
+  if (!suggestedAddOnIds.value.includes(p._id)) {
+    suggestedAddOnIds.value.push(p._id);
+  }
+  addOnSearch.value = "";
+};
+
+const removeAddOn = (id: string) => {
+  suggestedAddOnIds.value = suggestedAddOnIds.value.filter((x) => x !== id);
+};
+
+const addOnImage = (p: any): string =>
+  p?.images?.[0]?.url || p?.colorImages?.[0]?.images?.[0]?.url || "";
 
 // Filter master products by selected category
 const filteredMasterProducts = computed(() => {
@@ -1600,6 +1651,76 @@ onMounted(async () => {
                     <Input v-model="newEmbroideryColorValue" type="color" class="h-10 w-20" />
                     <Button type="button" @click="addEmbroideryColor" size="sm"> Добави </Button>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- Suggested add-ons (cross-sell: "goes well with" + cart upsell) -->
+          <Card>
+            <CardHeader class="pb-4">
+              <CardTitle class="text-lg">Препоръчани добавки</CardTitle>
+              <CardDescription class="text-xs">
+                Други продукти, които да предложим с този — на страницата на продукта
+                и в количката. Например ключодържател към чанта.
+              </CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-4">
+              <!-- Selected add-ons -->
+              <div v-if="selectedAddOns.length > 0" class="space-y-2">
+                <div
+                  v-for="addOn in selectedAddOns"
+                  :key="addOn._id"
+                  class="flex items-center gap-3 rounded-md border p-2"
+                >
+                  <img
+                    v-if="addOnImage(addOn)"
+                    :src="addOnImage(addOn)"
+                    :alt="addOn.name"
+                    class="h-10 w-10 rounded object-cover"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium">{{ addOn.name }}</p>
+                    <p class="text-xs text-muted-foreground">
+                      {{ typeof addOn.category === 'object'
+                        ? (addOn.category?.displayName || addOn.category?.name)
+                        : '' }}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    @click="removeAddOn(addOn._id)"
+                  >
+                    <X class="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <p v-else class="text-xs text-muted-foreground">Няма избрани добавки.</p>
+
+              <!-- Search + add -->
+              <div class="relative">
+                <Input v-model="addOnSearch" placeholder="Търсете продукт за добавяне..." />
+                <div
+                  v-if="addOnSearchResults.length > 0"
+                  class="absolute z-10 mt-1 w-full overflow-hidden rounded-md border bg-background shadow-lg"
+                >
+                  <button
+                    v-for="p in addOnSearchResults"
+                    :key="p._id"
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted"
+                    @click="addAddOn(p)"
+                  >
+                    <img
+                      v-if="addOnImage(p)"
+                      :src="addOnImage(p)"
+                      :alt="p.name"
+                      class="h-8 w-8 rounded object-cover"
+                    />
+                    <span class="truncate text-sm">{{ p.name }}</span>
+                  </button>
                 </div>
               </div>
             </CardContent>
