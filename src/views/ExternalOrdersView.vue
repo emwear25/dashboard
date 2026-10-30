@@ -730,8 +730,8 @@ const calculateShippingCost = async (office: any) => {
       return sum + item.price * item.quantity;
     }, 0);
 
-    // Free shipping over 60 EUR
-    if (subtotal >= 60) {
+    // Free shipping over 90 EUR
+    if (subtotal >= 90) {
       shippingCost.value = 0;
       calculatingShipping.value = false;
       return;
@@ -759,7 +759,7 @@ const calculateShippingCost = async (office: any) => {
       shippingCost.value = parseFloat(response.data.totalPrice);
     } else {
       // Fallback price
-      shippingCost.value = subtotal >= 60 ? 0 : 5.99;
+      shippingCost.value = subtotal >= 90 ? 0 : 5.99;
     }
   } catch (error: any) {
     console.error("Failed to calculate shipping:", error);
@@ -770,8 +770,8 @@ const calculateShippingCost = async (office: any) => {
             return sum + item.price * item.quantity;
           }, 0)
         : 0;
-    // Fallback: free shipping over 60, otherwise 5.99
-    shippingCost.value = subtotal >= 60 ? 0 : 5.99;
+    // Fallback: free shipping over 90, otherwise 5.99
+    shippingCost.value = subtotal >= 90 ? 0 : 5.99;
   } finally {
     calculatingShipping.value = false;
   }
@@ -1292,7 +1292,7 @@ onMounted(() => {
               v-else-if="!calculatingShipping && selectedOffice && shippingCost === 0"
               class="text-sm font-medium text-green-600"
             >
-              Безплатна доставка (над 55 €)
+              Безплатна доставка (над 90 €)
             </div>
           </div>
 
@@ -1644,7 +1644,7 @@ onMounted(() => {
                   class="flex justify-between items-center"
                 >
                   <span class="text-sm text-muted-foreground">Доставка:</span>
-                  <span class="text-sm text-muted-foreground">Безплатна (над 55 €)</span>
+                  <span class="text-sm text-muted-foreground">Безплатна (над 90 €)</span>
                 </div>
               </div>
             </div>
