@@ -2,7 +2,7 @@
   <div class="login-view">
     <div class="login-container">
       <div class="login-header">
-        <h1 class="login-title">emWear · Imagoo</h1>
+        <h1 class="login-title">emWear · Imagoo · boop</h1>
         <p class="login-subtitle">Влезте в общия административен панел</p>
       </div>
 

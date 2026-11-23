@@ -5,7 +5,7 @@
  * server scopes all data (products, orders, customers, ...) to that shop.
  * Keep the ids in sync with server/config/stores.js.
  */
-export type ShopId = "emwear" | "imagoo";
+export type ShopId = "emwear" | "imagoo" | "boop";
 
 export interface ShopMeta {
   id: ShopId;
@@ -35,6 +35,15 @@ export const SHOPS: Record<ShopId, ShopMeta> = {
     color: "#3b176f",
     siteUrl: import.meta.env.VITE_IMAGOO_SITE_URL || "http://localhost:3001",
     // The Imagoo storefront has no blog yet
+    articlePath: () => null,
+  },
+  boop: {
+    id: "boop",
+    name: "boop",
+    tagline: "Купички и медальони за любимци",
+    color: "#23301f",
+    siteUrl: import.meta.env.VITE_BOOP_SITE_URL || "http://localhost:3002",
+    // The boop storefront has no blog yet
     articlePath: () => null,
   },
 };
